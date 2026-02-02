@@ -1,0 +1,29 @@
+# Virtual environment
+.venv/
+venv/
+
+# Cached data and output
+output/
+*.parquet
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Environment / secrets
+.env
+*.key
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Pytest
+.pytest_cache/
