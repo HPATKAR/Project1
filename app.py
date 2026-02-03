@@ -352,8 +352,20 @@ def _run_markov(simulated, start, end, api_key):
     jp10 = _safe_col(df, "JP_10Y")
     if jp10 is None or len(jp10) < 60:
         return None
-    changes = jp10.diff().dropna()
-    return fit_markov_regime(changes, k_regimes=2, switching_variance=True)
+    changes = jp10.diff().dropna() * 100  # scale to bps for numerical stability
+    # Simulated data can be nearly constant (>90% zeros), which causes SVD
+    # failure in the Markov EM algorithm.  Add tiny jitter to regularise.
+    if (changes == 0).mean() > 0.5:
+        rng = np.random.default_rng(42)
+        changes = changes + rng.normal(0, changes.std() * 0.01, size=len(changes))
+    try:
+        return fit_markov_regime(changes, k_regimes=2, switching_variance=True)
+    except np.linalg.LinAlgError:
+        # Fall back to constant-variance model if switching-variance fails
+        try:
+            return fit_markov_regime(changes, k_regimes=2, switching_variance=False)
+        except Exception:
+            return None
 
 
 @st.cache_data(show_spinner="Fitting HMM…")
@@ -421,18 +433,30 @@ def _run_ensemble(simulated, start, end, api_key):
     ent, sig = _run_entropy(simulated, start, end, api_key)
     vol, breaks = _run_garch(simulated, start, end, api_key)
 
-    if any(x is None for x in [markov, hmm, sig]):
+    # Need at least HMM + one other signal for a meaningful ensemble
+    if hmm is None:
         return None
 
-    markov_prob = markov["regime_probabilities"]
-    # Use the column most likely to represent the repricing regime
-    prob_col = markov_prob.columns[-1]
-    mp = markov_prob[prob_col]
-
     hmm_states = hmm["states"]
+    ref_index = hmm_states.index
+
+    # Build Markov probability — fall back to neutral 0.5 if model failed
+    if markov is not None:
+        markov_prob = markov["regime_probabilities"]
+        prob_col = markov_prob.columns[-1]
+        mp = markov_prob[prob_col]
+    else:
+        mp = pd.Series(0.5, index=ref_index, name="markov_fallback")
+
+    # Entropy signal — fall back to neutral 0.5
+    if sig is not None:
+        entropy_sig = sig
+    else:
+        entropy_sig = pd.Series(0.5, index=ref_index, name="entropy_fallback")
+
     garch_input = breaks if breaks is not None else []
 
-    return ensemble_regime_probability(mp, hmm_states, sig, garch_input)
+    return ensemble_regime_probability(mp, hmm_states, entropy_sig, garch_input)
 
 
 def page_regime():
@@ -773,7 +797,10 @@ def _generate_trades(simulated, start, end, api_key):
 
     # Gather regime state inputs
     # Regime probability
-    ensemble = _run_ensemble(simulated, start, end, api_key)
+    try:
+        ensemble = _run_ensemble(simulated, start, end, api_key)
+    except Exception:
+        ensemble = None
     regime_prob = float(ensemble.dropna().iloc[-1]) if ensemble is not None and len(ensemble.dropna()) > 0 else 0.5
 
     # PCA scores
