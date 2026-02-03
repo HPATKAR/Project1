@@ -135,6 +135,11 @@ def _add_boj_events(fig: go.Figure, y_pos: float | None = None) -> go.Figure:
 # ===================================================================
 def page_overview():
     st.header("Overview & Data")
+    st.caption(
+        "High-level snapshot of the raw market data powering the dashboard. "
+        "Covers sovereign bond yields, volatility indices, exchange rates, and equity indices. "
+        "Toggle between simulated (synthetic) and live data in the sidebar."
+    )
 
     try:
         df = load_unified(
@@ -156,6 +161,12 @@ def page_overview():
 
     # --- Rates chart ---
     st.subheader("Sovereign Yields & VIX")
+    st.caption(
+        "Government bond yields represent the annual interest rate a country pays to borrow money. "
+        "JP_10Y is the Japan 10-year yield (this dashboard's core variable), US_10Y and DE_10Y are US and German benchmarks. "
+        "VIX (the 'fear index') measures expected US stock-market volatility — spikes signal market stress. "
+        "Red dotted lines mark Bank of Japan (BOJ) policy events."
+    )
     rate_cols = [c for c in ["JP_10Y", "US_10Y", "DE_10Y", "VIX"] if c in df.columns]
     if rate_cols:
         fig = go.Figure()
@@ -171,6 +182,11 @@ def page_overview():
 
     # --- Market chart ---
     st.subheader("FX & Equity")
+    st.caption(
+        "USDJPY = how many Yen one US Dollar buys (rising means Yen weakening). "
+        "EURJPY = Euro vs Yen. NIKKEI = Japan's main stock index (like the S&P 500 for Japan). "
+        "JGB repricing often ripples into these markets — a weakening Yen and falling stocks can accompany rising bond yields."
+    )
     mkt_cols = [c for c in ["USDJPY", "EURJPY", "NIKKEI"] if c in df.columns]
     if mkt_cols:
         fig2 = go.Figure()
@@ -248,11 +264,23 @@ def _run_liquidity(simulated, start, end, api_key):
 
 def page_yield_curve():
     st.header("Yield Curve Analytics")
+    st.caption(
+        "Statistical decomposition of *how* the yield curve moves. "
+        "The yield curve plots interest rates against bond maturities (2Y, 5Y, 10Y, etc.) — "
+        "its shape reflects market expectations about future rates and economic health."
+    )
 
     args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
 
     # --- PCA ---
     st.subheader("PCA of Yield Changes")
+    st.caption(
+        "**Principal Component Analysis (PCA)** reduces many correlated yield movements into a few independent factors. "
+        "PC1 (Level) captures parallel shifts in all rates; PC2 (Slope) captures steepening/flattening; "
+        "PC3 (Curvature) captures the belly bowing in or out. "
+        "The scree chart shows how much variance each factor explains; the heatmap shows which maturities each factor affects; "
+        "the time series tracks factor values over time — spikes indicate unusual yield-curve moves."
+    )
     pca_result = _run_pca(*args)
     if pca_result is None:
         st.warning("Insufficient yield data for PCA.")
@@ -305,6 +333,12 @@ def page_yield_curve():
 
     # --- Liquidity ---
     st.subheader("Liquidity Metrics")
+    st.caption(
+        "**Liquidity** measures how easily a bond can be bought or sold without moving its price. "
+        "The Roll measure estimates the bid-ask spread (trading cost) from return patterns — higher values mean worse liquidity. "
+        "The Composite Index combines multiple measures into one z-score — negative values signal deteriorating market conditions. "
+        "When the BOJ reduces purchases, liquidity dries up, amplifying price moves."
+    )
     liq = _run_liquidity(*args)
     if liq is None:
         st.warning("Insufficient data for liquidity metrics.")
@@ -320,6 +354,13 @@ def page_yield_curve():
 
     # --- Nelson-Siegel ---
     st.subheader("Nelson-Siegel Factor Evolution")
+    st.caption(
+        "The **Nelson-Siegel model** fits a smooth curve through observed yields using three interpretable parameters: "
+        "beta0 (long-run yield level), beta1 (slope — difference between short and long rates), "
+        "and beta2 (curvature — the 'hump' in the middle). "
+        "Unlike PCA, these have direct economic meaning. A rising beta0 indicates the market expects higher rates long-term — "
+        "a key sign of repricing."
+    )
     ns_result = _run_ns(*args)
     if ns_result is None:
         st.warning("Insufficient data for Nelson-Siegel fitting.")
@@ -461,11 +502,22 @@ def _run_ensemble(simulated, start, end, api_key):
 
 def page_regime():
     st.header("Regime Detection")
+    st.caption(
+        "A **regime** is a persistent market state with distinct statistical properties — think 'calm weather' vs 'storm.' "
+        "This page determines whether the market is currently in a BOJ-suppressed regime (stable, low volatility) "
+        "or a market-driven repricing regime (volatile, yields breaking free). "
+        "Four independent models vote, and their weighted average produces the ensemble probability at top."
+    )
 
     args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
 
     # --- Ensemble Probability ---
     st.subheader("Ensemble Regime Probability")
+    st.caption(
+        "The headline indicator — a weighted average of all four regime models below. "
+        "Values near 0 = BOJ-suppressed (calm); near 1 = market-driven repricing (stress). "
+        "The 0.5 threshold line separates the two regimes. This single number drives all trade ideas on Page 5."
+    )
     ensemble = _run_ensemble(*args)
     if ensemble is not None and len(ensemble.dropna()) > 0:
         current_prob = float(ensemble.dropna().iloc[-1])
@@ -494,6 +546,12 @@ def page_regime():
 
     # --- Markov Smoothed Probabilities ---
     st.subheader("Markov-Switching Smoothed Probabilities")
+    st.caption(
+        "A **Markov-switching model** assumes the market flips between two hidden states (e.g. calm vs crisis), "
+        "each with its own average return and volatility. 'Markov' means the chance of switching depends only on "
+        "the current state, not history. The stacked areas show the probability of being in each regime over time — "
+        "they always sum to 1.0."
+    )
     markov = _run_markov(*args)
     if markov is not None:
         rp = markov["regime_probabilities"]
@@ -518,6 +576,12 @@ def page_regime():
 
     # --- Structural Breaks ---
     st.subheader("Structural Breakpoints on JP 10Y Changes")
+    st.caption(
+        "**Structural breaks** are points where the statistical properties of a time series permanently change — "
+        "not just a temporary spike, but a fundamental shift. The PELT algorithm finds these optimally. "
+        "Orange dashed lines mark detected breakpoints. They often align with BOJ policy announcements, "
+        "confirming that the data itself recognises 'something fundamental changed.'"
+    )
     changes, bkps = _run_breaks(*args)
     if changes is not None and bkps is not None:
         fig_bp = go.Figure()
@@ -534,6 +598,12 @@ def page_regime():
 
     # --- Entropy ---
     st.subheader("Rolling Permutation Entropy & Regime Signal")
+    st.caption(
+        "**Permutation entropy** measures randomness/complexity over a rolling window. "
+        "Low entropy = predictable, ordered (BOJ in control); high entropy = chaotic (market-driven). "
+        "The regime signal (red dotted line, right axis) fires 0 or 1 when entropy exceeds a threshold. "
+        "Entropy often rises *before* big moves, making it a leading indicator of regime transitions."
+    )
     ent, sig = _run_entropy(*args)
     if ent is not None:
         fig_ent = go.Figure()
@@ -559,6 +629,12 @@ def page_regime():
 
     # --- GARCH ---
     st.subheader("GARCH Conditional Volatility & Vol-Regime Breaks")
+    st.caption(
+        "**GARCH** (Generalized Autoregressive Conditional Heteroskedasticity) models time-varying volatility — "
+        "the fact that volatile days tend to cluster together. The blue line is the model's real-time volatility estimate (in bps). "
+        "Purple dashed lines mark volatility regime breaks — permanent shifts to a new volatility level, "
+        "confirming that the calm-yields era has structurally ended."
+    )
     vol, breaks = _run_garch(*args)
     if vol is not None:
         fig_g = go.Figure()
@@ -670,11 +746,22 @@ def _run_carry(simulated, start, end, api_key):
 
 def page_spillover():
     st.header("Spillover & Information Flow")
+    st.caption(
+        "How do shocks transmit *between* markets? A JGB sell-off can trigger moves in US Treasuries, "
+        "the Yen, and equities. This page quantifies the direction, strength, and dynamics of these cross-market linkages "
+        "using four complementary methods."
+    )
 
     args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
 
     # --- Granger Causality ---
     st.subheader("Granger Causality (significant pairs)")
+    st.caption(
+        "**Granger causality** tests whether past values of one series help predict another, beyond what the target's "
+        "own history predicts. It does *not* prove true causation — only statistical precedence. "
+        "For example, if JP_10Y 'Granger-causes' USDJPY, JGB yield moves systematically precede Yen moves. "
+        "The table shows cause-effect pairs with F-statistic (strength) and p-value (significance at 5%)."
+    )
     granger_df = _run_granger(*args)
     if granger_df is not None and not granger_df.empty:
         sig_df = granger_df[granger_df["significant"] == True].reset_index(drop=True)
@@ -692,6 +779,12 @@ def page_spillover():
 
     # --- Transfer Entropy Heatmap ---
     st.subheader("Transfer Entropy Heatmap")
+    st.caption(
+        "**Transfer entropy** is an information-theoretic measure of directional information flow between two series — "
+        "a non-linear generalisation of Granger causality that captures complex dependencies. "
+        "Rows are 'source' (sender), columns are 'target' (receiver). Brighter cells = stronger information flow. "
+        "Asymmetry (bright in one direction, dim in the other) reveals which market leads."
+    )
     te_df = _run_te(*args)
     if te_df is not None and not te_df.empty:
         sources = te_df["source"].unique()
@@ -716,6 +809,12 @@ def page_spillover():
 
     # --- Diebold-Yilmaz ---
     st.subheader("Diebold-Yilmaz Spillover")
+    st.caption(
+        "The **Diebold-Yilmaz spillover index** uses a VAR (Vector Autoregression) model — where every variable depends on "
+        "its own past and every other variable's past — to measure how much of each market's volatility is caused by shocks "
+        "from *other* markets. The Total Index shows overall interconnectedness (higher = more contagion risk). "
+        "Green bars = net shock transmitters; red bars = net receivers."
+    )
     spill = _run_spillover(*args)
     if spill is not None:
         col_s1, col_s2 = st.columns([1, 2])
@@ -736,6 +835,12 @@ def page_spillover():
 
     # --- DCC ---
     st.subheader("DCC Time-Varying Correlations")
+    st.caption(
+        "**DCC-GARCH** (Dynamic Conditional Correlation) estimates how correlations between asset pairs change over time. "
+        "Unlike a simple rolling correlation, DCC accounts for the fact that correlations spike during crises. "
+        "During BOJ suppression, JGB correlations with global bonds were artificially low. "
+        "When they spike toward global norms, it confirms the repricing regime."
+    )
     dcc = _run_dcc(*args)
     if dcc is not None:
         cond_corr = dcc["conditional_correlations"]
@@ -757,6 +862,12 @@ def page_spillover():
 
     # --- FX Carry ---
     st.subheader("FX Carry Metrics (USD/JPY)")
+    st.caption(
+        "A **carry trade** borrows in a low-rate currency (JPY) and invests in a high-rate currency (USD) "
+        "to pocket the interest rate difference. *Carry* = the rate differential; *Realized Vol* = the FX risk; "
+        "*Carry-to-Vol* (right axis) = risk-adjusted attractiveness (above 1.0 = attractive, below 0.8 = danger zone). "
+        "When carry-to-vol collapses, crowded carry trades unwind violently, causing sharp Yen strengthening."
+    )
     carry = _run_carry(*args)
     if carry is not None:
         fig_c = go.Figure()
@@ -892,6 +1003,12 @@ def _generate_trades(simulated, start, end, api_key):
 
 def page_trade_ideas():
     st.header("Trade Ideas")
+    st.caption(
+        "Actionable trade recommendations generated by feeding all analytics from Pages 2-4 into rule-based strategy logic. "
+        "Each trade card specifies the instruments, entry/exit signals, regime conditions, and what could go wrong. "
+        "Trades span four categories: rates (bond positions), FX (currency bets), volatility (options strategies), "
+        "and cross-asset (relative-value plays across markets). Filter by category and conviction in the sidebar."
+    )
 
     args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
 
@@ -936,6 +1053,11 @@ def page_trade_ideas():
 
     # --- Conviction bar chart ---
     st.subheader("Conviction Distribution")
+    st.caption(
+        "**Conviction** (0-100%) reflects how strongly the model recommends each trade, based on the strength "
+        "of the underlying signals (regime probability, carry ratios, entropy, spillover, etc.). "
+        "Higher conviction = more signals align. Bars are coloured by asset-class category."
+    )
     if filtered:
         conv_data = pd.DataFrame({
             "Trade": [c.name for c in filtered],
@@ -951,6 +1073,13 @@ def page_trade_ideas():
 
     # --- Trade cards ---
     st.subheader(f"Trade Cards ({len(filtered)} shown)")
+    st.caption(
+        "Each card is a self-contained trade idea. Click to expand. "
+        "**Direction**: Long (bet price rises) or Short (bet price falls). "
+        "**Regime Condition**: what market state triggers entry. **Edge Source**: why this trade has an advantage. "
+        "**Entry/Exit Signals**: concrete triggers. **Failure Scenario**: the key risk that would make this trade lose. "
+        "Cards are sorted by conviction (highest first)."
+    )
     for card in sorted(filtered, key=lambda c: -c.conviction):
         direction_arrow = "⬆️" if card.direction == "long" else "⬇️"
         conv_colour = "🟢" if card.conviction >= 0.7 else ("🟡" if card.conviction >= 0.4 else "🔴")
