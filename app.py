@@ -384,25 +384,25 @@ def _page_footer():
 # ===================================================================
 # Cached helpers
 # ===================================================================
-@st.cache_resource
+@st.cache_resource(ttl=900, max_entries=2)
 def get_data_store(simulated: bool) -> DataStore:
     return DataStore(use_simulated=simulated)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
 def load_unified(simulated: bool, start: str, end: str, api_key: str | None):
     store = get_data_store(simulated)
     store.clear_cache()
     return store.get_unified(start=start, end=end, fred_api_key=api_key or None)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
 def load_rates(simulated: bool, start: str, end: str, api_key: str | None):
     store = get_data_store(simulated)
     return store.get_rates(start=start, end=end, fred_api_key=api_key or None)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
 def load_market(simulated: bool, start: str, end: str):
     store = get_data_store(simulated)
     return store.get_market(start=start, end=end)
@@ -544,7 +544,7 @@ def page_overview():
 # ===================================================================
 # Page 2: Yield Curve Analytics
 # ===================================================================
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
 def _run_pca(simulated, start, end, api_key):
     from src.yield_curve.pca import fit_yield_pca
 
@@ -560,7 +560,7 @@ def _run_pca(simulated, start, end, api_key):
     return fit_yield_pca(changes, n_components=min(3, len(yield_cols)))
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
 def _run_ns(simulated, start, end, api_key):
     from src.yield_curve.nelson_siegel import fit_ns_timeseries
 
@@ -583,7 +583,7 @@ def _run_ns(simulated, start, end, api_key):
     return fit_ns_timeseries(yield_weekly, tenors=tenors)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
 def _run_liquidity(simulated, start, end, api_key):
     from src.yield_curve.liquidity import roll_measure, composite_liquidity_index
 
@@ -829,7 +829,7 @@ def page_yield_curve():
 # ===================================================================
 # Page 3: Regime Detection
 # ===================================================================
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
 def _run_markov(simulated, start, end, api_key):
     from src.regime.markov_switching import fit_markov_regime
 
@@ -853,7 +853,7 @@ def _run_markov(simulated, start, end, api_key):
             return None
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
 def _run_hmm(simulated, start, end, api_key):
     from src.regime.hmm_regime import fit_multivariate_hmm
 
@@ -867,7 +867,7 @@ def _run_hmm(simulated, start, end, api_key):
     return fit_multivariate_hmm(sub, n_states=2)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
 def _run_breaks(simulated, start, end, api_key):
     from src.regime.structural_breaks import detect_breaks_pelt
 
@@ -880,7 +880,7 @@ def _run_breaks(simulated, start, end, api_key):
     return changes, bkps
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
 def _run_entropy(simulated, start, end, api_key):
     from src.regime.entropy_regime import rolling_permutation_entropy, entropy_regime_signal
 
@@ -894,7 +894,7 @@ def _run_entropy(simulated, start, end, api_key):
     return ent, sig
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
 def _run_garch(simulated, start, end, api_key):
     from src.regime.garch_regime import fit_garch, volatility_regime_breaks
 
@@ -909,7 +909,7 @@ def _run_garch(simulated, start, end, api_key):
     return vol, breaks
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
 def _run_ensemble(simulated, start, end, api_key):
     from src.regime.ensemble import ensemble_regime_probability
 
@@ -1160,7 +1160,7 @@ def page_regime():
 # ===================================================================
 # Page 4: Spillover & Information Flow
 # ===================================================================
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
 def _run_granger(simulated, start, end, api_key):
     from src.spillover.granger import pairwise_granger
 
@@ -1174,7 +1174,7 @@ def _run_granger(simulated, start, end, api_key):
     return pairwise_granger(sub, max_lag=5, significance=0.05)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
 def _run_te(simulated, start, end, api_key):
     from src.spillover.transfer_entropy import pairwise_transfer_entropy
 
@@ -1188,7 +1188,7 @@ def _run_te(simulated, start, end, api_key):
     return pairwise_transfer_entropy(sub, lag=1, n_bins=3)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
 def _run_spillover(simulated, start, end, api_key):
     from src.spillover.diebold_yilmaz import compute_spillover_index
 
@@ -1202,7 +1202,7 @@ def _run_spillover(simulated, start, end, api_key):
     return compute_spillover_index(sub, var_lags=4, forecast_horizon=10)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
 def _run_dcc(simulated, start, end, api_key):
     from src.spillover.dcc_garch import compute_dcc
 
@@ -1216,7 +1216,7 @@ def _run_dcc(simulated, start, end, api_key):
     return compute_dcc(sub, p=1, q=1)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
 def _run_carry(simulated, start, end, api_key):
     from src.fx.carry_analytics import compute_carry, carry_to_vol
 
@@ -1533,7 +1533,7 @@ def page_spillover():
 # ===================================================================
 # Page 5: Trade Ideas
 # ===================================================================
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
 def _generate_trades(simulated, start, end, api_key):
     from src.strategy.trade_generator import generate_all_trades
     from src.yield_curve.term_premium import estimate_acm_term_premium
