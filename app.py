@@ -39,28 +39,120 @@ from src.data.config import BOJ_EVENTS, JGB_TENORS, DEFAULT_START, DEFAULT_END
 # ---------------------------------------------------------------------------
 st.set_page_config(
     page_title="JGB Repricing Dashboard",
-    page_icon="🇯🇵",
+    page_icon="JP",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 # ---------------------------------------------------------------------------
-# Sidebar — navigation + global controls
+# Professional CSS
 # ---------------------------------------------------------------------------
-st.sidebar.title("JGB Repricing Framework")
-page = st.sidebar.radio(
-    "Navigate",
-    [
-        "1 — Overview & Data",
-        "2 — Yield Curve Analytics",
-        "3 — Regime Detection",
-        "4 — Spillover & Info Flow",
-        "5 — Trade Ideas",
-    ],
+st.markdown(
+    """
+    <style>
+    /* ---- Header styling ---- */
+    .main h1 {
+        font-weight: 700;
+        color: #1a1a2e;
+        border-bottom: 3px solid #1e3a5f;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.2rem;
+    }
+    .main h2 {
+        font-weight: 600;
+        color: #1e3a5f;
+        border-bottom: 1px solid #e0e4eb;
+        padding-bottom: 0.25rem;
+        margin-top: 2rem;
+    }
+    .main h3 { font-weight: 600; color: #2d4a6f; }
+
+    /* ---- Metric cards ---- */
+    [data-testid="stMetric"] {
+        background: #f8f9fc;
+        border: 1px solid #e2e6ed;
+        border-radius: 8px;
+        padding: 14px 18px;
+    }
+    [data-testid="stMetricLabel"] {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.72rem;
+        letter-spacing: 0.04em;
+        color: #5a6577;
+    }
+    [data-testid="stMetricValue"] { font-weight: 700; color: #1a1a2e; }
+
+    /* ---- Sidebar nav buttons ---- */
+    section[data-testid="stSidebar"] .stButton > button {
+        text-align: left;
+        font-size: 0.88rem;
+        border-radius: 6px;
+        padding: 0.55rem 1rem;
+        transition: all 0.12s ease;
+    }
+    section[data-testid="stSidebar"] .stButton > button[kind="secondary"] {
+        background: transparent;
+        border: 1px solid #d0d5dd;
+        color: #344054;
+    }
+    section[data-testid="stSidebar"] .stButton > button[kind="secondary"]:hover {
+        background: #e8ebf0;
+        border-color: #98a2b3;
+    }
+    section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
+        font-weight: 600;
+    }
+
+    /* ---- Expander headers ---- */
+    .streamlit-expanderHeader { font-weight: 600; }
+
+    /* ---- Divider ---- */
+    hr { border-color: #e0e4eb; }
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
 
+# ---------------------------------------------------------------------------
+# Sidebar — navigation + global controls
+# ---------------------------------------------------------------------------
+st.sidebar.markdown(
+    "<div style='text-align:center; padding:0.2rem 0 1.2rem 0;'>"
+    "<span style='font-size:1.25rem; font-weight:700; color:#1e3a5f; "
+    "letter-spacing:-0.01em;'>JGB Repricing</span><br>"
+    "<span style='font-size:0.78rem; font-weight:400; color:#5a6577;'>"
+    "Framework Dashboard</span></div>",
+    unsafe_allow_html=True,
+)
+
+# Button-based navigation with session state
+if "current_page" not in st.session_state:
+    st.session_state.current_page = "Overview & Data"
+
+_NAV_ITEMS = [
+    ("Overview & Data", "overview"),
+    ("Yield Curve Analytics", "yield_curve"),
+    ("Regime Detection", "regime"),
+    ("Spillover & Info Flow", "spillover"),
+    ("Trade Ideas", "trades"),
+]
+
+for _label, _key in _NAV_ITEMS:
+    _active = st.session_state.current_page == _label
+    if st.sidebar.button(
+        _label,
+        key=f"nav_{_key}",
+        use_container_width=True,
+        type="primary" if _active else "secondary",
+    ):
+        st.session_state.current_page = _label
+        st.rerun()
+
+page = st.session_state.current_page
+
 st.sidebar.markdown("---")
-st.sidebar.subheader("Settings")
+st.sidebar.markdown("**Settings**")
 
 use_simulated = st.sidebar.toggle("Simulated data", value=True)
 fred_api_key = st.sidebar.text_input("FRED API Key", type="password")
@@ -605,8 +697,7 @@ def page_regime():
         col_m1, col_m2, col_m3 = st.columns(3)
         col_m1.metric("Current Regime Prob.", f"{current_prob:.2%}")
         regime_label = "REPRICING" if current_prob > 0.5 else "SUPPRESSED"
-        colour = "🔴" if current_prob > 0.5 else "🟢"
-        col_m2.metric("Regime", f"{colour} {regime_label}")
+        col_m2.metric("Regime", regime_label)
         col_m3.metric("Avg Prob (full sample)", f"{ensemble.mean():.2%}")
 
         fig_ens = go.Figure()
@@ -1260,18 +1351,23 @@ def page_trade_ideas():
     st.subheader(f"Trade Cards ({len(filtered)} shown)")
     st.markdown(
         "Click any row to expand a full trade card. Cards are sorted highest conviction first. "
-        "Inside each card — **left column**: Direction (⬆️ Long / ⬇️ Short), Instruments, "
+        "Inside each card — **left column**: Direction (LONG / SHORT), Instruments, "
         "Regime Condition (which regime must be active), and Edge Source (why this has an advantage). "
         "**Right column**: Entry Signal (when to get in), Exit Signal (when to get out), "
         "Failure Scenario (the specific risk that kills the thesis), and Sizing method. "
         "**Actionable: Start with the top card — it has the most signals aligned. Read the Failure Scenario first to decide if you can tolerate the risk before reading the entry logic.**"
     )
     for card in sorted(filtered, key=lambda c: -c.conviction):
-        direction_arrow = "⬆️" if card.direction == "long" else "⬇️"
-        conv_colour = "🟢" if card.conviction >= 0.7 else ("🟡" if card.conviction >= 0.4 else "🔴")
+        direction_tag = "LONG" if card.direction == "long" else "SHORT"
+        if card.conviction >= 0.7:
+            conv_tag = "HIGH"
+        elif card.conviction >= 0.4:
+            conv_tag = "MED"
+        else:
+            conv_tag = "LOW"
 
         with st.expander(
-            f"{direction_arrow} **{card.name}** | {conv_colour} {card.conviction:.0%} | {card.category}"
+            f"[{direction_tag}] **{card.name}** | {conv_tag} {card.conviction:.0%} | {card.category}"
         ):
             col_l, col_r = st.columns([2, 1])
             with col_l:
@@ -1301,13 +1397,13 @@ def page_trade_ideas():
 # ===================================================================
 # Router
 # ===================================================================
-if page.startswith("1"):
+if page == "Overview & Data":
     page_overview()
-elif page.startswith("2"):
+elif page == "Yield Curve Analytics":
     page_yield_curve()
-elif page.startswith("3"):
+elif page == "Regime Detection":
     page_regime()
-elif page.startswith("4"):
+elif page == "Spillover & Info Flow":
     page_spillover()
-elif page.startswith("5"):
+elif page == "Trade Ideas":
     page_trade_ideas()
