@@ -163,11 +163,25 @@ def page_overview():
     st.subheader("Sovereign Yields & VIX")
     rate_cols = [c for c in ["JP_10Y", "US_10Y", "DE_10Y", "VIX"] if c in df.columns]
     if rate_cols:
+        # Compute chart-specific insights
+        _jp = df["JP_10Y"].dropna() if "JP_10Y" in df.columns else pd.Series(dtype=float)
+        _us = df["US_10Y"].dropna() if "US_10Y" in df.columns else pd.Series(dtype=float)
+        _vix = df["VIX"].dropna() if "VIX" in df.columns else pd.Series(dtype=float)
+        insight = ""
+        if len(_jp) > 0 and len(_us) > 0:
+            spread = float(_jp.iloc[-1] - _us.iloc[-1])
+            if abs(spread) < 0.5:
+                insight += f" **Actionable: The JP-US 10Y spread is only {spread:+.2f}% — JGB yields are converging toward US levels, confirming repricing is underway.**"
+            else:
+                insight += f" **Actionable: The JP-US 10Y spread sits at {spread:+.2f}% — the BOJ is still suppressing yields well below the US benchmark; watch for catch-up risk.**"
+        if len(_vix) > 0 and float(_vix.iloc[-1]) > 25:
+            insight += f" **VIX at {float(_vix.iloc[-1]):.1f} flags elevated market fear — risk-off spillover into JGBs is likely.**"
         st.markdown(
-            "Each line is a **government bond yield** — the annual interest rate a country pays to borrow for 10 years. "
-            "**JP_10Y** (Japan) is the core variable of this dashboard. **US_10Y** and **DE_10Y** (Germany) are global benchmarks. "
-            "**VIX** is the 'fear index' — expected US stock-market volatility; spikes mean market stress. "
-            "The :red[red dotted verticals] mark Bank of Japan policy events. *Hover over any line for exact values.*"
+            "Four traces in the legend: **JP_10Y** (Japan 10Y yield) is this dashboard's core variable — "
+            "compare its trajectory to **US_10Y** and **DE_10Y** (US and German benchmarks) on the same y-axis. "
+            "**VIX** scales differently (right-read it as a level, not a yield). "
+            "The :red[red dotted verticals] mark Bank of Japan policy dates — hover for event names."
+            + insight
         )
         fig = go.Figure()
         for col in rate_cols:
@@ -184,11 +198,22 @@ def page_overview():
     st.subheader("FX & Equity")
     mkt_cols = [c for c in ["USDJPY", "EURJPY", "NIKKEI"] if c in df.columns]
     if mkt_cols:
+        _usdjpy = df["USDJPY"].dropna() if "USDJPY" in df.columns else pd.Series(dtype=float)
+        _nikkei = df["NIKKEI"].dropna() if "NIKKEI" in df.columns else pd.Series(dtype=float)
+        fx_insight = ""
+        if len(_usdjpy) >= 20:
+            pct_20d = float((_usdjpy.iloc[-1] / _usdjpy.iloc[-20] - 1) * 100)
+            if pct_20d > 1:
+                fx_insight += f" **Actionable: USDJPY rose {pct_20d:+.1f}% over 20 days — Yen weakening accelerating; carry trades look exposed if BOJ tightens.**"
+            elif pct_20d < -1:
+                fx_insight += f" **Actionable: USDJPY fell {pct_20d:+.1f}% over 20 days — Yen strengthening suggests carry unwind or safe-haven flows.**"
         st.markdown(
-            "**USDJPY** shows how many Yen one US Dollar buys — a rising line means the Yen is weakening. "
-            "**NIKKEI** is Japan's main stock index (similar to the S&P 500). "
-            "When JGB yields reprice sharply, these markets often move in tandem: "
-            "the Yen weakens as foreign investors sell Japanese bonds, and equities can fall on tighter financial conditions."
+            "Trace names in the legend: **USDJPY** = Yen per Dollar (rising line = weaker Yen); "
+            "**EURJPY** = Yen per Euro; **NIKKEI** = Japan's main equity index. "
+            "All three share the x-axis (dates) but different y-scales — read each by hovering. "
+            "The :red[red dotted verticals] are the same BOJ events as the rates chart above. "
+            "Look for simultaneous moves: a sharp USDJPY rise + NIKKEI drop signals foreign investors exiting Japan."
+            + fx_insight
         )
         fig2 = go.Figure()
         for col in mkt_cols:
@@ -280,16 +305,19 @@ def page_yield_curve():
     if pca_result is None:
         st.warning("Insufficient yield data for PCA.")
     else:
+        ev = pca_result["explained_variance_ratio"]
+        pc1_pct = ev[0] if len(ev) > 0 else 0
         st.markdown(
-            "**Principal Component Analysis** distils many correlated yield movements into a few independent factors. "
-            "The bar chart (left) shows what fraction of total movement each factor explains. "
-            "The heatmap (right) shows which maturities each factor affects — red means positive sensitivity, blue means negative."
+            f"Two charts side by side. **Left — bar chart** with bars labeled PC1, PC2, PC3 on the x-axis and "
+            f"variance ratio on the y-axis. PC1 alone explains **{pc1_pct:.1%}** of all yield movements. "
+            f"**Right — heatmap** with yield names across the top (x-axis) and PC labels down the side (y-axis); "
+            "red cells = positive loading (that yield moves *with* the factor), blue cells = negative (moves *against* it). "
+            f"**Actionable: If PC1 dominates at >{80}%, the entire curve is moving in lockstep — a broad repricing event, not a local kink.**"
         )
         col_a, col_b = st.columns(2)
 
         with col_a:
             st.markdown("**Explained Variance** — *how much each factor matters*")
-            ev = pca_result["explained_variance_ratio"]
             fig_ev = go.Figure(
                 go.Bar(
                     x=[f"PC{i+1}" for i in range(len(ev))],
@@ -314,12 +342,24 @@ def page_yield_curve():
             fig_ld.update_layout(height=320)
             st.plotly_chart(fig_ld, use_container_width=True)
 
-        st.markdown(
-            "**PCA Scores Over Time** — the value of each factor on each date. "
-            "**PC1 (Level)** = all rates shifting together; **PC2 (Slope)** = long vs short rates diverging; "
-            "**PC3 (Curvature)** = the middle of the curve bowing. Spikes around :red[BOJ events] confirm broad repricing."
-        )
         scores = pca_result["scores"]
+        # Compute recent PC1 trend for actionable insight
+        _pc1 = scores.iloc[:, 0].dropna() if scores.shape[1] > 0 else pd.Series(dtype=float)
+        pc1_insight = ""
+        if len(_pc1) >= 20:
+            pc1_recent = float(_pc1.iloc[-20:].mean())
+            pc1_earlier = float(_pc1.iloc[-60:-20].mean()) if len(_pc1) >= 60 else float(_pc1.iloc[:len(_pc1)//2].mean())
+            if pc1_recent > pc1_earlier + 0.5:
+                pc1_insight = " **Actionable: PC1 (Level) has been trending upward recently — all yields are rising in unison, signalling a broad repricing move. Consider positioning for higher rates.**"
+            elif pc1_recent < pc1_earlier - 0.5:
+                pc1_insight = " **Actionable: PC1 (Level) is trending downward — yields are compressing across maturities, suggesting the BOJ suppression regime is reasserting control.**"
+        st.markdown(
+            "Three lines in the legend: **PC1 (Level)** = all rates shifting together (the dominant move); "
+            "**PC2 (Slope)** = long-end vs short-end diverging (a steepening/flattening trade signal); "
+            "**PC3 (Curvature)** = the belly of the curve bowing relative to wings. "
+            "The x-axis is time, y-axis is the score magnitude. Large spikes near :red[red dotted BOJ event verticals] confirm that policy changes drove broad repricing."
+            + pc1_insight
+        )
         fig_sc = go.Figure()
         labels = {0: "PC1 (Level)", 1: "PC2 (Slope)", 2: "PC3 (Curvature)"}
         for i, col in enumerate(scores.columns):
@@ -341,11 +381,19 @@ def page_yield_curve():
     if liq is None:
         st.warning("Insufficient data for liquidity metrics.")
     else:
+        _comp_latest = float(liq["composite_index"].dropna().iloc[-1]) if len(liq["composite_index"].dropna()) > 0 else 0.0
+        liq_insight = ""
+        if _comp_latest < -1:
+            liq_insight = f" **Actionable: Composite index at {_comp_latest:.2f} (below -1 z-score) — liquidity is deteriorating; expect larger price gaps on any repricing shock. Reduce position sizes or widen stop-losses.**"
+        elif _comp_latest > 1:
+            liq_insight = f" **Actionable: Composite index at {_comp_latest:.2f} (above +1 z-score) — liquidity is healthy; market can absorb order flow without outsized price impact.**"
         st.markdown(
-            "**Liquidity** = how easily you can trade a bond without moving its price. "
-            "The **Roll measure** estimates the bid-ask spread (higher = more expensive to trade). "
-            "The **Composite Index** normalises this into a z-score — negative values signal deteriorating conditions. "
-            "Watch for liquidity drying up around BOJ events: illiquid markets amplify repricing moves."
+            "Two traces in the legend: **roll_measure** (estimates the implicit bid-ask spread from price autocorrelation — "
+            "higher values on the y-axis = wider spreads = more expensive to trade) and **composite_index** "
+            "(a z-score normalisation — 0 is average, negative = worse-than-normal, positive = better). "
+            "Both share the same x-axis (dates). The :red[red dotted verticals] are BOJ events — "
+            "look for roll_measure spiking and composite_index dropping around them."
+            + liq_insight
         )
         fig_liq = go.Figure()
         for col in liq.columns:
@@ -362,11 +410,27 @@ def page_yield_curve():
     if ns_result is None:
         st.warning("Insufficient data for Nelson-Siegel fitting.")
     else:
+        _b0 = ns_result["beta0"].dropna() if "beta0" in ns_result.columns else pd.Series(dtype=float)
+        _b1 = ns_result["beta1"].dropna() if "beta1" in ns_result.columns else pd.Series(dtype=float)
+        ns_insight = ""
+        if len(_b0) >= 10:
+            b0_start, b0_end = float(_b0.iloc[0]), float(_b0.iloc[-1])
+            b0_chg = b0_end - b0_start
+            if b0_chg > 0.1:
+                ns_insight += f" **Actionable: β0 (Level) rose {b0_chg:+.2f} over the sample — the market has structurally repriced the long-run yield floor upward. This is the core confirmation of a JGB repricing regime.**"
+            elif b0_chg < -0.1:
+                ns_insight += f" **Actionable: β0 (Level) fell {b0_chg:+.2f} — long-run yield expectations are declining, consistent with continued BOJ suppression.**"
+        if len(_b1) >= 10:
+            b1_end = float(_b1.iloc[-1])
+            if b1_end < -0.5:
+                ns_insight += f" **β1 (Slope) at {b1_end:.2f} indicates a steep curve — short rates far below long rates; consider steepener trades.**"
         st.markdown(
-            "The **Nelson-Siegel model** fits a smooth mathematical curve to observed yields using three parameters with "
-            "direct economic meaning: **beta0** = long-run yield level (where rates settle at long maturities), "
-            "**beta1** = slope (negative = normal upward curve), **beta2** = curvature (the 'hump'). "
-            "A rising beta0 line means the market is pricing in structurally higher rates — a core repricing signal."
+            "Three traces in the legend: **β0 (Level)** = where yields settle at very long maturities (the curve's floor); "
+            "**β1 (Slope)** = how much the curve rises from short to long end (negative = normal upward slope); "
+            "**β2 (Curvature)** = the hump or dip at intermediate maturities. "
+            "The x-axis is weekly dates, y-axis is the parameter value. "
+            "The :red[red dotted verticals] are BOJ events — look for β0 jumping at those points."
+            + ns_insight
         )
         fig_ns = go.Figure()
         ns_labels = {"beta0": "β0 (Level)", "beta1": "β1 (Slope)", "beta2": "β2 (Curvature)"}
@@ -519,11 +583,22 @@ def page_regime():
     if ensemble is not None and len(ensemble.dropna()) > 0:
         current_prob = float(ensemble.dropna().iloc[-1])
 
+        ens_insight = ""
+        if current_prob > 0.7:
+            ens_insight = f" **Actionable: At {current_prob:.0%} the ensemble is firmly in REPRICING territory — all four models agree. This is the strongest signal to position for higher JGB yields and Yen weakness.**"
+        elif current_prob > 0.5:
+            ens_insight = f" **Actionable: At {current_prob:.0%} the ensemble leans REPRICING but conviction is moderate — consider partial positions with tighter stops until probability exceeds 70%.**"
+        elif current_prob > 0.3:
+            ens_insight = f" **Actionable: At {current_prob:.0%} the ensemble is near the boundary — the market is transitioning. Avoid directional bets; favour gamma (options) or wait for confirmation.**"
+        else:
+            ens_insight = f" **Actionable: At {current_prob:.0%} the ensemble reads SUPPRESSED — the BOJ is in control. Fade any yield spikes; carry trades remain safe for now.**"
         st.markdown(
-            "The **headline number** — a weighted blend of all four regime models below. "
-            "Closer to **0** = calm / BOJ-suppressed; closer to **1** = stress / market-driven repricing. "
-            "The :red[red dashed line] at 0.5 is the decision boundary. "
-            "This probability is the primary input to all trade ideas on Page 5."
+            "The **steelblue line** traces the ensemble probability over time (y-axis: 0 to 1). "
+            "The :red[red dashed horizontal line] at 0.5 is the decision boundary — "
+            "above it the market is in a repricing regime, below it the BOJ remains in control. "
+            ":red[Red dotted verticals] mark BOJ policy events. "
+            "This single number drives every trade idea on Page 5."
+            + ens_insight
         )
 
         # Gauge / metric
@@ -552,13 +627,25 @@ def page_regime():
     st.subheader("Markov-Switching Smoothed Probabilities")
     markov = _run_markov(*args)
     if markov is not None:
-        st.markdown(
-            "A **Markov-switching model** assumes the market alternates between two hidden states, "
-            "each with its own average yield-change and volatility. The stacked areas below show the "
-            "probability of each state over time — they always sum to 1.0. When one colour dominates, "
-            "the model is confident about the current regime."
-        )
         rp = markov["regime_probabilities"]
+        r_means = markov["regime_means"]
+        r_vars = markov["regime_variances"]
+        # Identify which regime is "high-vol"
+        mk_insight = ""
+        if isinstance(r_means, (list, np.ndarray)) and len(r_means) >= 2:
+            calm_i = int(np.argmin(np.abs(r_vars)))
+            stress_i = 1 - calm_i
+            mk_insight = (
+                f" Regime {calm_i} (calm) has mean {r_means[calm_i]:+.2f} bps/day and variance {r_vars[calm_i]:.2f}; "
+                f"Regime {stress_i} (stress) has mean {r_means[stress_i]:+.2f} bps/day and variance {r_vars[stress_i]:.2f}. "
+                f"**Actionable: When the stress-regime colour fills >80% of the stacked area, short-duration JGB positions are favoured — the market is pricing in persistent yield moves, not mean-reversion.**"
+            )
+        st.markdown(
+            "A stacked-area chart with two coloured bands (one per regime) — the y-axis sums to 1.0 at every date. "
+            "When one colour fills most of the area, the Markov model is confident the market is in that state. "
+            "Hover to see exact probabilities. :red[Red dotted verticals] are BOJ events."
+            + mk_insight
+        )
         fig_mk = go.Figure()
         for col in rp.columns:
             fig_mk.add_trace(
@@ -583,11 +670,16 @@ def page_regime():
     changes, bkps = _run_breaks(*args)
     if changes is not None and bkps is not None:
         n_bkps = len(bkps) if bkps else 0
+        bk_insight = ""
+        if bkps and len(bkps) > 0:
+            last_bk = bkps[-1]
+            bk_insight = f" The most recent breakpoint is **{last_bk:%Y-%m-%d}**. **Actionable: If this date is recent (within the last 3 months), the yield-change regime has just shifted — a fresh breakpoint is the strongest confirmation that old mean-reversion strategies are invalid and new trend-following positions are warranted.**"
         st.markdown(
-            f"The line below shows daily changes in the Japan 10Y yield. The **{n_bkps} :orange[orange dashed verticals]** "
-            "are **structural breakpoints** — dates where the statistical behaviour of the series permanently changed "
-            "(not just a temporary spike). The PELT algorithm detects these automatically. "
-            "Breakpoints near :red[BOJ events] confirm that policy shifts fundamentally altered market dynamics."
+            f"A single line trace (**JP_10Y Δ** in the legend) shows daily yield changes on the y-axis, dates on the x-axis. "
+            f"Superimposed are **{n_bkps} :orange[orange dashed vertical lines]** — each marks a structural breakpoint where "
+            "the PELT algorithm detected a permanent shift in the series' mean or variance (not a one-day spike). "
+            ":red[Red dotted verticals] are BOJ events — where orange and red verticals coincide, policy directly caused the regime change."
+            + bk_insight
         )
         fig_bp = go.Figure()
         fig_bp.add_trace(
@@ -605,12 +697,19 @@ def page_regime():
     st.subheader("Rolling Permutation Entropy & Regime Signal")
     ent, sig = _run_entropy(*args)
     if ent is not None:
+        ent_latest = float(ent.dropna().iloc[-1]) if len(ent.dropna()) > 0 else 0.0
+        sig_latest = float(sig.dropna().iloc[-1]) if sig is not None and len(sig.dropna()) > 0 else 0
+        ent_insight = ""
+        if sig_latest >= 1:
+            ent_insight = f" **Actionable: The regime signal (right axis) is currently ON (=1) with entropy at {ent_latest:.3f} — yield movements are unusually complex, consistent with a market-driven repricing regime. This is an early warning to prepare short-JGB or long-vol positions.**"
+        else:
+            ent_insight = f" **Actionable: The regime signal is OFF (=0) with entropy at {ent_latest:.3f} — yield movements remain orderly and predictable. The BOJ is likely still in control; no immediate repricing trigger.**"
         st.markdown(
-            "**Permutation entropy** measures how random/complex yield movements are over a rolling window. "
-            "The blue line (left axis) shows entropy: low = orderly, predictable (BOJ in control); "
-            "high = chaotic, disordered (market-driven). "
-            "The :red[red dotted line] (right axis) is a binary regime signal that fires **1** when entropy "
-            "exceeds a threshold — an early warning that often rises *before* major repricing moves."
+            "Dual-axis chart. **Left y-axis**: the **Perm. Entropy** trace (solid line) — higher values = more random, "
+            "complex yield movements; lower = orderly, predictable. **Right y-axis** (scaled 0 to 1): "
+            "the **Regime Signal** trace (:red[red dotted line]) — binary indicator that snaps to 1 when entropy "
+            "exceeds 1.5 standard deviations above its mean. This signal often fires *before* the other models detect a regime change."
+            + ent_insight
         )
         fig_ent = go.Figure()
         fig_ent.add_trace(
@@ -638,12 +737,21 @@ def page_regime():
     vol, breaks = _run_garch(*args)
     if vol is not None:
         n_vb = len(breaks) if breaks else 0
+        vol_latest = float(vol.dropna().iloc[-1]) if len(vol.dropna()) > 0 else 0.0
+        vol_insight = ""
+        if vol_latest > 5:
+            vol_insight = f" **Actionable: Conditional volatility is {vol_latest:.1f} bps — well above normal JGB levels. High vol-clustering means today's moves are likely to persist tomorrow. Size positions smaller and use wider stops.**"
+        elif vol_latest < 1:
+            vol_insight = f" **Actionable: Conditional volatility is only {vol_latest:.1f} bps — extremely low. This is either genuine calm or the quiet before a vol spike. Cheap to buy JGB options (gamma) here as a hedge.**"
+        if breaks and len(breaks) > 0:
+            last_vb = breaks[-1]
+            vol_insight += f" The latest vol-regime break is **{last_vb:%Y-%m-%d}**."
         st.markdown(
-            "**GARCH** models the tendency of volatile days to cluster together, producing a real-time "
-            "volatility estimate (blue line, in basis points). "
-            f"The **{n_vb} :violet[purple dashed verticals]** mark volatility regime breaks — points where "
-            "the level of volatility permanently shifts to a new baseline. "
-            "A new break appearing confirms the end of a calm-yields era."
+            f"A single trace (**Cond. Volatility** in the legend) shows the GARCH-estimated volatility in basis points (y-axis) "
+            f"over time (x-axis). {n_vb} :violet[purple dashed vertical lines] mark volatility-regime breaks — "
+            "points where the vol baseline permanently shifted (detected by PELT on the vol series itself). "
+            ":red[Red dotted verticals] are BOJ events."
+            + vol_insight
         )
         fig_g = go.Figure()
         fig_g.add_trace(
@@ -768,12 +876,20 @@ def page_spillover():
     if granger_df is not None and not granger_df.empty:
         sig_df = granger_df[granger_df["significant"] == True].reset_index(drop=True)
         n_sig = len(sig_df)
+        gc_insight = ""
+        if not sig_df.empty:
+            top_row = sig_df.loc[sig_df["f_stat"].idxmax()]
+            gc_insight = (
+                f" **Actionable: The strongest link is {top_row['cause']} → {top_row['effect']} "
+                f"(F={top_row['f_stat']:.1f}, p={top_row['p_value']:.4f}) — lagged moves in {top_row['cause']} "
+                f"statistically predict {top_row['effect']}. Monitor {top_row['cause']} for early signals.**"
+            )
         st.markdown(
-            f"**Granger causality** tests whether past values of one series help predict another beyond its own history. "
-            f"It does *not* prove true causation — only statistical precedence. "
-            f"**{n_sig} significant pair(s)** found at 5% level. "
-            "Higher **F-statistic** = stronger predictive link. "
-            "For example, if JP_10Y → USDJPY is significant, JGB yield moves systematically precede Yen moves."
+            f"A table with columns: **cause**, **effect**, **f_stat** (strength of predictive link — "
+            "the :yellow[yellow-highlighted] row has the highest), and **p_value** (statistical significance; <0.05 = significant). "
+            f"**{n_sig} significant pair(s)** found at 5% level out of {len(granger_df)} tested. "
+            "Granger causality tests whether past values of one series help predict another — statistical precedence, not true causation."
+            + gc_insight
         )
         if not sig_df.empty:
             st.dataframe(
@@ -798,12 +914,18 @@ def page_spillover():
         for _, row in te_df.iterrows():
             te_matrix.loc[row["source"], row["target"]] = row["te_value"]
 
+        # Find strongest directional flow
+        te_max_idx = np.unravel_index(np.argmax(te_matrix.values - np.diag(np.full(len(all_labels), -np.inf))), te_matrix.shape)
+        te_src = all_labels[te_max_idx[0]]
+        te_tgt = all_labels[te_max_idx[1]]
+        te_val = te_matrix.values[te_max_idx]
         st.markdown(
-            f"**Transfer entropy** is a non-linear measure of directional information flow — a generalisation "
-            "of Granger causality that captures complex dependencies. "
-            "Rows are **sources** (senders of information), columns are **targets** (receivers). "
-            "Brighter cells = stronger flow. Look for asymmetry: if JP_10Y → VIX is bright but VIX → JP_10Y is dim, "
-            "JGB stress is driving fear, not the reverse."
+            f"A heatmap with asset names on both axes (rows = **source/sender**, columns = **target/receiver**). "
+            f"The colour scale is Viridis: :violet[dark purple] = minimal information flow, "
+            ":green[bright yellow-green] = strong flow. Diagonal cells (self-to-self) are trivially zero. "
+            "Look for **asymmetry**: a bright cell in one direction and a dim cell in the reverse reveals which market leads. "
+            f"**Actionable: The strongest directional flow is {te_src} → {te_tgt} (TE = {te_val:.4f}) — "
+            f"information is flowing from {te_src} to {te_tgt}. Use {te_src} as a leading indicator when trading {te_tgt}.**"
         )
         fig_te = px.imshow(
             te_matrix.values,
@@ -823,12 +945,21 @@ def page_spillover():
     spill = _run_spillover(*args)
     if spill is not None:
         total_spill = spill["total_spillover"]
+        net = spill["net_spillover"]
+        top_transmitter = net.idxmax() if len(net) > 0 else "N/A"
+        top_receiver = net.idxmin() if len(net) > 0 else "N/A"
+        dy_insight = ""
+        if total_spill > 30:
+            dy_insight = f" **Actionable: Total spillover at {total_spill:.1f}% is elevated — markets are tightly coupled. A shock in {top_transmitter} (biggest :green[green bar]) will propagate quickly. Diversification across these assets is less effective than usual.**"
+        else:
+            dy_insight = f" **Actionable: Total spillover at {total_spill:.1f}% is moderate — markets are relatively independent. Diversification benefits are intact.**"
         st.markdown(
-            f"The **Diebold-Yilmaz spillover index** measures how much of each market's variance is explained by shocks "
-            "from *other* markets, using a VAR model. The **Total Spillover Index** "
-            f"({total_spill:.1f}%) quantifies overall interconnectedness — higher = more contagion risk. "
-            "In the bar chart, :green[green bars] are net shock **transmitters** (they export volatility) "
-            "and :red[red bars] are net **receivers** (they absorb volatility from others)."
+            f"Left: a **metric card** showing the Total Spillover Index ({total_spill:.1f}%). "
+            "Right: a **bar chart** with asset names on the x-axis and net spillover (%) on the y-axis. "
+            f":green[Green bars] are net shock **transmitters** (biggest: **{top_transmitter}**); "
+            f":red[red bars] are net **receivers** (biggest: **{top_receiver}**). "
+            "Expand the 'Spillover matrix' below the chart for the full pairwise breakdown."
+            + dy_insight
         )
         col_s1, col_s2 = st.columns([1, 2])
         with col_s1:
@@ -853,12 +984,28 @@ def page_spillover():
         cond_corr = dcc["conditional_correlations"]
         if cond_corr:
             n_pairs = len(cond_corr)
+            # Find the pair with highest latest correlation
+            dcc_latest = {p: float(s.dropna().iloc[-1]) for p, s in cond_corr.items() if len(s.dropna()) > 0}
+            dcc_insight = ""
+            if dcc_latest:
+                max_pair = max(dcc_latest, key=dcc_latest.get)
+                max_corr = dcc_latest[max_pair]
+                min_pair = min(dcc_latest, key=dcc_latest.get)
+                min_corr = dcc_latest[min_pair]
+                dcc_insight = (
+                    f" Currently, **{max_pair}** has the highest correlation ({max_corr:.2f}) and **{min_pair}** "
+                    f"the lowest ({min_corr:.2f}). "
+                )
+                if max_corr > 0.6:
+                    dcc_insight += f"**Actionable: {max_pair} correlation above 0.6 — these assets are moving in lockstep. Hedging one with the other is less effective than usual; look for decorrelated pairs instead.**"
+                elif max_corr < 0.3:
+                    dcc_insight += f"**Actionable: All correlations are below 0.3 — markets are relatively decoupled. Cross-asset diversification is working; no contagion signal.**"
             st.markdown(
-                f"**DCC-GARCH** (Dynamic Conditional Correlation) tracks how correlations between **{n_pairs} asset pair(s)** "
-                "evolve over time. Unlike a simple rolling window, DCC accounts for the fact that correlations spike during crises. "
-                "During BOJ yield suppression, JGB correlations with global bonds were artificially low. "
-                "When lines spike toward global norms, it confirms the market is repricing JGBs like any other sovereign bond. "
-                ":red[BOJ event verticals] help pinpoint when these correlation jumps occurred."
+                f"**{n_pairs} line(s)** in the legend, one per asset pair (e.g., 'JP_10Y-US_10Y'). "
+                "The y-axis is conditional correlation (-1 to +1); the x-axis is time. "
+                "Unlike a simple rolling window, DCC-GARCH accounts for the fact that correlations jump during crises. "
+                ":red[Red dotted verticals] are BOJ events — check whether correlations spike at those dates."
+                + dcc_insight
             )
             fig_dcc = go.Figure()
             for pair, series in cond_corr.items():
@@ -880,13 +1027,23 @@ def page_spillover():
     carry = _run_carry(*args)
     if carry is not None:
         latest_ctv = carry["carry_to_vol"].dropna().iloc[-1] if len(carry["carry_to_vol"].dropna()) > 0 else float("nan")
+        latest_carry = carry["carry"].dropna().iloc[-1] if len(carry["carry"].dropna()) > 0 else float("nan")
+        latest_rvol = carry["realized_vol"].dropna().iloc[-1] if len(carry["realized_vol"].dropna()) > 0 else float("nan")
         ctv_label = f"{latest_ctv:.2f}" if not np.isnan(latest_ctv) else "N/A"
+        carry_insight = ""
+        if not np.isnan(latest_ctv):
+            if latest_ctv > 1.0:
+                carry_insight = f" **Actionable: Carry-to-Vol at {latest_ctv:.2f} (>1.0) — the rate differential more than compensates for FX risk. Carry trades are attractive; long USDJPY is favoured.**"
+            elif latest_ctv > 0.5:
+                carry_insight = f" **Actionable: Carry-to-Vol at {latest_ctv:.2f} (0.5-1.0) — marginal; carry exists but FX vol is eating into returns. Only enter with tight stop-losses.**"
+            else:
+                carry_insight = f" **Actionable: Carry-to-Vol at {latest_ctv:.2f} (<0.5) — danger zone. FX volatility dwarfs the interest differential. Crowded carry positions are vulnerable to violent unwind; consider closing USDJPY longs.**"
         st.markdown(
-            f"A **carry trade** borrows in low-rate JPY and invests in high-rate USD to pocket the interest differential. "
-            "The chart shows three lines: **Carry** (rate gap), **Realized Vol** (FX risk over 3 months), "
-            f"and **Carry-to-Vol** (dotted, right axis) — currently **{ctv_label}**. "
-            "Above 1.0 = attractive risk-adjusted carry; below 0.8 = danger zone where crowded positions unwind violently, "
-            "causing sharp Yen strengthening. :red[BOJ event verticals] often trigger these unwinds."
+            "Dual-axis chart with three traces in the legend. **Left y-axis**: **Carry** (solid line — the US-JP interest rate gap, "
+            f"currently {latest_carry:.2f}%) and **Realized Vol** (solid line — 3-month annualised USDJPY volatility, "
+            f"currently {latest_rvol:.2f}%). **Right y-axis**: **Carry / Vol** (dotted line — the risk-adjusted ratio, "
+            f"currently **{ctv_label}**). :red[Red dotted verticals] are BOJ events."
+            + carry_insight
         )
         fig_c = go.Figure()
         fig_c.add_trace(
@@ -1075,11 +1232,17 @@ def page_trade_ideas():
         n_high = sum(1 for c in filtered if c.conviction >= 0.7)
         n_med = sum(1 for c in filtered if 0.4 <= c.conviction < 0.7)
         n_low = sum(1 for c in filtered if c.conviction < 0.4)
+        top_card = max(filtered, key=lambda c: c.conviction)
+        conv_insight = (
+            f" **Actionable: The highest-conviction idea is \"{top_card.name}\" at {top_card.conviction:.0%} "
+            f"({top_card.direction} {', '.join(top_card.instruments[:2])}) — "
+            f"this is where the most signals align. Focus research and sizing here first.**"
+        )
         st.markdown(
-            f"**Conviction** (0-100%) reflects how strongly the model recommends each trade, based on the strength "
-            "of the underlying signals (regime probability, carry ratios, entropy, spillover, etc.). "
-            f"Currently: :green[{n_high} high] (≥70%), :orange[{n_med} medium] (40-69%), :red[{n_low} low] (<40%). "
-            "Bars are coloured by asset-class category."
+            "A bar chart with trade names on the x-axis (angled for readability) and conviction (0-1) on the y-axis. "
+            "Bars are colour-coded by **Category** (see legend — rates, FX, volatility, cross-asset). "
+            f"Currently: :green[{n_high} high-conviction] (≥70%), :orange[{n_med} medium] (40-69%), :red[{n_low} low] (<40%)."
+            + conv_insight
         )
         conv_data = pd.DataFrame({
             "Trade": [c.name for c in filtered],
@@ -1096,10 +1259,12 @@ def page_trade_ideas():
     # --- Trade cards ---
     st.subheader(f"Trade Cards ({len(filtered)} shown)")
     st.markdown(
-        "Each expandable card is a self-contained trade idea, sorted by conviction (highest first). "
-        "**Direction**: ⬆️ Long (bet price rises) or ⬇️ Short (bet price falls). "
-        "**Regime Condition**: what market state triggers entry. **Edge Source**: why this trade has an advantage. "
-        "**Entry/Exit Signals**: concrete triggers to act on. **Failure Scenario**: the key risk that would invalidate the thesis."
+        "Click any row to expand a full trade card. Cards are sorted highest conviction first. "
+        "Inside each card — **left column**: Direction (⬆️ Long / ⬇️ Short), Instruments, "
+        "Regime Condition (which regime must be active), and Edge Source (why this has an advantage). "
+        "**Right column**: Entry Signal (when to get in), Exit Signal (when to get out), "
+        "Failure Scenario (the specific risk that kills the thesis), and Sizing method. "
+        "**Actionable: Start with the top card — it has the most signals aligned. Read the Failure Scenario first to decide if you can tolerate the risk before reading the entry logic.**"
     )
     for card in sorted(filtered, key=lambda c: -c.conviction):
         direction_arrow = "⬆️" if card.direction == "long" else "⬇️"
