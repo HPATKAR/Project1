@@ -135,10 +135,10 @@ def _add_boj_events(fig: go.Figure, y_pos: float | None = None) -> go.Figure:
 # ===================================================================
 def page_overview():
     st.header("Overview & Data")
-    st.caption(
-        "High-level snapshot of the raw market data powering the dashboard. "
-        "Covers sovereign bond yields, volatility indices, exchange rates, and equity indices. "
-        "Toggle between simulated (synthetic) and live data in the sidebar."
+    st.markdown(
+        "This page shows the raw market data feeding every analysis in the dashboard. "
+        "Use the **sidebar** to switch between simulated (synthetic) and live data, set the date range, "
+        "or enter a FRED API key for US economic data."
     )
 
     try:
@@ -161,14 +161,14 @@ def page_overview():
 
     # --- Rates chart ---
     st.subheader("Sovereign Yields & VIX")
-    st.caption(
-        "Government bond yields represent the annual interest rate a country pays to borrow money. "
-        "JP_10Y is the Japan 10-year yield (this dashboard's core variable), US_10Y and DE_10Y are US and German benchmarks. "
-        "VIX (the 'fear index') measures expected US stock-market volatility — spikes signal market stress. "
-        "Red dotted lines mark Bank of Japan (BOJ) policy events."
-    )
     rate_cols = [c for c in ["JP_10Y", "US_10Y", "DE_10Y", "VIX"] if c in df.columns]
     if rate_cols:
+        st.markdown(
+            "Each line is a **government bond yield** — the annual interest rate a country pays to borrow for 10 years. "
+            "**JP_10Y** (Japan) is the core variable of this dashboard. **US_10Y** and **DE_10Y** (Germany) are global benchmarks. "
+            "**VIX** is the 'fear index' — expected US stock-market volatility; spikes mean market stress. "
+            "The :red[red dotted verticals] mark Bank of Japan policy events. *Hover over any line for exact values.*"
+        )
         fig = go.Figure()
         for col in rate_cols:
             fig.add_trace(go.Scatter(x=df.index, y=df[col], mode="lines", name=col))
@@ -182,13 +182,14 @@ def page_overview():
 
     # --- Market chart ---
     st.subheader("FX & Equity")
-    st.caption(
-        "USDJPY = how many Yen one US Dollar buys (rising means Yen weakening). "
-        "EURJPY = Euro vs Yen. NIKKEI = Japan's main stock index (like the S&P 500 for Japan). "
-        "JGB repricing often ripples into these markets — a weakening Yen and falling stocks can accompany rising bond yields."
-    )
     mkt_cols = [c for c in ["USDJPY", "EURJPY", "NIKKEI"] if c in df.columns]
     if mkt_cols:
+        st.markdown(
+            "**USDJPY** shows how many Yen one US Dollar buys — a rising line means the Yen is weakening. "
+            "**NIKKEI** is Japan's main stock index (similar to the S&P 500). "
+            "When JGB yields reprice sharply, these markets often move in tandem: "
+            "the Yen weakens as foreign investors sell Japanese bonds, and equities can fall on tighter financial conditions."
+        )
         fig2 = go.Figure()
         for col in mkt_cols:
             fig2.add_trace(go.Scatter(x=df.index, y=df[col], mode="lines", name=col))
@@ -264,31 +265,30 @@ def _run_liquidity(simulated, start, end, api_key):
 
 def page_yield_curve():
     st.header("Yield Curve Analytics")
-    st.caption(
-        "Statistical decomposition of *how* the yield curve moves. "
-        "The yield curve plots interest rates against bond maturities (2Y, 5Y, 10Y, etc.) — "
-        "its shape reflects market expectations about future rates and economic health."
+    st.markdown(
+        "The **yield curve** plots interest rates against bond maturities (2Y, 5Y, 10Y, etc.). "
+        "Its shape reveals what the market expects about future rates and the economy. "
+        "This page decomposes yield-curve movements into interpretable factors, tracks market liquidity, "
+        "and fits a parametric model to monitor structural shifts."
     )
 
     args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
 
     # --- PCA ---
     st.subheader("PCA of Yield Changes")
-    st.caption(
-        "**Principal Component Analysis (PCA)** reduces many correlated yield movements into a few independent factors. "
-        "PC1 (Level) captures parallel shifts in all rates; PC2 (Slope) captures steepening/flattening; "
-        "PC3 (Curvature) captures the belly bowing in or out. "
-        "The scree chart shows how much variance each factor explains; the heatmap shows which maturities each factor affects; "
-        "the time series tracks factor values over time — spikes indicate unusual yield-curve moves."
-    )
     pca_result = _run_pca(*args)
     if pca_result is None:
         st.warning("Insufficient yield data for PCA.")
     else:
+        st.markdown(
+            "**Principal Component Analysis** distils many correlated yield movements into a few independent factors. "
+            "The bar chart (left) shows what fraction of total movement each factor explains. "
+            "The heatmap (right) shows which maturities each factor affects — red means positive sensitivity, blue means negative."
+        )
         col_a, col_b = st.columns(2)
 
         with col_a:
-            st.markdown("**Explained Variance**")
+            st.markdown("**Explained Variance** — *how much each factor matters*")
             ev = pca_result["explained_variance_ratio"]
             fig_ev = go.Figure(
                 go.Bar(
@@ -302,7 +302,7 @@ def page_yield_curve():
             st.plotly_chart(fig_ev, use_container_width=True)
 
         with col_b:
-            st.markdown("**Loadings Heatmap**")
+            st.markdown("**Loadings Heatmap** — *which maturities each factor moves*")
             loadings = pca_result["loadings"]
             fig_ld = px.imshow(
                 loadings.T.values,
@@ -314,7 +314,11 @@ def page_yield_curve():
             fig_ld.update_layout(height=320)
             st.plotly_chart(fig_ld, use_container_width=True)
 
-        st.markdown("**PCA Scores Over Time**")
+        st.markdown(
+            "**PCA Scores Over Time** — the value of each factor on each date. "
+            "**PC1 (Level)** = all rates shifting together; **PC2 (Slope)** = long vs short rates diverging; "
+            "**PC3 (Curvature)** = the middle of the curve bowing. Spikes around :red[BOJ events] confirm broad repricing."
+        )
         scores = pca_result["scores"]
         fig_sc = go.Figure()
         labels = {0: "PC1 (Level)", 1: "PC2 (Slope)", 2: "PC3 (Curvature)"}
@@ -333,16 +337,16 @@ def page_yield_curve():
 
     # --- Liquidity ---
     st.subheader("Liquidity Metrics")
-    st.caption(
-        "**Liquidity** measures how easily a bond can be bought or sold without moving its price. "
-        "The Roll measure estimates the bid-ask spread (trading cost) from return patterns — higher values mean worse liquidity. "
-        "The Composite Index combines multiple measures into one z-score — negative values signal deteriorating market conditions. "
-        "When the BOJ reduces purchases, liquidity dries up, amplifying price moves."
-    )
     liq = _run_liquidity(*args)
     if liq is None:
         st.warning("Insufficient data for liquidity metrics.")
     else:
+        st.markdown(
+            "**Liquidity** = how easily you can trade a bond without moving its price. "
+            "The **Roll measure** estimates the bid-ask spread (higher = more expensive to trade). "
+            "The **Composite Index** normalises this into a z-score — negative values signal deteriorating conditions. "
+            "Watch for liquidity drying up around BOJ events: illiquid markets amplify repricing moves."
+        )
         fig_liq = go.Figure()
         for col in liq.columns:
             fig_liq.add_trace(
@@ -354,17 +358,16 @@ def page_yield_curve():
 
     # --- Nelson-Siegel ---
     st.subheader("Nelson-Siegel Factor Evolution")
-    st.caption(
-        "The **Nelson-Siegel model** fits a smooth curve through observed yields using three interpretable parameters: "
-        "beta0 (long-run yield level), beta1 (slope — difference between short and long rates), "
-        "and beta2 (curvature — the 'hump' in the middle). "
-        "Unlike PCA, these have direct economic meaning. A rising beta0 indicates the market expects higher rates long-term — "
-        "a key sign of repricing."
-    )
     ns_result = _run_ns(*args)
     if ns_result is None:
         st.warning("Insufficient data for Nelson-Siegel fitting.")
     else:
+        st.markdown(
+            "The **Nelson-Siegel model** fits a smooth mathematical curve to observed yields using three parameters with "
+            "direct economic meaning: **beta0** = long-run yield level (where rates settle at long maturities), "
+            "**beta1** = slope (negative = normal upward curve), **beta2** = curvature (the 'hump'). "
+            "A rising beta0 line means the market is pricing in structurally higher rates — a core repricing signal."
+        )
         fig_ns = go.Figure()
         ns_labels = {"beta0": "β0 (Level)", "beta1": "β1 (Slope)", "beta2": "β2 (Curvature)"}
         for col in ["beta0", "beta1", "beta2"]:
@@ -502,25 +505,26 @@ def _run_ensemble(simulated, start, end, api_key):
 
 def page_regime():
     st.header("Regime Detection")
-    st.caption(
-        "A **regime** is a persistent market state with distinct statistical properties — think 'calm weather' vs 'storm.' "
-        "This page determines whether the market is currently in a BOJ-suppressed regime (stable, low volatility) "
-        "or a market-driven repricing regime (volatile, yields breaking free). "
-        "Four independent models vote, and their weighted average produces the ensemble probability at top."
+    st.markdown(
+        "Markets don't move smoothly — they flip between distinct **regimes** (like calm weather vs storms). "
+        "This page runs four independent models to answer one question: *is the BOJ still in control (suppressed regime), "
+        "or have yields broken free (repricing regime)?* Their weighted consensus appears first as the ensemble probability."
     )
 
     args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
 
     # --- Ensemble Probability ---
     st.subheader("Ensemble Regime Probability")
-    st.caption(
-        "The headline indicator — a weighted average of all four regime models below. "
-        "Values near 0 = BOJ-suppressed (calm); near 1 = market-driven repricing (stress). "
-        "The 0.5 threshold line separates the two regimes. This single number drives all trade ideas on Page 5."
-    )
     ensemble = _run_ensemble(*args)
     if ensemble is not None and len(ensemble.dropna()) > 0:
         current_prob = float(ensemble.dropna().iloc[-1])
+
+        st.markdown(
+            "The **headline number** — a weighted blend of all four regime models below. "
+            "Closer to **0** = calm / BOJ-suppressed; closer to **1** = stress / market-driven repricing. "
+            "The :red[red dashed line] at 0.5 is the decision boundary. "
+            "This probability is the primary input to all trade ideas on Page 5."
+        )
 
         # Gauge / metric
         col_m1, col_m2, col_m3 = st.columns(3)
@@ -546,14 +550,14 @@ def page_regime():
 
     # --- Markov Smoothed Probabilities ---
     st.subheader("Markov-Switching Smoothed Probabilities")
-    st.caption(
-        "A **Markov-switching model** assumes the market flips between two hidden states (e.g. calm vs crisis), "
-        "each with its own average return and volatility. 'Markov' means the chance of switching depends only on "
-        "the current state, not history. The stacked areas show the probability of being in each regime over time — "
-        "they always sum to 1.0."
-    )
     markov = _run_markov(*args)
     if markov is not None:
+        st.markdown(
+            "A **Markov-switching model** assumes the market alternates between two hidden states, "
+            "each with its own average yield-change and volatility. The stacked areas below show the "
+            "probability of each state over time — they always sum to 1.0. When one colour dominates, "
+            "the model is confident about the current regime."
+        )
         rp = markov["regime_probabilities"]
         fig_mk = go.Figure()
         for col in rp.columns:
@@ -576,14 +580,15 @@ def page_regime():
 
     # --- Structural Breaks ---
     st.subheader("Structural Breakpoints on JP 10Y Changes")
-    st.caption(
-        "**Structural breaks** are points where the statistical properties of a time series permanently change — "
-        "not just a temporary spike, but a fundamental shift. The PELT algorithm finds these optimally. "
-        "Orange dashed lines mark detected breakpoints. They often align with BOJ policy announcements, "
-        "confirming that the data itself recognises 'something fundamental changed.'"
-    )
     changes, bkps = _run_breaks(*args)
     if changes is not None and bkps is not None:
+        n_bkps = len(bkps) if bkps else 0
+        st.markdown(
+            f"The line below shows daily changes in the Japan 10Y yield. The **{n_bkps} :orange[orange dashed verticals]** "
+            "are **structural breakpoints** — dates where the statistical behaviour of the series permanently changed "
+            "(not just a temporary spike). The PELT algorithm detects these automatically. "
+            "Breakpoints near :red[BOJ events] confirm that policy shifts fundamentally altered market dynamics."
+        )
         fig_bp = go.Figure()
         fig_bp.add_trace(
             go.Scatter(x=changes.index, y=changes.values, mode="lines", name="JP_10Y Δ")
@@ -598,14 +603,15 @@ def page_regime():
 
     # --- Entropy ---
     st.subheader("Rolling Permutation Entropy & Regime Signal")
-    st.caption(
-        "**Permutation entropy** measures randomness/complexity over a rolling window. "
-        "Low entropy = predictable, ordered (BOJ in control); high entropy = chaotic (market-driven). "
-        "The regime signal (red dotted line, right axis) fires 0 or 1 when entropy exceeds a threshold. "
-        "Entropy often rises *before* big moves, making it a leading indicator of regime transitions."
-    )
     ent, sig = _run_entropy(*args)
     if ent is not None:
+        st.markdown(
+            "**Permutation entropy** measures how random/complex yield movements are over a rolling window. "
+            "The blue line (left axis) shows entropy: low = orderly, predictable (BOJ in control); "
+            "high = chaotic, disordered (market-driven). "
+            "The :red[red dotted line] (right axis) is a binary regime signal that fires **1** when entropy "
+            "exceeds a threshold — an early warning that often rises *before* major repricing moves."
+        )
         fig_ent = go.Figure()
         fig_ent.add_trace(
             go.Scatter(x=ent.index, y=ent.values, mode="lines", name="Perm. Entropy")
@@ -629,14 +635,16 @@ def page_regime():
 
     # --- GARCH ---
     st.subheader("GARCH Conditional Volatility & Vol-Regime Breaks")
-    st.caption(
-        "**GARCH** (Generalized Autoregressive Conditional Heteroskedasticity) models time-varying volatility — "
-        "the fact that volatile days tend to cluster together. The blue line is the model's real-time volatility estimate (in bps). "
-        "Purple dashed lines mark volatility regime breaks — permanent shifts to a new volatility level, "
-        "confirming that the calm-yields era has structurally ended."
-    )
     vol, breaks = _run_garch(*args)
     if vol is not None:
+        n_vb = len(breaks) if breaks else 0
+        st.markdown(
+            "**GARCH** models the tendency of volatile days to cluster together, producing a real-time "
+            "volatility estimate (blue line, in basis points). "
+            f"The **{n_vb} :violet[purple dashed verticals]** mark volatility regime breaks — points where "
+            "the level of volatility permanently shifts to a new baseline. "
+            "A new break appearing confirms the end of a calm-yields era."
+        )
         fig_g = go.Figure()
         fig_g.add_trace(
             go.Scatter(x=vol.index, y=vol.values, mode="lines", name="Cond. Volatility")
@@ -746,7 +754,7 @@ def _run_carry(simulated, start, end, api_key):
 
 def page_spillover():
     st.header("Spillover & Information Flow")
-    st.caption(
+    st.markdown(
         "How do shocks transmit *between* markets? A JGB sell-off can trigger moves in US Treasuries, "
         "the Yen, and equities. This page quantifies the direction, strength, and dynamics of these cross-market linkages "
         "using four complementary methods."
@@ -756,15 +764,17 @@ def page_spillover():
 
     # --- Granger Causality ---
     st.subheader("Granger Causality (significant pairs)")
-    st.caption(
-        "**Granger causality** tests whether past values of one series help predict another, beyond what the target's "
-        "own history predicts. It does *not* prove true causation — only statistical precedence. "
-        "For example, if JP_10Y 'Granger-causes' USDJPY, JGB yield moves systematically precede Yen moves. "
-        "The table shows cause-effect pairs with F-statistic (strength) and p-value (significance at 5%)."
-    )
     granger_df = _run_granger(*args)
     if granger_df is not None and not granger_df.empty:
         sig_df = granger_df[granger_df["significant"] == True].reset_index(drop=True)
+        n_sig = len(sig_df)
+        st.markdown(
+            f"**Granger causality** tests whether past values of one series help predict another beyond its own history. "
+            f"It does *not* prove true causation — only statistical precedence. "
+            f"**{n_sig} significant pair(s)** found at 5% level. "
+            "Higher **F-statistic** = stronger predictive link. "
+            "For example, if JP_10Y → USDJPY is significant, JGB yield moves systematically precede Yen moves."
+        )
         if not sig_df.empty:
             st.dataframe(
                 sig_df.style.highlight_max(subset=["f_stat"], color="lightyellow"),
@@ -779,12 +789,6 @@ def page_spillover():
 
     # --- Transfer Entropy Heatmap ---
     st.subheader("Transfer Entropy Heatmap")
-    st.caption(
-        "**Transfer entropy** is an information-theoretic measure of directional information flow between two series — "
-        "a non-linear generalisation of Granger causality that captures complex dependencies. "
-        "Rows are 'source' (sender), columns are 'target' (receiver). Brighter cells = stronger information flow. "
-        "Asymmetry (bright in one direction, dim in the other) reveals which market leads."
-    )
     te_df = _run_te(*args)
     if te_df is not None and not te_df.empty:
         sources = te_df["source"].unique()
@@ -794,6 +798,13 @@ def page_spillover():
         for _, row in te_df.iterrows():
             te_matrix.loc[row["source"], row["target"]] = row["te_value"]
 
+        st.markdown(
+            f"**Transfer entropy** is a non-linear measure of directional information flow — a generalisation "
+            "of Granger causality that captures complex dependencies. "
+            "Rows are **sources** (senders of information), columns are **targets** (receivers). "
+            "Brighter cells = stronger flow. Look for asymmetry: if JP_10Y → VIX is bright but VIX → JP_10Y is dim, "
+            "JGB stress is driving fear, not the reverse."
+        )
         fig_te = px.imshow(
             te_matrix.values,
             x=te_matrix.columns.tolist(),
@@ -809,17 +820,19 @@ def page_spillover():
 
     # --- Diebold-Yilmaz ---
     st.subheader("Diebold-Yilmaz Spillover")
-    st.caption(
-        "The **Diebold-Yilmaz spillover index** uses a VAR (Vector Autoregression) model — where every variable depends on "
-        "its own past and every other variable's past — to measure how much of each market's volatility is caused by shocks "
-        "from *other* markets. The Total Index shows overall interconnectedness (higher = more contagion risk). "
-        "Green bars = net shock transmitters; red bars = net receivers."
-    )
     spill = _run_spillover(*args)
     if spill is not None:
+        total_spill = spill["total_spillover"]
+        st.markdown(
+            f"The **Diebold-Yilmaz spillover index** measures how much of each market's variance is explained by shocks "
+            "from *other* markets, using a VAR model. The **Total Spillover Index** "
+            f"({total_spill:.1f}%) quantifies overall interconnectedness — higher = more contagion risk. "
+            "In the bar chart, :green[green bars] are net shock **transmitters** (they export volatility) "
+            "and :red[red bars] are net **receivers** (they absorb volatility from others)."
+        )
         col_s1, col_s2 = st.columns([1, 2])
         with col_s1:
-            st.metric("Total Spillover Index", f"{spill['total_spillover']:.1f}%")
+            st.metric("Total Spillover Index", f"{total_spill:.1f}%")
         with col_s2:
             net = spill["net_spillover"]
             fig_net = go.Figure(
@@ -835,16 +848,18 @@ def page_spillover():
 
     # --- DCC ---
     st.subheader("DCC Time-Varying Correlations")
-    st.caption(
-        "**DCC-GARCH** (Dynamic Conditional Correlation) estimates how correlations between asset pairs change over time. "
-        "Unlike a simple rolling correlation, DCC accounts for the fact that correlations spike during crises. "
-        "During BOJ suppression, JGB correlations with global bonds were artificially low. "
-        "When they spike toward global norms, it confirms the repricing regime."
-    )
     dcc = _run_dcc(*args)
     if dcc is not None:
         cond_corr = dcc["conditional_correlations"]
         if cond_corr:
+            n_pairs = len(cond_corr)
+            st.markdown(
+                f"**DCC-GARCH** (Dynamic Conditional Correlation) tracks how correlations between **{n_pairs} asset pair(s)** "
+                "evolve over time. Unlike a simple rolling window, DCC accounts for the fact that correlations spike during crises. "
+                "During BOJ yield suppression, JGB correlations with global bonds were artificially low. "
+                "When lines spike toward global norms, it confirms the market is repricing JGBs like any other sovereign bond. "
+                ":red[BOJ event verticals] help pinpoint when these correlation jumps occurred."
+            )
             fig_dcc = go.Figure()
             for pair, series in cond_corr.items():
                 fig_dcc.add_trace(
@@ -862,14 +877,17 @@ def page_spillover():
 
     # --- FX Carry ---
     st.subheader("FX Carry Metrics (USD/JPY)")
-    st.caption(
-        "A **carry trade** borrows in a low-rate currency (JPY) and invests in a high-rate currency (USD) "
-        "to pocket the interest rate difference. *Carry* = the rate differential; *Realized Vol* = the FX risk; "
-        "*Carry-to-Vol* (right axis) = risk-adjusted attractiveness (above 1.0 = attractive, below 0.8 = danger zone). "
-        "When carry-to-vol collapses, crowded carry trades unwind violently, causing sharp Yen strengthening."
-    )
     carry = _run_carry(*args)
     if carry is not None:
+        latest_ctv = carry["carry_to_vol"].dropna().iloc[-1] if len(carry["carry_to_vol"].dropna()) > 0 else float("nan")
+        ctv_label = f"{latest_ctv:.2f}" if not np.isnan(latest_ctv) else "N/A"
+        st.markdown(
+            f"A **carry trade** borrows in low-rate JPY and invests in high-rate USD to pocket the interest differential. "
+            "The chart shows three lines: **Carry** (rate gap), **Realized Vol** (FX risk over 3 months), "
+            f"and **Carry-to-Vol** (dotted, right axis) — currently **{ctv_label}**. "
+            "Above 1.0 = attractive risk-adjusted carry; below 0.8 = danger zone where crowded positions unwind violently, "
+            "causing sharp Yen strengthening. :red[BOJ event verticals] often trigger these unwinds."
+        )
         fig_c = go.Figure()
         fig_c.add_trace(
             go.Scatter(x=carry.index, y=carry["carry"], mode="lines", name="Carry")
@@ -1003,11 +1021,11 @@ def _generate_trades(simulated, start, end, api_key):
 
 def page_trade_ideas():
     st.header("Trade Ideas")
-    st.caption(
+    st.markdown(
         "Actionable trade recommendations generated by feeding all analytics from Pages 2-4 into rule-based strategy logic. "
         "Each trade card specifies the instruments, entry/exit signals, regime conditions, and what could go wrong. "
-        "Trades span four categories: rates (bond positions), FX (currency bets), volatility (options strategies), "
-        "and cross-asset (relative-value plays across markets). Filter by category and conviction in the sidebar."
+        "Trades span four categories: **rates** (bond positions), **FX** (currency bets), **volatility** (options strategies), "
+        "and **cross-asset** (relative-value plays across markets). Use the sidebar filters below to narrow by category and conviction."
     )
 
     args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
@@ -1053,12 +1071,16 @@ def page_trade_ideas():
 
     # --- Conviction bar chart ---
     st.subheader("Conviction Distribution")
-    st.caption(
-        "**Conviction** (0-100%) reflects how strongly the model recommends each trade, based on the strength "
-        "of the underlying signals (regime probability, carry ratios, entropy, spillover, etc.). "
-        "Higher conviction = more signals align. Bars are coloured by asset-class category."
-    )
     if filtered:
+        n_high = sum(1 for c in filtered if c.conviction >= 0.7)
+        n_med = sum(1 for c in filtered if 0.4 <= c.conviction < 0.7)
+        n_low = sum(1 for c in filtered if c.conviction < 0.4)
+        st.markdown(
+            f"**Conviction** (0-100%) reflects how strongly the model recommends each trade, based on the strength "
+            "of the underlying signals (regime probability, carry ratios, entropy, spillover, etc.). "
+            f"Currently: :green[{n_high} high] (≥70%), :orange[{n_med} medium] (40-69%), :red[{n_low} low] (<40%). "
+            "Bars are coloured by asset-class category."
+        )
         conv_data = pd.DataFrame({
             "Trade": [c.name for c in filtered],
             "Conviction": [c.conviction for c in filtered],
@@ -1073,12 +1095,11 @@ def page_trade_ideas():
 
     # --- Trade cards ---
     st.subheader(f"Trade Cards ({len(filtered)} shown)")
-    st.caption(
-        "Each card is a self-contained trade idea. Click to expand. "
-        "**Direction**: Long (bet price rises) or Short (bet price falls). "
+    st.markdown(
+        "Each expandable card is a self-contained trade idea, sorted by conviction (highest first). "
+        "**Direction**: ⬆️ Long (bet price rises) or ⬇️ Short (bet price falls). "
         "**Regime Condition**: what market state triggers entry. **Edge Source**: why this trade has an advantage. "
-        "**Entry/Exit Signals**: concrete triggers. **Failure Scenario**: the key risk that would make this trade lose. "
-        "Cards are sorted by conviction (highest first)."
+        "**Entry/Exit Signals**: concrete triggers to act on. **Failure Scenario**: the key risk that would invalidate the thesis."
     )
     for card in sorted(filtered, key=lambda c: -c.conviction):
         direction_arrow = "⬆️" if card.direction == "long" else "⬇️"
