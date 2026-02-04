@@ -154,7 +154,7 @@ page = st.session_state.current_page
 st.sidebar.markdown("---")
 st.sidebar.markdown("**Settings**")
 
-use_simulated = st.sidebar.toggle("Simulated data", value=True)
+use_simulated = st.sidebar.toggle("Simulated data", value=False)
 fred_api_key = st.sidebar.text_input("FRED API Key", type="password")
 date_range = st.sidebar.date_input(
     "Date range",
@@ -177,20 +177,20 @@ def get_data_store(simulated: bool) -> DataStore:
     return DataStore(use_simulated=simulated)
 
 
-@st.cache_data(show_spinner="Loading unified data…")
+@st.cache_data(show_spinner=False)
 def load_unified(simulated: bool, start: str, end: str, api_key: str | None):
     store = get_data_store(simulated)
     store.clear_cache()
     return store.get_unified(start=start, end=end, fred_api_key=api_key or None)
 
 
-@st.cache_data(show_spinner="Loading rates data…")
+@st.cache_data(show_spinner=False)
 def load_rates(simulated: bool, start: str, end: str, api_key: str | None):
     store = get_data_store(simulated)
     return store.get_rates(start=start, end=end, fred_api_key=api_key or None)
 
 
-@st.cache_data(show_spinner="Loading market data…")
+@st.cache_data(show_spinner=False)
 def load_market(simulated: bool, start: str, end: str):
     store = get_data_store(simulated)
     return store.get_market(start=start, end=end)
@@ -233,16 +233,17 @@ def page_overview():
         "or enter a FRED API key for US economic data."
     )
 
-    try:
-        df = load_unified(
-            use_simulated,
-            str(start_date),
-            str(end_date),
-            fred_api_key or None,
-        )
-    except Exception as exc:
-        st.error(f"Failed to load data: {exc}")
-        return
+    with st.spinner("Loading market data..."):
+        try:
+            df = load_unified(
+                use_simulated,
+                str(start_date),
+                str(end_date),
+                fred_api_key or None,
+            )
+        except Exception as exc:
+            st.error(f"Failed to load data: {exc}")
+            return
 
     # --- KPI row ---
     c1, c2, c3, c4 = st.columns(4)
@@ -326,7 +327,7 @@ def page_overview():
 # ===================================================================
 # Page 2 — Yield Curve Analytics
 # ===================================================================
-@st.cache_data(show_spinner="Running PCA…")
+@st.cache_data(show_spinner=False)
 def _run_pca(simulated, start, end, api_key):
     from src.yield_curve.pca import fit_yield_pca
 
@@ -342,7 +343,7 @@ def _run_pca(simulated, start, end, api_key):
     return fit_yield_pca(changes, n_components=min(3, len(yield_cols)))
 
 
-@st.cache_data(show_spinner="Fitting Nelson-Siegel…")
+@st.cache_data(show_spinner=False)
 def _run_ns(simulated, start, end, api_key):
     from src.yield_curve.nelson_siegel import fit_ns_timeseries
 
@@ -365,7 +366,7 @@ def _run_ns(simulated, start, end, api_key):
     return fit_ns_timeseries(yield_weekly, tenors=tenors)
 
 
-@st.cache_data(show_spinner="Computing liquidity metrics…")
+@st.cache_data(show_spinner=False)
 def _run_liquidity(simulated, start, end, api_key):
     from src.yield_curve.liquidity import roll_measure, composite_liquidity_index
 
@@ -391,9 +392,14 @@ def page_yield_curve():
 
     args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
 
+    # Pre-compute all models in a single pass
+    with st.spinner("Computing yield curve analytics..."):
+        pca_result = _run_pca(*args)
+        liq = _run_liquidity(*args)
+        ns_result = _run_ns(*args)
+
     # --- PCA ---
     st.subheader("PCA of Yield Changes")
-    pca_result = _run_pca(*args)
     if pca_result is None:
         st.warning("Insufficient yield data for PCA.")
     else:
@@ -469,7 +475,6 @@ def page_yield_curve():
 
     # --- Liquidity ---
     st.subheader("Liquidity Metrics")
-    liq = _run_liquidity(*args)
     if liq is None:
         st.warning("Insufficient data for liquidity metrics.")
     else:
@@ -498,7 +503,6 @@ def page_yield_curve():
 
     # --- Nelson-Siegel ---
     st.subheader("Nelson-Siegel Factor Evolution")
-    ns_result = _run_ns(*args)
     if ns_result is None:
         st.warning("Insufficient data for Nelson-Siegel fitting.")
     else:
@@ -544,7 +548,7 @@ def page_yield_curve():
 # ===================================================================
 # Page 3 — Regime Detection
 # ===================================================================
-@st.cache_data(show_spinner="Fitting Markov regime model…")
+@st.cache_data(show_spinner=False)
 def _run_markov(simulated, start, end, api_key):
     from src.regime.markov_switching import fit_markov_regime
 
@@ -568,7 +572,7 @@ def _run_markov(simulated, start, end, api_key):
             return None
 
 
-@st.cache_data(show_spinner="Fitting HMM…")
+@st.cache_data(show_spinner=False)
 def _run_hmm(simulated, start, end, api_key):
     from src.regime.hmm_regime import fit_multivariate_hmm
 
@@ -582,7 +586,7 @@ def _run_hmm(simulated, start, end, api_key):
     return fit_multivariate_hmm(sub, n_states=2)
 
 
-@st.cache_data(show_spinner="Detecting structural breaks…")
+@st.cache_data(show_spinner=False)
 def _run_breaks(simulated, start, end, api_key):
     from src.regime.structural_breaks import detect_breaks_pelt
 
@@ -595,7 +599,7 @@ def _run_breaks(simulated, start, end, api_key):
     return changes, bkps
 
 
-@st.cache_data(show_spinner="Computing entropy…")
+@st.cache_data(show_spinner=False)
 def _run_entropy(simulated, start, end, api_key):
     from src.regime.entropy_regime import rolling_permutation_entropy, entropy_regime_signal
 
@@ -609,7 +613,7 @@ def _run_entropy(simulated, start, end, api_key):
     return ent, sig
 
 
-@st.cache_data(show_spinner="Fitting GARCH…")
+@st.cache_data(show_spinner=False)
 def _run_garch(simulated, start, end, api_key):
     from src.regime.garch_regime import fit_garch, volatility_regime_breaks
 
@@ -624,7 +628,7 @@ def _run_garch(simulated, start, end, api_key):
     return vol, breaks
 
 
-@st.cache_data(show_spinner="Computing ensemble probability…")
+@st.cache_data(show_spinner=False)
 def _run_ensemble(simulated, start, end, api_key):
     from src.regime.ensemble import ensemble_regime_probability
 
@@ -669,9 +673,16 @@ def page_regime():
 
     args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
 
+    # Pre-compute all regime models in a single pass
+    with st.spinner("Running regime detection models..."):
+        ensemble = _run_ensemble(*args)   # internally runs markov, hmm, entropy, garch
+        markov = _run_markov(*args)       # cached from ensemble
+        changes, bkps = _run_breaks(*args)
+        ent, sig = _run_entropy(*args)    # cached from ensemble
+        vol, garch_breaks = _run_garch(*args)  # cached from ensemble
+
     # --- Ensemble Probability ---
     st.subheader("Ensemble Regime Probability")
-    ensemble = _run_ensemble(*args)
     if ensemble is not None and len(ensemble.dropna()) > 0:
         current_prob = float(ensemble.dropna().iloc[-1])
 
@@ -716,7 +727,6 @@ def page_regime():
 
     # --- Markov Smoothed Probabilities ---
     st.subheader("Markov-Switching Smoothed Probabilities")
-    markov = _run_markov(*args)
     if markov is not None:
         rp = markov["regime_probabilities"]
         r_means = markov["regime_means"]
@@ -758,7 +768,6 @@ def page_regime():
 
     # --- Structural Breaks ---
     st.subheader("Structural Breakpoints on JP 10Y Changes")
-    changes, bkps = _run_breaks(*args)
     if changes is not None and bkps is not None:
         n_bkps = len(bkps) if bkps else 0
         bk_insight = ""
@@ -786,7 +795,6 @@ def page_regime():
 
     # --- Entropy ---
     st.subheader("Rolling Permutation Entropy & Regime Signal")
-    ent, sig = _run_entropy(*args)
     if ent is not None:
         ent_latest = float(ent.dropna().iloc[-1]) if len(ent.dropna()) > 0 else 0.0
         sig_latest = float(sig.dropna().iloc[-1]) if sig is not None and len(sig.dropna()) > 0 else 0
@@ -825,7 +833,7 @@ def page_regime():
 
     # --- GARCH ---
     st.subheader("GARCH Conditional Volatility & Vol-Regime Breaks")
-    vol, breaks = _run_garch(*args)
+    breaks = garch_breaks
     if vol is not None:
         n_vb = len(breaks) if breaks else 0
         vol_latest = float(vol.dropna().iloc[-1]) if len(vol.dropna()) > 0 else 0.0
@@ -861,7 +869,7 @@ def page_regime():
 # ===================================================================
 # Page 4 — Spillover & Information Flow
 # ===================================================================
-@st.cache_data(show_spinner="Running Granger causality tests…")
+@st.cache_data(show_spinner=False)
 def _run_granger(simulated, start, end, api_key):
     from src.spillover.granger import pairwise_granger
 
@@ -875,7 +883,7 @@ def _run_granger(simulated, start, end, api_key):
     return pairwise_granger(sub, max_lag=5, significance=0.05)
 
 
-@st.cache_data(show_spinner="Computing transfer entropy…")
+@st.cache_data(show_spinner=False)
 def _run_te(simulated, start, end, api_key):
     from src.spillover.transfer_entropy import pairwise_transfer_entropy
 
@@ -889,7 +897,7 @@ def _run_te(simulated, start, end, api_key):
     return pairwise_transfer_entropy(sub, lag=1, n_bins=3)
 
 
-@st.cache_data(show_spinner="Computing Diebold-Yilmaz spillover index…")
+@st.cache_data(show_spinner=False)
 def _run_spillover(simulated, start, end, api_key):
     from src.spillover.diebold_yilmaz import compute_spillover_index
 
@@ -903,7 +911,7 @@ def _run_spillover(simulated, start, end, api_key):
     return compute_spillover_index(sub, var_lags=4, forecast_horizon=10)
 
 
-@st.cache_data(show_spinner="Computing DCC-GARCH correlations…")
+@st.cache_data(show_spinner=False)
 def _run_dcc(simulated, start, end, api_key):
     from src.spillover.dcc_garch import compute_dcc
 
@@ -917,7 +925,7 @@ def _run_dcc(simulated, start, end, api_key):
     return compute_dcc(sub, p=1, q=1)
 
 
-@st.cache_data(show_spinner="Computing FX carry metrics…")
+@st.cache_data(show_spinner=False)
 def _run_carry(simulated, start, end, api_key):
     from src.fx.carry_analytics import compute_carry, carry_to_vol
 
@@ -961,9 +969,16 @@ def page_spillover():
 
     args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
 
+    # Pre-compute all spillover models in a single pass
+    with st.spinner("Computing cross-market spillover analysis..."):
+        granger_df = _run_granger(*args)
+        te_df = _run_te(*args)
+        spill = _run_spillover(*args)
+        dcc = _run_dcc(*args)
+        carry = _run_carry(*args)
+
     # --- Granger Causality ---
     st.subheader("Granger Causality (significant pairs)")
-    granger_df = _run_granger(*args)
     if granger_df is not None and not granger_df.empty:
         sig_df = granger_df[granger_df["significant"] == True].reset_index(drop=True)
         n_sig = len(sig_df)
@@ -996,7 +1011,6 @@ def page_spillover():
 
     # --- Transfer Entropy Heatmap ---
     st.subheader("Transfer Entropy Heatmap")
-    te_df = _run_te(*args)
     if te_df is not None and not te_df.empty:
         sources = te_df["source"].unique()
         targets = te_df["target"].unique()
@@ -1033,7 +1047,6 @@ def page_spillover():
 
     # --- Diebold-Yilmaz ---
     st.subheader("Diebold-Yilmaz Spillover")
-    spill = _run_spillover(*args)
     if spill is not None:
         total_spill = spill["total_spillover"]
         net = spill["net_spillover"]
@@ -1070,7 +1083,6 @@ def page_spillover():
 
     # --- DCC ---
     st.subheader("DCC Time-Varying Correlations")
-    dcc = _run_dcc(*args)
     if dcc is not None:
         cond_corr = dcc["conditional_correlations"]
         if cond_corr:
@@ -1115,7 +1127,6 @@ def page_spillover():
 
     # --- FX Carry ---
     st.subheader("FX Carry Metrics (USD/JPY)")
-    carry = _run_carry(*args)
     if carry is not None:
         latest_ctv = carry["carry_to_vol"].dropna().iloc[-1] if len(carry["carry_to_vol"].dropna()) > 0 else float("nan")
         latest_carry = carry["carry"].dropna().iloc[-1] if len(carry["carry"].dropna()) > 0 else float("nan")
@@ -1165,7 +1176,7 @@ def page_spillover():
 # ===================================================================
 # Page 5 — Trade Ideas
 # ===================================================================
-@st.cache_data(show_spinner="Generating trade ideas…")
+@st.cache_data(show_spinner=False)
 def _generate_trades(simulated, start, end, api_key):
     from src.strategy.trade_generator import generate_all_trades
     from src.yield_curve.term_premium import estimate_acm_term_premium
@@ -1278,14 +1289,15 @@ def page_trade_ideas():
 
     args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
 
-    try:
-        cards, regime_state = _generate_trades(*args)
-    except Exception as exc:
-        st.error(f"Trade generation failed: {exc}")
-        import traceback
-        with st.expander("Traceback"):
-            st.code(traceback.format_exc())
-        return
+    with st.spinner("Generating trade ideas from all models..."):
+        try:
+            cards, regime_state = _generate_trades(*args)
+        except Exception as exc:
+            st.error(f"Trade generation failed: {exc}")
+            import traceback
+            with st.expander("Traceback"):
+                st.code(traceback.format_exc())
+            return
 
     if not cards:
         st.info("No trade ideas generated for the current regime state. Try adjusting date range or data mode.")
