@@ -1,5 +1,5 @@
 """
-JGB Repricing Framework — Streamlit Dashboard
+JGB Repricing Framework: Streamlit Dashboard
 
 Multi-page dashboard visualising the full JGB repricing pipeline:
 data overview, yield curve analytics, regime detection, cross-asset
@@ -29,7 +29,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 # ---------------------------------------------------------------------------
-# src imports (all lazy — only called within their respective pages)
+# src imports (all lazy, only called within their respective pages)
 # ---------------------------------------------------------------------------
 from src.data.data_store import DataStore
 from src.data.config import BOJ_EVENTS, JGB_TENORS, DEFAULT_START, DEFAULT_END
@@ -50,46 +50,86 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* ---- Header styling ---- */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    /* ---- Global ---- */
+    .main .block-container {
+        padding-top: 1.5rem;
+        padding-bottom: 1rem;
+        max-width: 1200px;
+    }
+
+    /* ---- Typography ---- */
     .main h1 {
+        font-family: 'Inter', -apple-system, sans-serif;
         font-weight: 700;
-        color: #1a1a2e;
-        border-bottom: 3px solid #1e3a5f;
-        padding-bottom: 0.5rem;
-        margin-bottom: 1.2rem;
+        color: #0a1628;
+        border-bottom: 2px solid #1e3a5f;
+        padding-bottom: 0.4rem;
+        margin-bottom: 0.8rem;
+        font-size: 1.4rem;
+        letter-spacing: -0.03em;
     }
     .main h2 {
+        font-family: 'Inter', -apple-system, sans-serif;
         font-weight: 600;
         color: #1e3a5f;
-        border-bottom: 1px solid #e0e4eb;
-        padding-bottom: 0.25rem;
-        margin-top: 2rem;
+        border-bottom: none;
+        padding-bottom: 0;
+        margin-top: 1.6rem;
+        margin-bottom: 0.3rem;
+        font-size: 0.95rem;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
     }
-    .main h3 { font-weight: 600; color: #2d4a6f; }
+    .main h3 {
+        font-weight: 600;
+        color: #344054;
+        font-size: 0.88rem;
+        margin-top: 1rem;
+    }
+    .main p, .main li {
+        color: #475467;
+        line-height: 1.55;
+        font-size: 0.82rem;
+    }
 
     /* ---- Metric cards ---- */
     [data-testid="stMetric"] {
         background: #f8f9fc;
-        border: 1px solid #e2e6ed;
-        border-radius: 8px;
-        padding: 14px 18px;
+        border: 1px solid #d5dbe3;
+        border-top: 3px solid #1e3a5f;
+        border-radius: 2px;
+        padding: 10px 14px;
     }
     [data-testid="stMetricLabel"] {
-        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
         text-transform: uppercase;
-        font-size: 0.72rem;
-        letter-spacing: 0.04em;
-        color: #5a6577;
+        font-size: 0.6rem;
+        letter-spacing: 0.08em;
+        color: #667085;
     }
-    [data-testid="stMetricValue"] { font-weight: 700; color: #1a1a2e; }
+    [data-testid="stMetricValue"] {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        color: #0a1628;
+        font-size: 1rem;
+    }
 
-    /* ---- Sidebar nav buttons ---- */
+    /* ---- Sidebar ---- */
+    section[data-testid="stSidebar"] {
+        background: #f8f9fb;
+        border-right: 1px solid #e4e7ec;
+    }
     section[data-testid="stSidebar"] .stButton > button {
         text-align: left;
-        font-size: 0.88rem;
-        border-radius: 6px;
-        padding: 0.55rem 1rem;
-        transition: all 0.12s ease;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.8rem;
+        border-radius: 3px;
+        padding: 0.45rem 0.8rem;
+        transition: all 0.1s ease;
+        font-weight: 500;
     }
     section[data-testid="stSidebar"] .stButton > button[kind="secondary"] {
         background: transparent;
@@ -97,32 +137,92 @@ st.markdown(
         color: #344054;
     }
     section[data-testid="stSidebar"] .stButton > button[kind="secondary"]:hover {
-        background: #e8ebf0;
+        background: #eaecf0;
         border-color: #98a2b3;
     }
     section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
-        font-weight: 600;
+        font-weight: 700;
+        border-left: 3px solid #1e3a5f;
     }
 
-    /* ---- Expander headers ---- */
-    .streamlit-expanderHeader { font-weight: 600; }
+    /* ---- Expander ---- */
+    .streamlit-expanderHeader {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 0.82rem;
+        color: #0a1628;
+    }
+    details[data-testid="stExpander"] {
+        border: 1px solid #e4e7ec;
+        border-radius: 3px;
+        margin-bottom: 0.4rem;
+    }
+
+    /* ---- Plotly chart containers ---- */
+    [data-testid="stPlotlyChart"] {
+        border: 1px solid #e4e7ec;
+        border-radius: 3px;
+        background: #ffffff;
+    }
+
+    /* ---- Dataframes ---- */
+    [data-testid="stDataFrame"] {
+        border: 1px solid #e4e7ec;
+        border-radius: 3px;
+    }
 
     /* ---- Divider ---- */
-    hr { border-color: #e0e4eb; }
+    hr {
+        border: none;
+        border-top: 1px solid #e4e7ec;
+        margin: 1rem 0;
+    }
+
+    /* ---- Download button ---- */
+    .stDownloadButton > button {
+        font-family: 'Inter', sans-serif;
+        background: #1e3a5f;
+        color: #ffffff;
+        border: none;
+        font-weight: 600;
+        border-radius: 3px;
+        padding: 0.4rem 1.2rem;
+        font-size: 0.78rem;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+    }
+    .stDownloadButton > button:hover {
+        background: #15304f;
+    }
+
+    /* ---- Alerts ---- */
+    [data-testid="stAlert"] {
+        border-radius: 3px;
+        font-size: 0.82rem;
+    }
+
+    /* ---- Tabs / Toggle ---- */
+    .stTabs [data-baseweb="tab"] {
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 # ---------------------------------------------------------------------------
-# Sidebar — navigation + global controls
+# Sidebar: navigation + global controls
 # ---------------------------------------------------------------------------
 st.sidebar.markdown(
-    "<div style='text-align:center; padding:0.2rem 0 1.2rem 0;'>"
-    "<span style='font-size:1.25rem; font-weight:700; color:#1e3a5f; "
-    "letter-spacing:-0.01em;'>JGB Repricing</span><br>"
-    "<span style='font-size:0.78rem; font-weight:400; color:#5a6577;'>"
-    "Framework Dashboard</span></div>",
+    "<div style='padding:0.5rem 0 0.8rem 0; border-bottom:2px solid #1e3a5f; "
+    "margin-bottom:0.6rem;'>"
+    "<div style='font-size:0.55rem; font-weight:700; text-transform:uppercase; "
+    "letter-spacing:0.14em; color:#98a2b3;'>Rates Strategy Desk</div>"
+    "<div style='font-size:1.15rem; font-weight:700; color:#0a1628; "
+    "letter-spacing:-0.02em; line-height:1.25; margin-top:0.1rem;'>JGB Repricing</div>"
+    "<div style='font-size:0.68rem; font-weight:500; color:#667085; "
+    "margin-top:0.1rem;'>Quantitative Framework</div></div>",
     unsafe_allow_html=True,
 )
 
@@ -167,6 +267,118 @@ if len(date_range) == 2:
     start_date, end_date = date_range
 else:
     start_date, end_date = DEFAULT_START, DEFAULT_END
+
+
+# ===================================================================
+# Plotly template (institutional palette)
+# ===================================================================
+_PALETTE = ["#1e3a5f", "#c0392b", "#2e7d32", "#7b1fa2", "#e67e22", "#00838f"]
+
+_PLOTLY_LAYOUT = dict(
+    font=dict(family="Inter, -apple-system, Helvetica Neue, sans-serif", size=11, color="#475467"),
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="#fcfcfd",
+    title_text="",
+    title_font=dict(size=12, color="#0a1628", family="Inter, sans-serif"),
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.01,
+        xanchor="left",
+        x=0,
+        font=dict(size=10, color="#475467"),
+        bgcolor="rgba(0,0,0,0)",
+    ),
+    margin=dict(l=45, r=15, t=30, b=35),
+    hovermode="x unified",
+    hoverlabel=dict(font_size=11, font_family="Inter, sans-serif"),
+    xaxis=dict(
+        gridcolor="#f2f4f7",
+        linecolor="#e4e7ec",
+        zerolinecolor="#e4e7ec",
+        tickfont=dict(size=10),
+    ),
+    yaxis=dict(
+        gridcolor="#f2f4f7",
+        linecolor="#e4e7ec",
+        zerolinecolor="#e4e7ec",
+        tickfont=dict(size=10),
+    ),
+)
+
+
+def _style_fig(fig: go.Figure, height: int = 380) -> go.Figure:
+    """Apply the global institutional template to a plotly figure."""
+    fig.update_layout(**_PLOTLY_LAYOUT, height=height)
+    for i, trace in enumerate(fig.data):
+        # Only recolour Scatter traces that haven't been explicitly coloured
+        if isinstance(trace, go.Scatter):
+            has_color = getattr(trace.line, "color", None) or getattr(trace.marker, "color", None)
+            if not has_color:
+                fig.data[i].update(line=dict(color=_PALETTE[i % len(_PALETTE)]))
+    return fig
+
+
+def _page_intro(text: str):
+    """Render a page introduction in a muted, professional style."""
+    st.markdown(
+        f"<p style='color:#667085;font-family:Inter,sans-serif;font-size:0.78rem;"
+        f"line-height:1.6;margin:0 0 1rem 0;padding:0;'>{text}</p>",
+        unsafe_allow_html=True,
+    )
+
+
+def _section_note(text: str):
+    """Render a brief analytical note below a chart section header."""
+    st.markdown(
+        f"<p style='color:#475467;font-size:0.76rem;line-height:1.55;"
+        f"margin:-0.2rem 0 0.5rem 0;'>{text}</p>",
+        unsafe_allow_html=True,
+    )
+
+
+def _page_conclusion(verdict: str, summary: str):
+    """Render an integrated verdict + summary panel at the bottom of a page."""
+    st.markdown(
+        f"<div style='margin-top:1.5rem;border-top:2px solid #1e3a5f;padding:0;'>"
+        # verdict row
+        f"<div style='background:linear-gradient(135deg,#0a1628 0%,#1e3a5f 100%);"
+        f"padding:14px 20px;'>"
+        f"<p style='margin:0;color:#ffffff;font-family:Inter,sans-serif;"
+        f"font-size:0.92rem;font-weight:600;line-height:1.5;letter-spacing:-0.01em;'>"
+        f"{verdict}</p></div>"
+        # summary row
+        f"<div style='background:#f8f9fb;padding:12px 20px;border-bottom:1px solid #e4e7ec;'>"
+        f"<p style='margin:0;color:#475467;font-family:Inter,sans-serif;"
+        f"font-size:0.78rem;line-height:1.6;'>"
+        f"<span style='color:#1e3a5f;font-weight:600;text-transform:uppercase;"
+        f"font-size:0.68rem;letter-spacing:0.06em;'>Assessment </span>"
+        f"{summary}</p></div>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def _page_footer():
+    """Render an institutional disclaimer footer with credits."""
+    st.markdown(
+        "<div style='margin-top:2rem;padding:12px 0 6px 0;border-top:1px solid #e4e7ec;'>"
+        "<p style='color:#98a2b3;font-size:0.65rem;line-height:1.5;margin:0 0 8px 0;"
+        "font-family:Inter,sans-serif;'>"
+        "This material is produced by a quantitative framework for informational purposes only. "
+        "It does not constitute investment advice, a solicitation, or an offer to buy or sell any securities. "
+        "Past performance is not indicative of future results. All models are approximations. "
+        f"Generated {datetime.now():%Y-%m-%d %H:%M} UTC.</p>"
+        "<p style='color:#667085;font-size:0.65rem;line-height:1.6;margin:0;"
+        "font-family:Inter,sans-serif;'>"
+        "Developed by <a href='https://www.linkedin.com/in/heramb-patkar/' "
+        "target='_blank' style='color:#1e3a5f;text-decoration:none;font-weight:600;'>"
+        "Heramb S. Patkar</a>, MSF, Purdue University. "
+        "Faculty Advisor: <a href='https://cinderzhang.github.io/' "
+        "target='_blank' style='color:#1e3a5f;text-decoration:none;font-weight:600;'>"
+        "Dr. Cinder Zhang</a>.</p></div>",
+        unsafe_allow_html=True,
+    )
 
 
 # ===================================================================
@@ -223,14 +435,13 @@ def _add_boj_events(fig: go.Figure, y_pos: float | None = None) -> go.Figure:
 
 
 # ===================================================================
-# Page 1 — Overview & Data
+# Page 1: Overview & Data
 # ===================================================================
 def page_overview():
     st.header("Overview & Data")
-    st.markdown(
-        "This page shows the raw market data feeding every analysis in the dashboard. "
-        "Use the **sidebar** to switch between simulated (synthetic) and live data, set the date range, "
-        "or enter a FRED API key for US economic data."
+    _page_intro(
+        "Raw market data underlying all downstream analytics. "
+        "Toggle data source and date range via sidebar controls."
     )
 
     with st.spinner("Loading market data..."):
@@ -264,26 +475,20 @@ def page_overview():
         if len(_jp) > 0 and len(_us) > 0:
             spread = float(_jp.iloc[-1] - _us.iloc[-1])
             if abs(spread) < 0.5:
-                insight += f" **Actionable: The JP-US 10Y spread is only {spread:+.2f}% — JGB yields are converging toward US levels, confirming repricing is underway.**"
+                insight += f" <b>Actionable: The JP-US 10Y spread is only {spread:+.2f}%. JGB yields are converging toward US levels, confirming repricing is underway.</b>"
             else:
-                insight += f" **Actionable: The JP-US 10Y spread sits at {spread:+.2f}% — the BOJ is still suppressing yields well below the US benchmark; watch for catch-up risk.**"
+                insight += f" <b>Actionable: The JP-US 10Y spread sits at {spread:+.2f}%. The BOJ is still suppressing yields well below the US benchmark; watch for catch-up risk.</b>"
         if len(_vix) > 0 and float(_vix.iloc[-1]) > 25:
-            insight += f" **VIX at {float(_vix.iloc[-1]):.1f} flags elevated market fear — risk-off spillover into JGBs is likely.**"
-        st.markdown(
-            "Four traces in the legend: **JP_10Y** (Japan 10Y yield) is this dashboard's core variable — "
-            "compare its trajectory to **US_10Y** and **DE_10Y** (US and German benchmarks) on the same y-axis. "
-            "**VIX** scales differently (right-read it as a level, not a yield). "
-            "The :red[red dotted verticals] mark Bank of Japan policy dates — hover for event names."
+            insight += f" <b>VIX at {float(_vix.iloc[-1]):.1f} flags elevated market fear. Risk-off spillover into JGBs is likely.</b>"
+        _section_note(
+            "JP_10Y vs US/DE benchmarks. Red verticals = BOJ policy dates."
             + insight
         )
         fig = go.Figure()
         for col in rate_cols:
             fig.add_trace(go.Scatter(x=df.index, y=df[col], mode="lines", name=col))
-        fig.update_layout(
-            height=420, legend=dict(orientation="h"), hovermode="x unified"
-        )
         _add_boj_events(fig)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(_style_fig(fig, 420), use_container_width=True)
     else:
         st.info("No rate columns found in data.")
 
@@ -297,25 +502,18 @@ def page_overview():
         if len(_usdjpy) >= 20:
             pct_20d = float((_usdjpy.iloc[-1] / _usdjpy.iloc[-20] - 1) * 100)
             if pct_20d > 1:
-                fx_insight += f" **Actionable: USDJPY rose {pct_20d:+.1f}% over 20 days — Yen weakening accelerating; carry trades look exposed if BOJ tightens.**"
+                fx_insight += f" <b>Actionable: USDJPY rose {pct_20d:+.1f}% over 20 days. Yen weakening accelerating; carry trades look exposed if BOJ tightens.</b>"
             elif pct_20d < -1:
-                fx_insight += f" **Actionable: USDJPY fell {pct_20d:+.1f}% over 20 days — Yen strengthening suggests carry unwind or safe-haven flows.**"
-        st.markdown(
-            "Trace names in the legend: **USDJPY** = Yen per Dollar (rising line = weaker Yen); "
-            "**EURJPY** = Yen per Euro; **NIKKEI** = Japan's main equity index. "
-            "All three share the x-axis (dates) but different y-scales — read each by hovering. "
-            "The :red[red dotted verticals] are the same BOJ events as the rates chart above. "
-            "Look for simultaneous moves: a sharp USDJPY rise + NIKKEI drop signals foreign investors exiting Japan."
+                fx_insight += f" <b>Actionable: USDJPY fell {pct_20d:+.1f}% over 20 days. Yen strengthening suggests carry unwind or safe-haven flows.</b>"
+        _section_note(
+            "USDJPY (rising = weaker Yen), EURJPY, Nikkei. Simultaneous Yen weakness + equity drop = foreign outflows."
             + fx_insight
         )
         fig2 = go.Figure()
         for col in mkt_cols:
             fig2.add_trace(go.Scatter(x=df.index, y=df[col], mode="lines", name=col))
-        fig2.update_layout(
-            height=420, legend=dict(orientation="h"), hovermode="x unified"
-        )
         _add_boj_events(fig2)
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(_style_fig(fig2, 420), use_container_width=True)
     else:
         st.info("No market columns found in data.")
 
@@ -323,9 +521,28 @@ def page_overview():
     with st.expander("Raw data (last 20 rows)"):
         st.dataframe(df.tail(20), use_container_width=True)
 
+    # --- Page conclusion ---
+    _src_label = "simulated" if use_simulated else "live (FRED + yfinance)"
+    # Verdict
+    _jp = df["JP_10Y"].dropna() if "JP_10Y" in df.columns else pd.Series(dtype=float)
+    _us = df["US_10Y"].dropna() if "US_10Y" in df.columns else pd.Series(dtype=float)
+    if len(_jp) > 0 and len(_us) > 0:
+        _spread_bps = (float(_jp.iloc[-1]) - float(_us.iloc[-1])) * 100
+        _verdict_p1 = f"JGB 10Y trades {abs(_spread_bps):.0f} bps {'below' if _spread_bps < 0 else 'above'} the US benchmark. {'Gap remains wide; repricing has room to run.' if _spread_bps < -100 else 'Spread is narrowing; convergence trade is maturing.' if _spread_bps < 0 else 'JGBs have overshot; watch for mean-reversion.'}"
+    else:
+        _verdict_p1 = "Data pipeline operational. Review yield and FX series above before proceeding."
+    _page_conclusion(
+        _verdict_p1,
+        f"Dataset loaded with <b>{len(df):,}</b> observations across "
+        f"<b>{df.shape[1]}</b> variables from {_src_label} sources, spanning "
+        f"<b>{df.index.min():%b %Y}</b> to <b>{df.index.max():%b %Y}</b>. "
+        f"Proceed to Yield Curve Analytics to decompose these raw series into interpretable factors.",
+    )
+    _page_footer()
+
 
 # ===================================================================
-# Page 2 — Yield Curve Analytics
+# Page 2: Yield Curve Analytics
 # ===================================================================
 @st.cache_data(show_spinner=False)
 def _run_pca(simulated, start, end, api_key):
@@ -383,11 +600,8 @@ def _run_liquidity(simulated, start, end, api_key):
 
 def page_yield_curve():
     st.header("Yield Curve Analytics")
-    st.markdown(
-        "The **yield curve** plots interest rates against bond maturities (2Y, 5Y, 10Y, etc.). "
-        "Its shape reveals what the market expects about future rates and the economy. "
-        "This page decomposes yield-curve movements into interpretable factors, tracks market liquidity, "
-        "and fits a parametric model to monitor structural shifts."
+    _page_intro(
+        "Yield curve decomposition via PCA, Roll liquidity measure, and Nelson-Siegel parametric fit."
     )
 
     args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
@@ -405,17 +619,14 @@ def page_yield_curve():
     else:
         ev = pca_result["explained_variance_ratio"]
         pc1_pct = ev[0] if len(ev) > 0 else 0
-        st.markdown(
-            f"Two charts side by side. **Left — bar chart** with bars labeled PC1, PC2, PC3 on the x-axis and "
-            f"variance ratio on the y-axis. PC1 alone explains **{pc1_pct:.1%}** of all yield movements. "
-            f"**Right — heatmap** with yield names across the top (x-axis) and PC labels down the side (y-axis); "
-            "red cells = positive loading (that yield moves *with* the factor), blue cells = negative (moves *against* it). "
-            f"**Actionable: If PC1 dominates at >{80}%, the entire curve is moving in lockstep — a broad repricing event, not a local kink.**"
+        _section_note(
+            f"Variance decomposition and factor loadings. PC1 explains <b>{pc1_pct:.1%}</b> of all yield movements."
+            f" <b>Actionable: If PC1 >{80}%, the entire curve is moving in lockstep, indicating a broad repricing event, not a local kink.</b>"
         )
         col_a, col_b = st.columns(2)
 
         with col_a:
-            st.markdown("**Explained Variance** — *how much each factor matters*")
+            _section_note("Explained variance by component")
             fig_ev = go.Figure(
                 go.Bar(
                     x=[f"PC{i+1}" for i in range(len(ev))],
@@ -424,21 +635,71 @@ def page_yield_curve():
                     textposition="outside",
                 )
             )
-            fig_ev.update_layout(height=320, yaxis_title="Variance Ratio")
-            st.plotly_chart(fig_ev, use_container_width=True)
+            fig_ev.update_layout(yaxis_title="Variance Ratio")
+            st.plotly_chart(_style_fig(fig_ev, 320), use_container_width=True)
 
         with col_b:
-            st.markdown("**Loadings Heatmap** — *which maturities each factor moves*")
             loadings = pca_result["loadings"]
+            # loadings shape: (PCs x securities) — rows=PC1/PC2/PC3, cols=JP_10Y/US_10Y/...
+            sec_names = list(loadings.columns.astype(str))
+            pc_labels = list(loadings.index.astype(str))
+            # Build data-driven note from actual securities
+            _ld_parts = []
+            for ci in range(min(loadings.shape[0], 3)):
+                abs_row = loadings.iloc[ci, :].abs()
+                top_sec = abs_row.idxmax()
+                _ld_parts.append(f"{pc_labels[ci]} loads heaviest on <b>{top_sec}</b>")
+            _section_note(
+                "; ".join(_ld_parts) + "." if _ld_parts else "Factor loadings across yield series."
+            )
             fig_ld = px.imshow(
-                loadings.T.values,
-                x=loadings.index.astype(str),
-                y=[f"PC{i+1}" for i in range(loadings.shape[1])],
+                loadings.values,
+                x=sec_names,
+                y=pc_labels,
                 color_continuous_scale="RdBu_r",
                 aspect="auto",
             )
-            fig_ld.update_layout(height=320)
-            st.plotly_chart(fig_ld, use_container_width=True)
+            st.plotly_chart(_style_fig(fig_ld, 320), use_container_width=True)
+
+        # --- PCA Loadings by Security (line chart) ---
+        loadings_line = pca_result["loadings"]
+        # loadings_line shape: (PCs x securities)
+        _sec_names_lc = list(loadings_line.columns.astype(str))
+        if len(_sec_names_lc) >= 2 and loadings_line.shape[0] >= 1:
+            # Build security-level insight
+            _lc_note = f"Beta weights across {', '.join(_sec_names_lc[:5])}{'...' if len(_sec_names_lc) > 5 else ''}. "
+            if loadings_line.shape[0] >= 2:
+                pc1_row = loadings_line.iloc[0, :]  # PC1 loadings across securities
+                pc2_row = loadings_line.iloc[1, :]  # PC2 loadings across securities
+                pc1_range = pc1_row.max() - pc1_row.min()
+                pc2_range = pc2_row.max() - pc2_row.min()
+                if pc1_range < 0.15:
+                    _lc_note += "PC1 is near-flat: the level factor moves all securities in lockstep."
+                else:
+                    _pc1_top = pc1_row.abs().idxmax()
+                    _lc_note += f"PC1 tilts toward <b>{_pc1_top}</b>, indicating uneven parallel exposure."
+                if pc2_range > 0.2:
+                    _pc2_hi = pc2_row.idxmax()
+                    _pc2_lo = pc2_row.idxmin()
+                    _lc_note += f" PC2 slope runs from <b>{_pc2_lo}</b> to <b>{_pc2_hi}</b>."
+            _section_note(_lc_note)
+            fig_pcl = go.Figure()
+            pc_names = {0: "PC1 (Level)", 1: "PC2 (Slope)", 2: "PC3 (Curvature)"}
+            for i in range(loadings_line.shape[0]):  # iterate over PCs (rows)
+                fig_pcl.add_trace(
+                    go.Scatter(
+                        x=_sec_names_lc,
+                        y=loadings_line.iloc[i, :].values,
+                        mode="lines+markers",
+                        name=pc_names.get(i, f"PC{i+1}"),
+                        marker=dict(size=6),
+                    )
+                )
+            fig_pcl.update_layout(
+                yaxis_title="Loading (beta)",
+                xaxis_title="Security",
+            )
+            st.plotly_chart(_style_fig(fig_pcl, 340), use_container_width=True)
 
         scores = pca_result["scores"]
         # Compute recent PC1 trend for actionable insight
@@ -448,14 +709,11 @@ def page_yield_curve():
             pc1_recent = float(_pc1.iloc[-20:].mean())
             pc1_earlier = float(_pc1.iloc[-60:-20].mean()) if len(_pc1) >= 60 else float(_pc1.iloc[:len(_pc1)//2].mean())
             if pc1_recent > pc1_earlier + 0.5:
-                pc1_insight = " **Actionable: PC1 (Level) has been trending upward recently — all yields are rising in unison, signalling a broad repricing move. Consider positioning for higher rates.**"
+                pc1_insight = " <b>Actionable: PC1 (Level) has been trending upward recently. All yields are rising in unison, signalling a broad repricing move. Consider positioning for higher rates.</b>"
             elif pc1_recent < pc1_earlier - 0.5:
-                pc1_insight = " **Actionable: PC1 (Level) is trending downward — yields are compressing across maturities, suggesting the BOJ suppression regime is reasserting control.**"
-        st.markdown(
-            "Three lines in the legend: **PC1 (Level)** = all rates shifting together (the dominant move); "
-            "**PC2 (Slope)** = long-end vs short-end diverging (a steepening/flattening trade signal); "
-            "**PC3 (Curvature)** = the belly of the curve bowing relative to wings. "
-            "The x-axis is time, y-axis is the score magnitude. Large spikes near :red[red dotted BOJ event verticals] confirm that policy changes drove broad repricing."
+                pc1_insight = " <b>Actionable: PC1 (Level) is trending downward. Yields are compressing across maturities, suggesting the BOJ suppression regime is reasserting control.</b>"
+        _section_note(
+            "PC1 (Level), PC2 (Slope), PC3 (Curvature) factor scores over time. Spikes near red BOJ verticals confirm policy-driven repricing."
             + pc1_insight
         )
         fig_sc = go.Figure()
@@ -469,9 +727,8 @@ def page_yield_curve():
                     name=labels.get(i, col),
                 )
             )
-        fig_sc.update_layout(height=380, hovermode="x unified")
         _add_boj_events(fig_sc)
-        st.plotly_chart(fig_sc, use_container_width=True)
+        st.plotly_chart(_style_fig(fig_sc, 380), use_container_width=True)
 
     # --- Liquidity ---
     st.subheader("Liquidity Metrics")
@@ -481,15 +738,11 @@ def page_yield_curve():
         _comp_latest = float(liq["composite_index"].dropna().iloc[-1]) if len(liq["composite_index"].dropna()) > 0 else 0.0
         liq_insight = ""
         if _comp_latest < -1:
-            liq_insight = f" **Actionable: Composite index at {_comp_latest:.2f} (below -1 z-score) — liquidity is deteriorating; expect larger price gaps on any repricing shock. Reduce position sizes or widen stop-losses.**"
+            liq_insight = f" <b>Actionable: Composite index at {_comp_latest:.2f} (below -1 z-score). Liquidity is deteriorating; expect larger price gaps on any repricing shock. Reduce position sizes or widen stop-losses.</b>"
         elif _comp_latest > 1:
-            liq_insight = f" **Actionable: Composite index at {_comp_latest:.2f} (above +1 z-score) — liquidity is healthy; market can absorb order flow without outsized price impact.**"
-        st.markdown(
-            "Two traces in the legend: **roll_measure** (estimates the implicit bid-ask spread from price autocorrelation — "
-            "higher values on the y-axis = wider spreads = more expensive to trade) and **composite_index** "
-            "(a z-score normalisation — 0 is average, negative = worse-than-normal, positive = better). "
-            "Both share the same x-axis (dates). The :red[red dotted verticals] are BOJ events — "
-            "look for roll_measure spiking and composite_index dropping around them."
+            liq_insight = f" <b>Actionable: Composite index at {_comp_latest:.2f} (above +1 z-score). Liquidity is healthy; market can absorb order flow without outsized price impact.</b>"
+        _section_note(
+            "Roll measure (implicit bid-ask) and composite liquidity z-score. Spikes at BOJ events = liquidity withdrawal."
             + liq_insight
         )
         fig_liq = go.Figure()
@@ -497,9 +750,8 @@ def page_yield_curve():
             fig_liq.add_trace(
                 go.Scatter(x=liq.index, y=liq[col], mode="lines", name=col)
             )
-        fig_liq.update_layout(height=380, hovermode="x unified")
         _add_boj_events(fig_liq)
-        st.plotly_chart(fig_liq, use_container_width=True)
+        st.plotly_chart(_style_fig(fig_liq, 380), use_container_width=True)
 
     # --- Nelson-Siegel ---
     st.subheader("Nelson-Siegel Factor Evolution")
@@ -513,19 +765,15 @@ def page_yield_curve():
             b0_start, b0_end = float(_b0.iloc[0]), float(_b0.iloc[-1])
             b0_chg = b0_end - b0_start
             if b0_chg > 0.1:
-                ns_insight += f" **Actionable: β0 (Level) rose {b0_chg:+.2f} over the sample — the market has structurally repriced the long-run yield floor upward. This is the core confirmation of a JGB repricing regime.**"
+                ns_insight += f" <b>Actionable: β0 (Level) rose {b0_chg:+.2f} over the sample. The market has structurally repriced the long-run yield floor upward. This is the core confirmation of a JGB repricing regime.</b>"
             elif b0_chg < -0.1:
-                ns_insight += f" **Actionable: β0 (Level) fell {b0_chg:+.2f} — long-run yield expectations are declining, consistent with continued BOJ suppression.**"
+                ns_insight += f" <b>Actionable: β0 (Level) fell {b0_chg:+.2f}. Long-run yield expectations are declining, consistent with continued BOJ suppression.</b>"
         if len(_b1) >= 10:
             b1_end = float(_b1.iloc[-1])
             if b1_end < -0.5:
-                ns_insight += f" **β1 (Slope) at {b1_end:.2f} indicates a steep curve — short rates far below long rates; consider steepener trades.**"
-        st.markdown(
-            "Three traces in the legend: **β0 (Level)** = where yields settle at very long maturities (the curve's floor); "
-            "**β1 (Slope)** = how much the curve rises from short to long end (negative = normal upward slope); "
-            "**β2 (Curvature)** = the hump or dip at intermediate maturities. "
-            "The x-axis is weekly dates, y-axis is the parameter value. "
-            "The :red[red dotted verticals] are BOJ events — look for β0 jumping at those points."
+                ns_insight += f" <b>β1 (Slope) at {b1_end:.2f} indicates a steep curve. Short rates far below long rates; consider steepener trades.</b>"
+        _section_note(
+            "Nelson-Siegel beta factors (weekly). β0 = long-run floor, β1 = slope, β2 = curvature. Red verticals = BOJ events."
             + ns_insight
         )
         fig_ns = go.Figure()
@@ -540,13 +788,46 @@ def page_yield_curve():
                         name=ns_labels.get(col, col),
                     )
                 )
-        fig_ns.update_layout(height=380, hovermode="x unified")
         _add_boj_events(fig_ns)
-        st.plotly_chart(fig_ns, use_container_width=True)
+        st.plotly_chart(_style_fig(fig_ns, 380), use_container_width=True)
+
+    # --- Page conclusion ---
+    _yc_parts = []
+    if pca_result is not None:
+        _ev = pca_result["explained_variance_ratio"]
+        _yc_parts.append(f"PC1 explains {_ev[0]:.0%} of yield variance")
+    if liq is not None and len(liq["composite_index"].dropna()) > 0:
+        _liq_v = float(liq["composite_index"].dropna().iloc[-1])
+        _liq_state = "healthy" if _liq_v > 0 else "stressed" if _liq_v < -1 else "neutral"
+        _yc_parts.append(f"liquidity is {_liq_state} ({_liq_v:+.2f} z-score)")
+    if ns_result is not None and "beta0" in ns_result.columns and len(ns_result["beta0"].dropna()) > 0:
+        _b0_v = float(ns_result["beta0"].dropna().iloc[-1])
+        _yc_parts.append(f"the Nelson-Siegel level factor stands at {_b0_v:.2f}")
+    _yc_summary = "; ".join(_yc_parts) + "." if _yc_parts else "Insufficient data for a complete summary."
+    # Verdict
+    if pca_result is not None and liq is not None and len(liq["composite_index"].dropna()) > 0:
+        _pc1_pct = pca_result["explained_variance_ratio"][0]
+        _liq_v2 = float(liq["composite_index"].dropna().iloc[-1])
+        if _pc1_pct > 0.8 and _liq_v2 < -0.5:
+            _verdict_p2 = f"The entire curve is repricing in unison ({_pc1_pct:.0%} PC1) and liquidity is thin. Broad duration risk is elevated."
+        elif _pc1_pct > 0.8:
+            _verdict_p2 = f"Parallel shift dominates at {_pc1_pct:.0%}. All maturities are moving together; this is a level story, not a curve story."
+        elif _liq_v2 < -1:
+            _verdict_p2 = f"Liquidity is deteriorating ({_liq_v2:+.1f} z-score). Expect wider bid-ask spreads and choppy execution on any JGB repositioning."
+        else:
+            _verdict_p2 = "Yield curve structure is orderly. No unusual concentration in a single factor; standard curve trades apply."
+    else:
+        _verdict_p2 = "Yield curve analytics require additional data. Expand the date range or switch data sources."
+    _page_conclusion(
+        _verdict_p2,
+        f"{_yc_summary.capitalize()} "
+        f"These structural decompositions feed directly into the regime detection models on the next page.",
+    )
+    _page_footer()
 
 
 # ===================================================================
-# Page 3 — Regime Detection
+# Page 3: Regime Detection
 # ===================================================================
 @st.cache_data(show_spinner=False)
 def _run_markov(simulated, start, end, api_key):
@@ -644,7 +925,7 @@ def _run_ensemble(simulated, start, end, api_key):
     hmm_states = hmm["states"]
     ref_index = hmm_states.index
 
-    # Build Markov probability — fall back to neutral 0.5 if model failed
+    # Build Markov probability; fall back to neutral 0.5 if model failed
     if markov is not None:
         markov_prob = markov["regime_probabilities"]
         prob_col = markov_prob.columns[-1]
@@ -652,7 +933,7 @@ def _run_ensemble(simulated, start, end, api_key):
     else:
         mp = pd.Series(0.5, index=ref_index, name="markov_fallback")
 
-    # Entropy signal — fall back to neutral 0.5
+    # Entropy signal; fall back to neutral 0.5
     if sig is not None:
         entropy_sig = sig
     else:
@@ -665,10 +946,8 @@ def _run_ensemble(simulated, start, end, api_key):
 
 def page_regime():
     st.header("Regime Detection")
-    st.markdown(
-        "Markets don't move smoothly — they flip between distinct **regimes** (like calm weather vs storms). "
-        "This page runs four independent models to answer one question: *is the BOJ still in control (suppressed regime), "
-        "or have yields broken free (repricing regime)?* Their weighted consensus appears first as the ensemble probability."
+    _page_intro(
+        "Four independent regime detection models (Markov, HMM, entropy, GARCH) combined into an ensemble probability."
     )
 
     args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
@@ -688,19 +967,15 @@ def page_regime():
 
         ens_insight = ""
         if current_prob > 0.7:
-            ens_insight = f" **Actionable: At {current_prob:.0%} the ensemble is firmly in REPRICING territory — all four models agree. This is the strongest signal to position for higher JGB yields and Yen weakness.**"
+            ens_insight = f" <b>Actionable: At {current_prob:.0%} the ensemble is firmly in REPRICING territory. All four models agree. This is the strongest signal to position for higher JGB yields and Yen weakness.</b>"
         elif current_prob > 0.5:
-            ens_insight = f" **Actionable: At {current_prob:.0%} the ensemble leans REPRICING but conviction is moderate — consider partial positions with tighter stops until probability exceeds 70%.**"
+            ens_insight = f" <b>Actionable: At {current_prob:.0%} the ensemble leans REPRICING but conviction is moderate. Consider partial positions with tighter stops until probability exceeds 70%.</b>"
         elif current_prob > 0.3:
-            ens_insight = f" **Actionable: At {current_prob:.0%} the ensemble is near the boundary — the market is transitioning. Avoid directional bets; favour gamma (options) or wait for confirmation.**"
+            ens_insight = f" <b>Actionable: At {current_prob:.0%} the ensemble is near the boundary. The market is transitioning. Avoid directional bets; favour gamma (options) or wait for confirmation.</b>"
         else:
-            ens_insight = f" **Actionable: At {current_prob:.0%} the ensemble reads SUPPRESSED — the BOJ is in control. Fade any yield spikes; carry trades remain safe for now.**"
-        st.markdown(
-            "The **steelblue line** traces the ensemble probability over time (y-axis: 0 to 1). "
-            "The :red[red dashed horizontal line] at 0.5 is the decision boundary — "
-            "above it the market is in a repricing regime, below it the BOJ remains in control. "
-            ":red[Red dotted verticals] mark BOJ policy events. "
-            "This single number drives every trade idea on Page 5."
+            ens_insight = f" <b>Actionable: At {current_prob:.0%} the ensemble reads SUPPRESSED. The BOJ is in control. Fade any yield spikes; carry trades remain safe for now.</b>"
+        _section_note(
+            "Ensemble probability (0-1). Above 0.5 red dashed line = repricing regime. This drives all Page 5 trade ideas."
             + ens_insight
         )
 
@@ -719,11 +994,11 @@ def page_regime():
             )
         )
         fig_ens.add_hline(y=0.5, line_dash="dash", line_color="red", annotation_text="Threshold")
-        fig_ens.update_layout(height=380, yaxis_title="Probability", hovermode="x unified")
+        fig_ens.update_layout(yaxis_title="Probability")
         _add_boj_events(fig_ens)
-        st.plotly_chart(fig_ens, use_container_width=True)
+        st.plotly_chart(_style_fig(fig_ens, 380), use_container_width=True)
     else:
-        st.warning("Could not compute ensemble probability — check data availability.")
+        st.warning("Could not compute ensemble probability. Check data availability.")
 
     # --- Markov Smoothed Probabilities ---
     st.subheader("Markov-Switching Smoothed Probabilities")
@@ -739,12 +1014,10 @@ def page_regime():
             mk_insight = (
                 f" Regime {calm_i} (calm) has mean {r_means[calm_i]:+.2f} bps/day and variance {r_vars[calm_i]:.2f}; "
                 f"Regime {stress_i} (stress) has mean {r_means[stress_i]:+.2f} bps/day and variance {r_vars[stress_i]:.2f}. "
-                f"**Actionable: When the stress-regime colour fills >80% of the stacked area, short-duration JGB positions are favoured — the market is pricing in persistent yield moves, not mean-reversion.**"
+                f"<b>Actionable: When the stress-regime colour fills >80% of the stacked area, short-duration JGB positions are favoured. The market is pricing in persistent yield moves, not mean-reversion.</b>"
             )
-        st.markdown(
-            "A stacked-area chart with two coloured bands (one per regime) — the y-axis sums to 1.0 at every date. "
-            "When one colour fills most of the area, the Markov model is confident the market is in that state. "
-            "Hover to see exact probabilities. :red[Red dotted verticals] are BOJ events."
+        _section_note(
+            "Markov-switching smoothed probabilities (stacked). When one regime fills >80% of the area, the model is confident."
             + mk_insight
         )
         fig_mk = go.Figure()
@@ -755,9 +1028,9 @@ def page_regime():
                     stackgroup="one",
                 )
             )
-        fig_mk.update_layout(height=350, yaxis_title="Smoothed Probability", hovermode="x unified")
+        fig_mk.update_layout(yaxis_title="Smoothed Probability")
         _add_boj_events(fig_mk)
-        st.plotly_chart(fig_mk, use_container_width=True)
+        st.plotly_chart(_style_fig(fig_mk, 350), use_container_width=True)
 
         st.caption(
             f"Regime means: {markov['regime_means']}, "
@@ -773,12 +1046,9 @@ def page_regime():
         bk_insight = ""
         if bkps and len(bkps) > 0:
             last_bk = bkps[-1]
-            bk_insight = f" The most recent breakpoint is **{last_bk:%Y-%m-%d}**. **Actionable: If this date is recent (within the last 3 months), the yield-change regime has just shifted — a fresh breakpoint is the strongest confirmation that old mean-reversion strategies are invalid and new trend-following positions are warranted.**"
-        st.markdown(
-            f"A single line trace (**JP_10Y Δ** in the legend) shows daily yield changes on the y-axis, dates on the x-axis. "
-            f"Superimposed are **{n_bkps} :orange[orange dashed vertical lines]** — each marks a structural breakpoint where "
-            "the PELT algorithm detected a permanent shift in the series' mean or variance (not a one-day spike). "
-            ":red[Red dotted verticals] are BOJ events — where orange and red verticals coincide, policy directly caused the regime change."
+            bk_insight = f" The most recent breakpoint is <b>{last_bk:%Y-%m-%d}</b>. <b>Actionable: If this date is recent (within the last 3 months), the yield-change regime has just shifted. A fresh breakpoint is the strongest confirmation that old mean-reversion strategies are invalid and new trend-following positions are warranted.</b>"
+        _section_note(
+            f"JP_10Y daily changes with {n_bkps} PELT structural breakpoints (orange). Coincidence with red BOJ verticals = policy-driven shift."
             + bk_insight
         )
         fig_bp = go.Figure()
@@ -787,9 +1057,8 @@ def page_regime():
         )
         for bp in bkps:
             fig_bp.add_vline(x=bp, line_dash="dash", line_color="orange", line_width=2)
-        fig_bp.update_layout(height=350, hovermode="x unified")
         _add_boj_events(fig_bp)
-        st.plotly_chart(fig_bp, use_container_width=True)
+        st.plotly_chart(_style_fig(fig_bp, 350), use_container_width=True)
     else:
         st.warning("Insufficient data for structural break detection.")
 
@@ -800,14 +1069,11 @@ def page_regime():
         sig_latest = float(sig.dropna().iloc[-1]) if sig is not None and len(sig.dropna()) > 0 else 0
         ent_insight = ""
         if sig_latest >= 1:
-            ent_insight = f" **Actionable: The regime signal (right axis) is currently ON (=1) with entropy at {ent_latest:.3f} — yield movements are unusually complex, consistent with a market-driven repricing regime. This is an early warning to prepare short-JGB or long-vol positions.**"
+            ent_insight = f" <b>Actionable: The regime signal (right axis) is currently ON (=1) with entropy at {ent_latest:.3f}. Yield movements are unusually complex, consistent with a market-driven repricing regime. This is an early warning to prepare short-JGB or long-vol positions.</b>"
         else:
-            ent_insight = f" **Actionable: The regime signal is OFF (=0) with entropy at {ent_latest:.3f} — yield movements remain orderly and predictable. The BOJ is likely still in control; no immediate repricing trigger.**"
-        st.markdown(
-            "Dual-axis chart. **Left y-axis**: the **Perm. Entropy** trace (solid line) — higher values = more random, "
-            "complex yield movements; lower = orderly, predictable. **Right y-axis** (scaled 0 to 1): "
-            "the **Regime Signal** trace (:red[red dotted line]) — binary indicator that snaps to 1 when entropy "
-            "exceeds 1.5 standard deviations above its mean. This signal often fires *before* the other models detect a regime change."
+            ent_insight = f" <b>Actionable: The regime signal is OFF (=0) with entropy at {ent_latest:.3f}. Yield movements remain orderly and predictable. The BOJ is likely still in control; no immediate repricing trigger.</b>"
+        _section_note(
+            "Permutation entropy (left axis) and binary regime signal (right, red). Signal fires before other models detect regime change."
             + ent_insight
         )
         fig_ent = go.Figure()
@@ -825,9 +1091,9 @@ def page_regime():
             fig_ent.update_layout(
                 yaxis2=dict(title="Signal", overlaying="y", side="right", range=[-0.1, 1.1])
             )
-        fig_ent.update_layout(height=350, yaxis_title="Entropy", hovermode="x unified")
+        fig_ent.update_layout(yaxis_title="Entropy")
         _add_boj_events(fig_ent)
-        st.plotly_chart(fig_ent, use_container_width=True)
+        st.plotly_chart(_style_fig(fig_ent, 350), use_container_width=True)
     else:
         st.warning("Insufficient data for entropy analysis.")
 
@@ -839,17 +1105,14 @@ def page_regime():
         vol_latest = float(vol.dropna().iloc[-1]) if len(vol.dropna()) > 0 else 0.0
         vol_insight = ""
         if vol_latest > 5:
-            vol_insight = f" **Actionable: Conditional volatility is {vol_latest:.1f} bps — well above normal JGB levels. High vol-clustering means today's moves are likely to persist tomorrow. Size positions smaller and use wider stops.**"
+            vol_insight = f" <b>Actionable: Conditional volatility is {vol_latest:.1f} bps, well above normal JGB levels. High vol-clustering means today's moves are likely to persist tomorrow. Size positions smaller and use wider stops.</b>"
         elif vol_latest < 1:
-            vol_insight = f" **Actionable: Conditional volatility is only {vol_latest:.1f} bps — extremely low. This is either genuine calm or the quiet before a vol spike. Cheap to buy JGB options (gamma) here as a hedge.**"
+            vol_insight = f" <b>Actionable: Conditional volatility is only {vol_latest:.1f} bps, extremely low. This is either genuine calm or the quiet before a vol spike. Cheap to buy JGB options (gamma) here as a hedge.</b>"
         if breaks and len(breaks) > 0:
             last_vb = breaks[-1]
-            vol_insight += f" The latest vol-regime break is **{last_vb:%Y-%m-%d}**."
-        st.markdown(
-            f"A single trace (**Cond. Volatility** in the legend) shows the GARCH-estimated volatility in basis points (y-axis) "
-            f"over time (x-axis). {n_vb} :violet[purple dashed vertical lines] mark volatility-regime breaks — "
-            "points where the vol baseline permanently shifted (detected by PELT on the vol series itself). "
-            ":red[Red dotted verticals] are BOJ events."
+            vol_insight += f" The latest vol-regime break is <b>{last_vb:%Y-%m-%d}</b>."
+        _section_note(
+            f"GARCH(1,1) conditional volatility (bps) with {n_vb} vol-regime breakpoints (purple). Red verticals = BOJ events."
             + vol_insight
         )
         fig_g = go.Figure()
@@ -859,15 +1122,43 @@ def page_regime():
         if breaks:
             for bp in breaks:
                 fig_g.add_vline(x=bp, line_dash="dash", line_color="purple", line_width=2)
-        fig_g.update_layout(height=350, yaxis_title="Volatility (bps)", hovermode="x unified")
+        fig_g.update_layout(yaxis_title="Volatility (bps)")
         _add_boj_events(fig_g)
-        st.plotly_chart(fig_g, use_container_width=True)
+        st.plotly_chart(_style_fig(fig_g, 350), use_container_width=True)
     else:
         st.warning("Insufficient data for GARCH model.")
 
+    # --- Page conclusion ---
+    if ensemble is not None and len(ensemble.dropna()) > 0:
+        _ep = float(ensemble.dropna().iloc[-1])
+        _regime_word = "repricing" if _ep > 0.5 else "suppressed"
+        _conf_word = "high" if abs(_ep - 0.5) > 0.2 else "moderate" if abs(_ep - 0.5) > 0.1 else "low"
+        _regime_summary = (
+            f"The ensemble probability currently reads <b>{_ep:.0%}</b>, placing the market in a "
+            f"<b>{_regime_word}</b> regime with {_conf_word} conviction across all four detection models."
+        )
+        # Verdict
+        if _ep > 0.7:
+            _verdict_p3 = f"Regime consensus is clear at {_ep:.0%}: the BOJ has lost control of the curve. Reduce long-duration JGB exposure."
+        elif _ep > 0.5:
+            _verdict_p3 = f"Repricing signal at {_ep:.0%} but not yet decisive. Trim positions; do not add until conviction exceeds 70%."
+        elif _ep > 0.3:
+            _verdict_p3 = f"Transition zone at {_ep:.0%}. The market has not committed either way. Preserve capital; avoid directional bets."
+        else:
+            _verdict_p3 = f"BOJ remains in control at {_ep:.0%}. Yield suppression holds; carry strategies are intact."
+    else:
+        _regime_summary = "Regime detection models could not produce a consensus due to insufficient data."
+        _verdict_p3 = "Insufficient model output. Withhold conviction until all four detectors report."
+    _page_conclusion(
+        _verdict_p3,
+        f"{_regime_summary} "
+        f"Cross-market transmission dynamics are analysed on the Spillover page.",
+    )
+    _page_footer()
+
 
 # ===================================================================
-# Page 4 — Spillover & Information Flow
+# Page 4: Spillover & Information Flow
 # ===================================================================
 @st.cache_data(show_spinner=False)
 def _run_granger(simulated, start, end, api_key):
@@ -961,10 +1252,8 @@ def _run_carry(simulated, start, end, api_key):
 
 def page_spillover():
     st.header("Spillover & Information Flow")
-    st.markdown(
-        "How do shocks transmit *between* markets? A JGB sell-off can trigger moves in US Treasuries, "
-        "the Yen, and equities. This page quantifies the direction, strength, and dynamics of these cross-market linkages "
-        "using four complementary methods."
+    _page_intro(
+        "Cross-market transmission analysis via Granger causality, transfer entropy, Diebold-Yilmaz spillover, and DCC-GARCH."
     )
 
     args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
@@ -986,15 +1275,12 @@ def page_spillover():
         if not sig_df.empty:
             top_row = sig_df.loc[sig_df["f_stat"].idxmax()]
             gc_insight = (
-                f" **Actionable: The strongest link is {top_row['cause']} → {top_row['effect']} "
-                f"(F={top_row['f_stat']:.1f}, p={top_row['p_value']:.4f}) — lagged moves in {top_row['cause']} "
-                f"statistically predict {top_row['effect']}. Monitor {top_row['cause']} for early signals.**"
+                f" <b>Actionable: The strongest link is {top_row['cause']} → {top_row['effect']} "
+                f"(F={top_row['f_stat']:.1f}, p={top_row['p_value']:.4f}). Lagged moves in {top_row['cause']} "
+                f"statistically predict {top_row['effect']}. Monitor {top_row['cause']} for early signals.</b>"
             )
-        st.markdown(
-            f"A table with columns: **cause**, **effect**, **f_stat** (strength of predictive link — "
-            "the :yellow[yellow-highlighted] row has the highest), and **p_value** (statistical significance; <0.05 = significant). "
-            f"**{n_sig} significant pair(s)** found at 5% level out of {len(granger_df)} tested. "
-            "Granger causality tests whether past values of one series help predict another — statistical precedence, not true causation."
+        _section_note(
+            f"Significant Granger-causal pairs at 5% level. {n_sig} of {len(granger_df)} pairs significant. Yellow = strongest F-stat."
             + gc_insight
         )
         if not sig_df.empty:
@@ -1019,19 +1305,69 @@ def page_spillover():
         for _, row in te_df.iterrows():
             te_matrix.loc[row["source"], row["target"]] = row["te_value"]
 
-        # Find strongest directional flow
-        te_max_idx = np.unravel_index(np.argmax(te_matrix.values - np.diag(np.full(len(all_labels), -np.inf))), te_matrix.shape)
-        te_src = all_labels[te_max_idx[0]]
-        te_tgt = all_labels[te_max_idx[1]]
-        te_val = te_matrix.values[te_max_idx]
-        st.markdown(
-            f"A heatmap with asset names on both axes (rows = **source/sender**, columns = **target/receiver**). "
-            f"The colour scale is Viridis: :violet[dark purple] = minimal information flow, "
-            ":green[bright yellow-green] = strong flow. Diagonal cells (self-to-self) are trivially zero. "
-            "Look for **asymmetry**: a bright cell in one direction and a dim cell in the reverse reveals which market leads. "
-            f"**Actionable: The strongest directional flow is {te_src} → {te_tgt} (TE = {te_val:.4f}) — "
-            f"information is flowing from {te_src} to {te_tgt}. Use {te_src} as a leading indicator when trading {te_tgt}.**"
+        # Analyse off-diagonal flows only (exclude self-to-self)
+        n = len(all_labels)
+        te_vals = te_matrix.values.copy()
+        np.fill_diagonal(te_vals, np.nan)  # mask diagonal
+
+        # Strongest single directional link
+        flat_idx = int(np.nanargmax(te_vals))
+        te_src = all_labels[flat_idx // n]
+        te_tgt = all_labels[flat_idx % n]
+        te_val = te_vals[flat_idx // n, flat_idx % n]
+
+        # Most asymmetric pair: largest |A→B minus B→A|
+        asym_best, asym_leader, asym_follower, asym_fwd, asym_rev = 0.0, "", "", 0.0, 0.0
+        for i in range(n):
+            for j in range(i + 1, n):
+                fwd = te_matrix.iloc[i, j]
+                rev = te_matrix.iloc[j, i]
+                diff = abs(fwd - rev)
+                if diff > asym_best:
+                    asym_best = diff
+                    if fwd > rev:
+                        asym_leader, asym_follower = all_labels[i], all_labels[j]
+                        asym_fwd, asym_rev = fwd, rev
+                    else:
+                        asym_leader, asym_follower = all_labels[j], all_labels[i]
+                        asym_fwd, asym_rev = rev, fwd
+
+        # Net transmitter / receiver (sum of outflows minus inflows, off-diagonal)
+        out_flow = np.nansum(te_vals, axis=1)  # row sums = total info sent
+        in_flow = np.nansum(te_vals, axis=0)   # col sums = total info received
+        net_flow = out_flow - in_flow
+        net_transmitter = all_labels[int(np.argmax(net_flow))]
+        net_receiver = all_labels[int(np.argmin(net_flow))]
+
+        # Who drives JP_10Y specifically?
+        jp_insight = ""
+        if "JP_10Y" in all_labels:
+            jp_col_idx = all_labels.index("JP_10Y")
+            jp_inflows = te_vals[:, jp_col_idx].copy()
+            jp_inflows[jp_col_idx] = np.nan  # exclude self
+            if not np.all(np.isnan(jp_inflows)):
+                top_driver_idx = int(np.nanargmax(jp_inflows))
+                top_driver = all_labels[top_driver_idx]
+                top_driver_te = jp_inflows[top_driver_idx]
+                jp_insight = (
+                    f" For JGB-specific positioning, <b>{top_driver}</b> is the single strongest information source "
+                    f"into JP_10Y (TE = {top_driver_te:.4f}). Monitor {top_driver} for early signals before JGB moves."
+                )
+
+        te_description = (
+            f"Transfer entropy heatmap (rows = source, columns = target). Off-diagonal only; Viridis scale. "
         )
+        te_description += (
+            f"<b>Strongest link:</b> {te_src} → {te_tgt} (TE = {te_val:.4f}). "
+            f"<b>Most asymmetric pair:</b> {asym_leader} → {asym_follower} "
+            f"(fwd {asym_fwd:.4f}, rev {asym_rev:.4f}). "
+            f"<b>Net transmitter:</b> {net_transmitter}. <b>Net receiver:</b> {net_receiver}. "
+        )
+        te_description += (
+            f"<b>Actionable:{jp_insight} "
+            f"Lag between {asym_leader} and {asym_follower} represents a tradeable window.</b>"
+        )
+        _section_note(te_description)
         fig_te = px.imshow(
             te_matrix.values,
             x=te_matrix.columns.tolist(),
@@ -1040,8 +1376,7 @@ def page_spillover():
             aspect="auto",
             labels=dict(color="TE"),
         )
-        fig_te.update_layout(height=450)
-        st.plotly_chart(fig_te, use_container_width=True)
+        st.plotly_chart(_style_fig(fig_te, 450), use_container_width=True)
     else:
         st.warning("Insufficient data for transfer entropy.")
 
@@ -1054,15 +1389,11 @@ def page_spillover():
         top_receiver = net.idxmin() if len(net) > 0 else "N/A"
         dy_insight = ""
         if total_spill > 30:
-            dy_insight = f" **Actionable: Total spillover at {total_spill:.1f}% is elevated — markets are tightly coupled. A shock in {top_transmitter} (biggest :green[green bar]) will propagate quickly. Diversification across these assets is less effective than usual.**"
+            dy_insight = f" <b>Actionable: Total spillover at {total_spill:.1f}% is elevated. Markets are tightly coupled. A shock in {top_transmitter} (biggest :green[green bar]) will propagate quickly. Diversification across these assets is less effective than usual.</b>"
         else:
-            dy_insight = f" **Actionable: Total spillover at {total_spill:.1f}% is moderate — markets are relatively independent. Diversification benefits are intact.**"
-        st.markdown(
-            f"Left: a **metric card** showing the Total Spillover Index ({total_spill:.1f}%). "
-            "Right: a **bar chart** with asset names on the x-axis and net spillover (%) on the y-axis. "
-            f":green[Green bars] are net shock **transmitters** (biggest: **{top_transmitter}**); "
-            f":red[red bars] are net **receivers** (biggest: **{top_receiver}**). "
-            "Expand the 'Spillover matrix' below the chart for the full pairwise breakdown."
+            dy_insight = f" <b>Actionable: Total spillover at {total_spill:.1f}% is moderate. Markets are relatively independent. Diversification benefits are intact.</b>"
+        _section_note(
+            f"Total spillover {total_spill:.1f}%. Green bars = net transmitters, red = net receivers. Top transmitter: {top_transmitter}."
             + dy_insight
         )
         col_s1, col_s2 = st.columns([1, 2])
@@ -1073,8 +1404,8 @@ def page_spillover():
             fig_net = go.Figure(
                 go.Bar(x=net.index.tolist(), y=net.values, marker_color=["green" if v > 0 else "red" for v in net.values])
             )
-            fig_net.update_layout(height=320, title="Net Directional Spillover", yaxis_title="Net (%)")
-            st.plotly_chart(fig_net, use_container_width=True)
+            fig_net.update_layout(title="Net Directional Spillover", yaxis_title="Net (%)")
+            st.plotly_chart(_style_fig(fig_net, 320), use_container_width=True)
 
         with st.expander("Spillover matrix"):
             st.dataframe(spill["spillover_matrix"].round(2), use_container_width=True)
@@ -1096,18 +1427,15 @@ def page_spillover():
                 min_pair = min(dcc_latest, key=dcc_latest.get)
                 min_corr = dcc_latest[min_pair]
                 dcc_insight = (
-                    f" Currently, **{max_pair}** has the highest correlation ({max_corr:.2f}) and **{min_pair}** "
+                    f" Currently, <b>{max_pair}</b> has the highest correlation ({max_corr:.2f}) and <b>{min_pair}</b> "
                     f"the lowest ({min_corr:.2f}). "
                 )
                 if max_corr > 0.6:
-                    dcc_insight += f"**Actionable: {max_pair} correlation above 0.6 — these assets are moving in lockstep. Hedging one with the other is less effective than usual; look for decorrelated pairs instead.**"
+                    dcc_insight += f"<b>Actionable: {max_pair} correlation above 0.6. These assets are moving in lockstep. Hedging one with the other is less effective than usual; look for decorrelated pairs instead.</b>"
                 elif max_corr < 0.3:
-                    dcc_insight += f"**Actionable: All correlations are below 0.3 — markets are relatively decoupled. Cross-asset diversification is working; no contagion signal.**"
-            st.markdown(
-                f"**{n_pairs} line(s)** in the legend, one per asset pair (e.g., 'JP_10Y-US_10Y'). "
-                "The y-axis is conditional correlation (-1 to +1); the x-axis is time. "
-                "Unlike a simple rolling window, DCC-GARCH accounts for the fact that correlations jump during crises. "
-                ":red[Red dotted verticals] are BOJ events — check whether correlations spike at those dates."
+                    dcc_insight += f"<b>Actionable: All correlations are below 0.3. Markets are relatively decoupled. Cross-asset diversification is working; no contagion signal.</b>"
+            _section_note(
+                f"{n_pairs} DCC-GARCH conditional correlation pair(s). Unlike rolling windows, DCC captures crisis-driven correlation spikes."
                 + dcc_insight
             )
             fig_dcc = go.Figure()
@@ -1115,11 +1443,9 @@ def page_spillover():
                 fig_dcc.add_trace(
                     go.Scatter(x=series.index, y=series.values, mode="lines", name=pair)
                 )
-            fig_dcc.update_layout(
-                height=380, yaxis_title="Conditional Correlation", hovermode="x unified"
-            )
+            fig_dcc.update_layout(yaxis_title="Conditional Correlation")
             _add_boj_events(fig_dcc)
-            st.plotly_chart(fig_dcc, use_container_width=True)
+            st.plotly_chart(_style_fig(fig_dcc, 380), use_container_width=True)
         else:
             st.info("No correlation pairs computed.")
     else:
@@ -1135,16 +1461,13 @@ def page_spillover():
         carry_insight = ""
         if not np.isnan(latest_ctv):
             if latest_ctv > 1.0:
-                carry_insight = f" **Actionable: Carry-to-Vol at {latest_ctv:.2f} (>1.0) — the rate differential more than compensates for FX risk. Carry trades are attractive; long USDJPY is favoured.**"
+                carry_insight = f" <b>Actionable: Carry-to-Vol at {latest_ctv:.2f} (>1.0). The rate differential more than compensates for FX risk. Carry trades are attractive; long USDJPY is favoured.</b>"
             elif latest_ctv > 0.5:
-                carry_insight = f" **Actionable: Carry-to-Vol at {latest_ctv:.2f} (0.5-1.0) — marginal; carry exists but FX vol is eating into returns. Only enter with tight stop-losses.**"
+                carry_insight = f" <b>Actionable: Carry-to-Vol at {latest_ctv:.2f} (0.5-1.0). Marginal; carry exists but FX vol is eating into returns. Only enter with tight stop-losses.</b>"
             else:
-                carry_insight = f" **Actionable: Carry-to-Vol at {latest_ctv:.2f} (<0.5) — danger zone. FX volatility dwarfs the interest differential. Crowded carry positions are vulnerable to violent unwind; consider closing USDJPY longs.**"
-        st.markdown(
-            "Dual-axis chart with three traces in the legend. **Left y-axis**: **Carry** (solid line — the US-JP interest rate gap, "
-            f"currently {latest_carry:.2f}%) and **Realized Vol** (solid line — 3-month annualised USDJPY volatility, "
-            f"currently {latest_rvol:.2f}%). **Right y-axis**: **Carry / Vol** (dotted line — the risk-adjusted ratio, "
-            f"currently **{ctv_label}**). :red[Red dotted verticals] are BOJ events."
+                carry_insight = f" <b>Actionable: Carry-to-Vol at {latest_ctv:.2f} (<0.5). Danger zone. FX volatility dwarfs the interest differential. Crowded carry positions are vulnerable to violent unwind; consider closing USDJPY longs.</b>"
+        _section_note(
+            f"Carry (US-JP rate gap, {latest_carry:.2f}%), realized vol ({latest_rvol:.2f}%), and carry-to-vol ratio ({ctv_label}, right axis)."
             + carry_insight
         )
         fig_c = go.Figure()
@@ -1162,19 +1485,53 @@ def page_spillover():
             )
         )
         fig_c.update_layout(
-            height=380,
             yaxis_title="Rate / Vol",
             yaxis2=dict(title="Carry-to-Vol Ratio", overlaying="y", side="right"),
-            hovermode="x unified",
         )
         _add_boj_events(fig_c)
-        st.plotly_chart(fig_c, use_container_width=True)
+        st.plotly_chart(_style_fig(fig_c, 380), use_container_width=True)
     else:
         st.warning("Insufficient data for carry analytics.")
 
+    # --- Page conclusion ---
+    _sp_parts = []
+    _sp_total = None
+    _sp_ctv = None
+    if spill is not None:
+        _sp_total = spill["total_spillover"]
+        _sp_parts.append(f"total spillover index at {_sp_total:.1f}%")
+    if granger_df is not None and not granger_df.empty:
+        _n_gc = int(granger_df["significant"].sum())
+        _sp_parts.append(f"{_n_gc} significant Granger-causal link{'s' if _n_gc != 1 else ''}")
+    if carry is not None and len(carry["carry_to_vol"].dropna()) > 0:
+        _sp_ctv = float(carry["carry_to_vol"].dropna().iloc[-1])
+        _carry_state = "attractive" if _sp_ctv > 1.0 else "marginal" if _sp_ctv > 0.5 else "unattractive"
+        _sp_parts.append(f"FX carry-to-vol ratio is {_carry_state} at {_sp_ctv:.2f}")
+    _sp_summary = "; ".join(_sp_parts) + "." if _sp_parts else "Insufficient data for a complete spillover summary."
+    # Verdict
+    if _sp_total is not None and _sp_ctv is not None:
+        if _sp_total > 40 and _sp_ctv < 0.5:
+            _verdict_p4 = f"Contagion risk is high ({_sp_total:.0f}% spillover) and carry no longer compensates for vol. Reduce cross-asset exposure."
+        elif _sp_total > 30:
+            _verdict_p4 = f"Markets are tightly coupled at {_sp_total:.0f}% spillover. Diversification is less effective than usual; hedge explicitly."
+        elif _sp_ctv > 1.0:
+            _verdict_p4 = f"Spillover is contained ({_sp_total:.0f}%) and carry-to-vol at {_sp_ctv:.1f}x is compelling. Carry trades are well supported."
+        else:
+            _verdict_p4 = f"Cross-market linkages are moderate ({_sp_total:.0f}% spillover). No systemic contagion signal; standard risk budgets apply."
+    elif _sp_total is not None:
+        _verdict_p4 = f"Spillover index at {_sp_total:.0f}%. {'Markets are interconnected; size accordingly.' if _sp_total > 30 else 'No systemic contagion detected.'}"
+    else:
+        _verdict_p4 = "Spillover analysis requires a broader dataset. Expand the date range for meaningful cross-market inference."
+    _page_conclusion(
+        _verdict_p4,
+        f"{_sp_summary.capitalize()} "
+        f"These cross-market dynamics are synthesised into actionable trade ideas on the final page.",
+    )
+    _page_footer()
+
 
 # ===================================================================
-# Page 5 — Trade Ideas
+# Page 5: Trade Ideas
 # ===================================================================
 @st.cache_data(show_spinner=False)
 def _generate_trades(simulated, start, end, api_key):
@@ -1259,6 +1616,13 @@ def _generate_trades(simulated, start, end, api_key):
     dcc_res = _run_dcc(simulated, start, end, api_key)
     dcc_correlations = None
 
+    # Spot levels for concrete trade targets
+    jp10_level = float(df["JP_10Y"].dropna().iloc[-1]) if "JP_10Y" in df.columns and len(df["JP_10Y"].dropna()) > 0 else None
+    us10_level = float(df["US_10Y"].dropna().iloc[-1]) if "US_10Y" in df.columns and len(df["US_10Y"].dropna()) > 0 else None
+    usdjpy_level = float(df["USDJPY"].dropna().iloc[-1]) if "USDJPY" in df.columns and len(df["USDJPY"].dropna()) > 0 else None
+    nikkei_level = float(df["NIKKEI"].dropna().iloc[-1]) if "NIKKEI" in df.columns and len(df["NIKKEI"].dropna()) > 0 else None
+    jp2y_level = float(df["JP_2Y"].dropna().iloc[-1]) if "JP_2Y" in df.columns and len(df["JP_2Y"].dropna()) > 0 else None
+
     regime_state = {
         "regime_prob": regime_prob,
         "term_premium": term_premium,
@@ -1272,6 +1636,11 @@ def _generate_trades(simulated, start, end, api_key):
         "spillover_index": spillover_index,
         "te_network": te_network,
         "dcc_correlations": dcc_correlations,
+        "jp10_level": jp10_level,
+        "us10_level": us10_level,
+        "usdjpy_level": usdjpy_level,
+        "nikkei_level": nikkei_level,
+        "jp2y_level": jp2y_level,
     }
 
     cards = generate_all_trades(regime_state)
@@ -1280,11 +1649,9 @@ def _generate_trades(simulated, start, end, api_key):
 
 def page_trade_ideas():
     st.header("Trade Ideas")
-    st.markdown(
-        "Actionable trade recommendations generated by feeding all analytics from Pages 2-4 into rule-based strategy logic. "
-        "Each trade card specifies the instruments, entry/exit signals, regime conditions, and what could go wrong. "
-        "Trades span four categories: **rates** (bond positions), **FX** (currency bets), **volatility** (options strategies), "
-        "and **cross-asset** (relative-value plays across markets). Use the sidebar filters below to narrow by category and conviction."
+    _page_intro(
+        "Rule-based trade generation from regime state, curve analytics, and cross-asset signals. "
+        "Filter by category and conviction via sidebar."
     )
 
     args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
@@ -1337,14 +1704,13 @@ def page_trade_ideas():
         n_low = sum(1 for c in filtered if c.conviction < 0.4)
         top_card = max(filtered, key=lambda c: c.conviction)
         conv_insight = (
-            f" **Actionable: The highest-conviction idea is \"{top_card.name}\" at {top_card.conviction:.0%} "
-            f"({top_card.direction} {', '.join(top_card.instruments[:2])}) — "
-            f"this is where the most signals align. Focus research and sizing here first.**"
+            f" <b>Actionable: The highest-conviction idea is \"{top_card.name}\" at {top_card.conviction:.0%} "
+            f"({top_card.direction} {', '.join(top_card.instruments[:2])}). "
+            f"This is where the most signals align. Focus research and sizing here first.</b>"
         )
-        st.markdown(
-            "A bar chart with trade names on the x-axis (angled for readability) and conviction (0-1) on the y-axis. "
-            "Bars are colour-coded by **Category** (see legend — rates, FX, volatility, cross-asset). "
-            f"Currently: :green[{n_high} high-conviction] (≥70%), :orange[{n_med} medium] (40-69%), :red[{n_low} low] (<40%)."
+        _section_note(
+            f"Conviction by trade, colour-coded by category. "
+            f"{n_high} high (≥70%), {n_med} medium (40-69%), {n_low} low (<40%)."
             + conv_insight
         )
         conv_data = pd.DataFrame({
@@ -1356,45 +1722,59 @@ def page_trade_ideas():
             conv_data, x="Trade", y="Conviction", color="Category",
             color_discrete_sequence=px.colors.qualitative.Set2,
         )
-        fig_conv.update_layout(height=350, xaxis_tickangle=-45)
-        st.plotly_chart(fig_conv, use_container_width=True)
+        fig_conv.update_layout(xaxis_tickangle=-45)
+        st.plotly_chart(_style_fig(fig_conv, 350), use_container_width=True)
 
     # --- Trade cards ---
     st.subheader(f"Trade Cards ({len(filtered)} shown)")
-    st.markdown(
-        "Click any row to expand a full trade card. Cards are sorted highest conviction first. "
-        "Inside each card — **left column**: Direction (LONG / SHORT), Instruments, "
-        "Regime Condition (which regime must be active), and Edge Source (why this has an advantage). "
-        "**Right column**: Entry Signal (when to get in), Exit Signal (when to get out), "
-        "Failure Scenario (the specific risk that kills the thesis), and Sizing method. "
-        "**Actionable: Start with the top card — it has the most signals aligned. Read the Failure Scenario first to decide if you can tolerate the risk before reading the entry logic.**"
+    _section_note(
+        "Sorted by conviction descending. Expand for full trade specification. Read Failure Scenario before Entry Signal."
     )
     for card in sorted(filtered, key=lambda c: -c.conviction):
         direction_tag = "LONG" if card.direction == "long" else "SHORT"
+        dir_color = "#2e7d32" if card.direction == "long" else "#c0392b"
         if card.conviction >= 0.7:
-            conv_tag = "HIGH"
+            conv_tag, conv_color = "HIGH", "#2e7d32"
         elif card.conviction >= 0.4:
-            conv_tag = "MED"
+            conv_tag, conv_color = "MED", "#e67e22"
         else:
-            conv_tag = "LOW"
+            conv_tag, conv_color = "LOW", "#c0392b"
 
         with st.expander(
             f"[{direction_tag}] **{card.name}** | {conv_tag} {card.conviction:.0%} | {card.category}"
         ):
-            col_l, col_r = st.columns([2, 1])
+            # Styled card header
+            st.markdown(
+                f"<div style='display:flex;align-items:center;gap:10px;margin-bottom:12px;'>"
+                f"<span style='background:{dir_color};color:#fff;padding:3px 10px;"
+                f"border-radius:4px;font-weight:700;font-size:0.78rem;letter-spacing:0.04em;'>{direction_tag}</span>"
+                f"<span style='background:{conv_color};color:#fff;padding:3px 10px;"
+                f"border-radius:4px;font-weight:700;font-size:0.78rem;'>{card.conviction:.0%}</span>"
+                f"<span style='background:#f0f2f6;color:#344054;padding:3px 10px;"
+                f"border-radius:4px;font-size:0.78rem;font-weight:500;'>{card.category}</span>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
+            col_l, col_r = st.columns(2)
             with col_l:
-                st.markdown(f"**Direction:** {card.direction.upper()}")
-                st.markdown(f"**Instruments:** {', '.join(card.instruments)}")
-                st.markdown(f"**Regime Condition:** {card.regime_condition}")
-                st.markdown(f"**Edge Source:** {card.edge_source}")
+                st.markdown(
+                    f"<div style='font-size:0.85rem;line-height:1.8;color:#344054;'>"
+                    f"<b style='color:#1e3a5f;'>Instruments:</b> {', '.join(card.instruments)}<br>"
+                    f"<b style='color:#1e3a5f;'>Regime Condition:</b> {card.regime_condition}<br>"
+                    f"<b style='color:#1e3a5f;'>Edge Source:</b> {card.edge_source}<br>"
+                    f"<b style='color:#1e3a5f;'>Entry Signal:</b> {card.entry_signal}</div>",
+                    unsafe_allow_html=True,
+                )
             with col_r:
-                st.markdown(f"**Entry Signal:** {card.entry_signal}")
-                st.markdown(f"**Exit Signal:** {card.exit_signal}")
-                st.markdown(f"**Failure Scenario:** {card.failure_scenario}")
-                st.markdown(f"**Sizing:** {card.sizing_method}")
+                st.markdown(
+                    f"<div style='font-size:0.85rem;line-height:1.8;color:#344054;'>"
+                    f"<b style='color:#1e3a5f;'>Exit Signal:</b> {card.exit_signal}<br>"
+                    f"<b style='color:#1e3a5f;'>Sizing:</b> {card.sizing_method}<br>"
+                    f"<b style='color:#c0392b;'>Failure Scenario:</b> {card.failure_scenario}</div>",
+                    unsafe_allow_html=True,
+                )
 
     # --- Export ---
-    st.markdown("---")
     if filtered:
         df_export = trade_cards_to_dataframe(filtered)
         csv = df_export.to_csv(index=False)
@@ -1404,6 +1784,34 @@ def page_trade_ideas():
             file_name="jgb_trade_cards.csv",
             mime="text/csv",
         )
+
+    # --- Page conclusion ---
+    _n_total = len(cards)
+    _n_shown = len(filtered)
+    _rp = regime_state.get("regime_prob", 0.5)
+    _regime_word = "repricing" if _rp > 0.5 else "suppressed"
+    if filtered:
+        _top = max(filtered, key=lambda c: c.conviction)
+        _n_high_c = sum(1 for c in filtered if c.conviction >= 0.7)
+        _trade_summary = (
+            f"The framework generated <b>{_n_total}</b> trade idea{'s' if _n_total != 1 else ''} "
+            f"(<b>{_n_shown}</b> shown after filters) under a <b>{_regime_word}</b> regime "
+            f"(probability {_rp:.0%}), led by \"{_top.name}\" at {_top.conviction:.0%} conviction."
+        )
+        # Verdict
+        _verdict_p5 = (
+            f"Lead with \"{_top.name}\" ({_top.direction.upper()}, {_top.conviction:.0%} conviction). "
+            f"{_n_high_c} idea{'s' if _n_high_c != 1 else ''} above 70% conviction; "
+            f"{'allocate risk budget here first.' if _n_high_c > 0 else 'no high-conviction trades; keep sizing conservative.'}"
+        )
+    else:
+        _trade_summary = (
+            f"No trade ideas passed the current filters under a <b>{_regime_word}</b> regime "
+            f"(probability {_rp:.0%}). Adjust category or conviction filters in the sidebar."
+        )
+        _verdict_p5 = "No actionable trades at current filter settings. Widen conviction range or wait for a clearer regime signal."
+    _page_conclusion(_verdict_p5, _trade_summary)
+    _page_footer()
 
 
 # ===================================================================
