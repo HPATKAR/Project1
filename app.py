@@ -1815,6 +1815,35 @@ def page_trade_ideas():
 
 
 # ===================================================================
+# Pre-warm all caches so page switches are instant
+# ===================================================================
+_args = (use_simulated, str(start_date), str(end_date), fred_api_key)
+
+if "warmed" not in st.session_state:
+    with st.spinner("Loading models (one-time)..."):
+        try:
+            load_unified(*_args)
+        except Exception:
+            pass
+        for _fn in [_run_pca, _run_ns, _run_liquidity,
+                    _run_markov, _run_hmm, _run_breaks, _run_entropy, _run_garch,
+                    _run_granger, _run_te, _run_spillover, _run_dcc, _run_carry]:
+            try:
+                _fn(*_args)
+            except Exception:
+                pass
+        try:
+            _run_ensemble(*_args)
+        except Exception:
+            pass
+        try:
+            _generate_trades(*_args)
+        except Exception:
+            pass
+    st.session_state["warmed"] = True
+
+
+# ===================================================================
 # Router
 # ===================================================================
 if page == "Overview & Data":
