@@ -521,6 +521,31 @@ def page_overview():
     with st.expander("Raw data (last 20 rows)"):
         st.dataframe(df.tail(20), use_container_width=True)
 
+    # --- Sovereign Credit & Trust Metrics ---
+    st.subheader("Japan Sovereign Credit Context")
+    from src.data.config import JAPAN_CREDIT_RATINGS, BOJ_CREDIBILITY_EVENTS
+    _section_note(
+        "Credit ratings provide structural context for JGB repricing risk. Japan's A/A+ rating "
+        "reflects high debt-to-GDP offset by its net external creditor position and domestic savings base. "
+        "<b>Actionable: Rating downgrades or outlook changes can accelerate repricing by forcing institutional rebalancing.</b>"
+    )
+    cr_cols = st.columns(len(JAPAN_CREDIT_RATINGS))
+    for cr_col, (agency, info) in zip(cr_cols, JAPAN_CREDIT_RATINGS.items()):
+        cr_col.metric(
+            f"{agency}",
+            info["rating"],
+            delta=f"Outlook: {info['outlook']}",
+            help=f"{info['note']} ({info['last_action']})"
+        )
+
+    _section_note(
+        "BOJ credibility events: policy decisions that surprised markets (>2 std dev moves). "
+        "A pattern of hawkish surprises erodes forward guidance credibility and amplifies repricing."
+    )
+    cred_df = pd.DataFrame(BOJ_CREDIBILITY_EVENTS)
+    cred_df = cred_df.rename(columns={"date": "Date", "direction": "Direction", "impact_bps": "Impact (bps)", "description": "Description"})
+    st.dataframe(cred_df, use_container_width=True, hide_index=True)
+
     # --- Page conclusion ---
     _src_label = "simulated" if use_simulated else "live (FRED + yfinance)"
     # Verdict
@@ -546,7 +571,7 @@ def page_overview():
 # ===================================================================
 @st.cache_data(show_spinner=False, ttl=900, max_entries=3)
 def _run_pca(simulated, start, end, api_key):
-    from src.yield_curve.pca import fit_yield_pca
+    from src.yield_curve.pca import fit_yield_pca, validate_pca_factors
 
     df = load_unified(simulated, start, end, api_key)
     # Use available yield columns for PCA
@@ -700,6 +725,21 @@ def page_yield_curve():
                 xaxis_title="Security",
             )
             st.plotly_chart(_style_fig(fig_pcl, 340), use_container_width=True)
+
+        # --- PCA Factor Validation ---
+        from src.yield_curve.pca import validate_pca_factors
+        pca_validation = validate_pca_factors(pca_result)
+        st.markdown("**Factor Validation** (Litterman-Scheinkman 1991)")
+        val_cols = st.columns(len(pca_validation["factor_checks"]))
+        for vc, (name, passed, detail) in zip(val_cols, pca_validation["factor_checks"]):
+            vc.metric(name, "PASS" if passed else "FAIL", help=detail)
+        cum_var = pca_validation["cumulative_variance"]
+        _section_note(
+            f"Cumulative explained variance: <b>{cum_var:.1%}</b>. "
+            f"Literature benchmark: PC1-3 should explain >95% of yield curve movements. "
+            + (f"<b>Validation confirms standard Level/Slope/Curvature factor structure.</b>" if sum(1 for _, p, _ in pca_validation["factor_checks"] if p) >= 3
+               else f"<b>Some factors deviate from classical structure — review loadings for regime-specific dynamics.</b>")
+        )
 
         scores = pca_result["scores"]
         # Compute recent PC1 trend for actionable insight

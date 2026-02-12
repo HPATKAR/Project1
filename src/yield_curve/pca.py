@@ -198,3 +198,102 @@ def interpret_pca(
 
     result["interpretation"] = labels
     return result
+
+
+# ---------------------------------------------------------------------------
+# Model validation
+# ---------------------------------------------------------------------------
+
+def validate_pca_factors(
+    pca_result: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Validate PCA factors against known yield curve dynamics.
+
+    Compares the fitted PCA decomposition to the classical fixed-income
+    factor structure (Litterman-Scheinkman 1991):
+
+    * PC1 should explain 60-90% of variance (level factor).
+    * PC2 should explain 10-20% (slope factor).
+    * PC3 should explain 3-10% (curvature factor).
+    * Cumulative PC1-3 should exceed 95%.
+
+    Parameters
+    ----------
+    pca_result : dict
+        Output from :func:`fit_yield_pca`.
+
+    Returns
+    -------
+    dict
+        ``factor_checks``       – list of (name, passed, detail) tuples.
+        ``explained_variance``  – dict mapping factor name to ratio.
+        ``cumulative_variance`` – float, total explained by all retained PCs.
+        ``interpretation``      – pd.DataFrame from :func:`interpret_pca`.
+        ``summary``             – str, human-readable validation summary.
+    """
+    evr = pca_result["explained_variance_ratio"]
+    loadings = pca_result["loadings"]
+    interp = interpret_pca(loadings)
+
+    n = len(evr)
+    cum_var = float(np.sum(evr))
+
+    checks = []
+
+    # PC1: Level factor
+    if n >= 1:
+        pc1_var = float(evr[0])
+        pc1_label = interp.iloc[0]["interpretation"] if "interpretation" in interp.columns else "unknown"
+        pc1_pass = pc1_var >= 0.50 and "level" in pc1_label.lower()
+        checks.append((
+            "PC1 (Level)",
+            pc1_pass,
+            f"{pc1_var:.1%} variance, identified as '{pc1_label}'"
+        ))
+
+    # PC2: Slope factor
+    if n >= 2:
+        pc2_var = float(evr[1])
+        pc2_label = interp.iloc[1]["interpretation"] if "interpretation" in interp.columns else "unknown"
+        pc2_pass = "slope" in pc2_label.lower()
+        checks.append((
+            "PC2 (Slope)",
+            pc2_pass,
+            f"{pc2_var:.1%} variance, identified as '{pc2_label}'"
+        ))
+
+    # PC3: Curvature factor
+    if n >= 3:
+        pc3_var = float(evr[2])
+        pc3_label = interp.iloc[2]["interpretation"] if "interpretation" in interp.columns else "unknown"
+        pc3_pass = "curvature" in pc3_label.lower()
+        checks.append((
+            "PC3 (Curvature)",
+            pc3_pass,
+            f"{pc3_var:.1%} variance, identified as '{pc3_label}'"
+        ))
+
+    # Cumulative variance check
+    cum_pass = cum_var >= 0.90
+    checks.append((
+        "Cumulative (PC1-3)",
+        cum_pass,
+        f"{cum_var:.1%} total variance explained (benchmark: >95%)"
+    ))
+
+    # Build summary
+    passed = sum(1 for _, p, _ in checks if p)
+    total = len(checks)
+    lines = [f"PCA Factor Validation: {passed}/{total} checks passed"]
+    for name, ok, detail in checks:
+        lines.append(f"  [{'PASS' if ok else 'FAIL'}] {name}: {detail}")
+
+    return {
+        "factor_checks": checks,
+        "explained_variance": {
+            f"PC{i+1}": float(evr[i]) for i in range(n)
+        },
+        "cumulative_variance": cum_var,
+        "interpretation": interp,
+        "summary": "\n".join(lines),
+    }

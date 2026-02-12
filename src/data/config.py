@@ -70,6 +70,25 @@ BOJ_EVENTS = {
     "2024-03-19": "BOJ exits NIRP and YCC formally",
 }
 
+# ── Japan Sovereign Credit Ratings & Trust Metrics ───────────────────
+# Static reference: major rating agency assessments of Japan
+JAPAN_CREDIT_RATINGS = {
+    "Moody's": {"rating": "A1", "outlook": "Stable", "last_action": "2014-12-01", "note": "Downgraded from Aa3 citing fiscal challenges"},
+    "S&P": {"rating": "A+", "outlook": "Stable", "last_action": "2015-09-16", "note": "Downgraded from AA- on weak fiscal outlook"},
+    "Fitch": {"rating": "A", "outlook": "Stable", "last_action": "2023-04-27", "note": "Affirmed; high debt offset by external creditor position"},
+    "R&I": {"rating": "AA+", "outlook": "Stable", "last_action": "2024-06-01", "note": "Domestic agency; highest among international ratings"},
+}
+
+# BOJ credibility proxy: policy surprise events where market moved >2 std devs
+BOJ_CREDIBILITY_EVENTS = [
+    {"date": "2013-04-04", "direction": "dovish_surprise", "impact_bps": -15, "description": "QQE far exceeded expectations; massive rally"},
+    {"date": "2014-10-31", "direction": "dovish_surprise", "impact_bps": -10, "description": "Halloween QQE expansion; no analyst predicted timing"},
+    {"date": "2016-01-29", "direction": "dovish_surprise", "impact_bps": -8, "description": "NIRP announcement; most analysts expected wait"},
+    {"date": "2022-12-20", "direction": "hawkish_surprise", "impact_bps": +20, "description": "YCC band widening; zero market participants expected"},
+    {"date": "2023-07-28", "direction": "hawkish_surprise", "impact_bps": +10, "description": "YCC flexibility; gradual but faster than consensus"},
+    {"date": "2025-05-20", "direction": "market_driven", "impact_bps": +70, "description": "20Y auction failure; BOJ lost control of ultra-longs"},
+]
+
 # ── MOF Japan JGB Yield URL ──────────────────────────────────────────
 MOF_JGB_URL = "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/jgbcme.csv"
 
