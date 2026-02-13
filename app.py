@@ -50,7 +50,7 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap');
 
     :root {
         /* Purdue Daniels School of Business palette */
@@ -266,70 +266,23 @@ st.markdown(
         color: #CFB991 !important;
         border: none;
     }
-    /* Sidebar collapse/expand button — hide broken ligature text, show arrow */
+    /* Sidebar collapse/expand — style Streamlit's default SVG arrow */
     button[data-testid="stSidebarCollapseButton"] {
         visibility: visible !important;
         display: flex !important;
-        align-items: center;
-        justify-content: center;
-        width: 32px;
-        height: 32px;
-        border-radius: 6px;
-        background: rgba(255,255,255,0.06);
-        border: 1px solid rgba(255,255,255,0.1);
-        transition: all 0.15s ease;
+        background: transparent;
+        border: none;
     }
-    button[data-testid="stSidebarCollapseButton"]:hover {
-        background: rgba(207,185,145,0.15);
-        border-color: rgba(207,185,145,0.3);
+    button[data-testid="stSidebarCollapseButton"] svg {
+        fill: rgba(255,255,255,0.5);
+        stroke: rgba(255,255,255,0.5);
     }
-    button[data-testid="stSidebarCollapseButton"] span {
-        font-size: 0 !important;
-        visibility: hidden;
+    button[data-testid="stSidebarCollapseButton"]:hover svg {
+        fill: #CFB991;
+        stroke: #CFB991;
     }
-    button[data-testid="stSidebarCollapseButton"]::after {
-        content: '\u00AB';
-        font-family: 'DM Sans', sans-serif;
-        font-size: 1rem;
-        font-weight: 600;
-        color: rgba(255,255,255,0.5);
-        visibility: visible;
-    }
-    button[data-testid="stSidebarCollapseButton"]:hover::after {
-        color: #CFB991;
-    }
-    /* Expand button (when sidebar is collapsed) — on light background */
     [data-testid="collapsedControl"] {
         visibility: visible !important;
-    }
-    [data-testid="collapsedControl"] button {
-        display: flex !important;
-        align-items: center;
-        justify-content: center;
-        width: 32px;
-        height: 32px;
-        border-radius: 6px;
-        background: #f9f8f6;
-        border: 1px solid #C4BFC0;
-    }
-    [data-testid="collapsedControl"] button span {
-        font-size: 0 !important;
-        visibility: hidden;
-    }
-    [data-testid="collapsedControl"] button::after {
-        content: '\u00BB';
-        font-family: 'DM Sans', sans-serif;
-        font-size: 1rem;
-        font-weight: 600;
-        color: #000000;
-        visibility: visible;
-    }
-    [data-testid="collapsedControl"] button:hover {
-        background: #000000;
-        border-color: #000000;
-    }
-    [data-testid="collapsedControl"] button:hover::after {
-        color: #CFB991;
     }
 
     /* ---- Expander ---- */
@@ -648,7 +601,6 @@ def get_data_store(simulated: bool) -> DataStore:
 @st.cache_data(show_spinner=False, ttl=900, max_entries=3)
 def load_unified(simulated: bool, start: str, end: str, api_key: str | None):
     store = get_data_store(simulated)
-    store.clear_cache()
     return store.get_unified(start=start, end=end, fred_api_key=api_key or None)
 
 
@@ -2419,42 +2371,6 @@ def page_ai_qa():
 # Lazy per-page cache warming (only load what the current page needs)
 # ===================================================================
 _args = (use_simulated, str(start_date), str(end_date), fred_api_key)
-
-# Always pre-load the unified dataset (shared by all pages)
-_warm_key = f"warmed_{page}"
-if "data_warmed" not in st.session_state:
-    try:
-        load_unified(*_args)
-    except Exception:
-        pass
-    st.session_state["data_warmed"] = True
-
-# Pre-warm only the models needed for the current page
-if _warm_key not in st.session_state:
-    _page_fns = {
-        "Overview & Data": [],
-        "Yield Curve Analytics": [_run_pca, _run_ns, _run_liquidity],
-        "Regime Detection": [_run_markov, _run_hmm, _run_breaks, _run_entropy, _run_garch],
-        "Spillover & Info Flow": [_run_granger, _run_te, _run_spillover, _run_dcc, _run_carry],
-        "Trade Ideas": [],  # _generate_trades calls its deps internally
-        "AI Q&A": [],
-    }
-    for _fn in _page_fns.get(page, []):
-        try:
-            _fn(*_args)
-        except Exception:
-            pass
-    if page == "Regime Detection":
-        try:
-            _run_ensemble(*_args)
-        except Exception:
-            pass
-    if page == "Trade Ideas":
-        try:
-            _generate_trades(*_args)
-        except Exception:
-            pass
-    st.session_state[_warm_key] = True
 
 
 # ===================================================================
