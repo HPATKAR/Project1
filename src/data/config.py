@@ -19,6 +19,12 @@ FRED_SERIES = {
     "US_FF": "DFF",                      # Fed Funds effective rate
     # Germany
     "DE_10Y": "IRLTLT01DEM156N",         # Germany 10Y Bund yield
+    # UK
+    "UK_10Y": "IRLTLT01GBM156N",         # UK 10Y Gilt yield
+    # Australia
+    "AU_10Y": "IRLTLT01AUM156N",         # Australia 10Y government bond yield
+    # Japan inflation-linked (breakeven proxy)
+    "JP_CPI_CORE": "JPNCPICORMINMEI",    # Japan Core CPI (breakeven proxy input)
     # Volatility
     "VIX": "VIXCLS",                     # CBOE VIX
     "MOVE": "BAMLHYH0A0HYM2TRIV",       # ICE BofA MOVE index (proxy)
@@ -30,15 +36,20 @@ YF_TICKERS = {
     "USDJPY": "JPY=X",
     "EURJPY": "EURJPY=X",
     "EURUSD": "EURUSD=X",
+    "GBPJPY": "GBPJPY=X",
+    "AUDJPY": "AUDJPY=X",
     # Equity indices
     "NIKKEI": "^N225",
     "SPX": "^GSPC",
     "EUROSTOXX": "^STOXX50E",
+    "FTSE": "^FTSE",            # FTSE 100 (UK equity benchmark)
+    "ASX200": "^AXJO",          # ASX 200 (Australia equity benchmark)
     # Bond ETFs (for flow proxy)
     "TLT": "TLT",       # iShares 20+ Year Treasury
     "IEF": "IEF",       # iShares 7-10 Year Treasury
     "SHY": "SHY",       # iShares 1-3 Year Treasury
     "BNDX": "BNDX",     # Vanguard Total International Bond
+    "IGLT": "IGLT.L",   # iShares UK Gilts ETF (London)
     # JGB futures proxy (10Y JGB futures on OSE)
     "JGB_FUT": "JBH5.OSE",
 }

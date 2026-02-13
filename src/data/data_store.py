@@ -162,6 +162,29 @@ def _synthesize_missing_rates(
     if "DE_10Y" not in df.columns and "US_10Y" in df.columns:
         df["DE_10Y"] = df["US_10Y"] - 1.0 + np.random.randn(len(df)) * 0.04
 
+    # UK_10Y: approximate from US_10Y (Gilts track Treasuries with ~20bp spread)
+    if "UK_10Y" not in df.columns and "US_10Y" in df.columns:
+        df["UK_10Y"] = df["US_10Y"] - 0.2 + np.random.randn(len(df)) * 0.05
+        logger.info("UK_10Y: using synthetic proxy (US_10Y - 20bp + noise).")
+
+    # AU_10Y: approximate from US_10Y (AU trades ~30bp above US historically)
+    if "AU_10Y" not in df.columns and "US_10Y" in df.columns:
+        df["AU_10Y"] = df["US_10Y"] + 0.3 + np.random.randn(len(df)) * 0.04
+        logger.info("AU_10Y: using synthetic proxy (US_10Y + 30bp + noise).")
+
+    # JGBi breakeven: JP_10Y minus real rate proxy (CPI-adjusted)
+    if "JP_BREAKEVEN" not in df.columns and "JP_10Y" in df.columns:
+        if "JP_CPI_CORE" in df.columns:
+            # Breakeven ~ nominal yield - (CPI-implied real rate proxy)
+            cpi_yoy = df["JP_CPI_CORE"].pct_change(12).fillna(0) * 100
+            df["JP_BREAKEVEN"] = df["JP_10Y"] - (df["JP_10Y"] - cpi_yoy.clip(-1, 5))
+            logger.info("JP_BREAKEVEN: computed from JP_10Y and JP_CPI_CORE.")
+        else:
+            # Simple proxy: breakeven ≈ 0.5-1.5% for Japan
+            np.random.seed(43)
+            df["JP_BREAKEVEN"] = 0.8 + np.random.randn(len(df)) * 0.15
+            logger.info("JP_BREAKEVEN: using synthetic proxy (~0.8% ± noise).")
+
     return df
 
 

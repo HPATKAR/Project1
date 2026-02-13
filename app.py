@@ -32,179 +32,354 @@ if str(PROJECT_ROOT) not in sys.path:
 # src imports (all lazy, only called within their respective pages)
 # ---------------------------------------------------------------------------
 from src.data.data_store import DataStore
-from src.data.config import BOJ_EVENTS, JGB_TENORS, DEFAULT_START, DEFAULT_END
+from src.data.config import BOJ_EVENTS, JGB_TENORS, DEFAULT_START, DEFAULT_END, ANALYSIS_WINDOWS
 
 # ---------------------------------------------------------------------------
 # Global Streamlit config
 # ---------------------------------------------------------------------------
 st.set_page_config(
-    page_title="JGB Repricing Dashboard",
-    page_icon="JP",
+    page_title="JGB Repricing Framework",
+    page_icon="https://em-content.zobj.net/source/apple/391/chart-increasing_1f4c8.png",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 # ---------------------------------------------------------------------------
-# Professional CSS
+# Institutional CSS — Bloomberg / JPM Research aesthetic
 # ---------------------------------------------------------------------------
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap');
 
-    /* ---- Global ---- */
+    :root {
+        /* Purdue Daniels School of Business palette */
+        --ink:        #000000;          /* Purdue Black */
+        --ink-soft:   #555960;          /* Steel */
+        --ink-muted:  #6F727B;          /* Cool Gray */
+        --ink-faint:  #9D9795;          /* Railway Gray */
+        --surface:    #ffffff;
+        --surface-1:  #f9f8f6;          /* warm white */
+        --surface-2:  #f0eeeb;          /* warm gray */
+        --border:     #C4BFC0;          /* Steam */
+        --border-light:#e8e5e2;
+        --accent:     #000000;          /* Purdue Black */
+        --accent-mid: #8E6F3E;          /* Aged */
+        --accent-pop: #CFB991;          /* Boilermaker Gold */
+        --gold:       #CFB991;          /* Boilermaker Gold */
+        --gold-bright:#DAAA00;          /* Rush */
+        --gold-field: #DDB945;          /* Field */
+        --gold-dust:  #EBD99F;          /* Dust */
+        --red:        #c0392b;
+        --green:      #2e7d32;
+        --amber:      #8E6F3E;          /* Aged as amber */
+    }
+
+    /* ---- Reset & Global ---- */
+    html, body, .main, [data-testid="stAppViewContainer"] {
+        font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        color: var(--ink-soft);
+    }
     .main .block-container {
-        padding-top: 1.5rem;
-        padding-bottom: 1rem;
-        max-width: 1200px;
+        padding: 2rem 2.5rem 1.5rem 2.5rem;
+        max-width: 1360px;
     }
 
     /* ---- Typography ---- */
     .main h1 {
-        font-family: 'Inter', -apple-system, sans-serif;
+        font-family: 'DM Sans', sans-serif;
         font-weight: 700;
-        color: #0a1628;
-        border-bottom: 2px solid #1e3a5f;
-        padding-bottom: 0.4rem;
-        margin-bottom: 0.8rem;
-        font-size: 1.4rem;
-        letter-spacing: -0.03em;
-    }
-    .main h2 {
-        font-family: 'Inter', -apple-system, sans-serif;
-        font-weight: 600;
-        color: #1e3a5f;
+        color: var(--ink);
+        font-size: 1.25rem;
+        letter-spacing: -0.025em;
         border-bottom: none;
         padding-bottom: 0;
-        margin-top: 1.6rem;
-        margin-bottom: 0.3rem;
-        font-size: 0.95rem;
-        letter-spacing: 0.02em;
+        margin-bottom: 0.15rem;
+    }
+    .main h1::after {
+        content: '';
+        display: block;
+        width: 40px;
+        height: 3px;
+        background: linear-gradient(90deg, var(--gold) 0%, var(--gold-bright) 100%);
+        margin-top: 0.5rem;
+        margin-bottom: 1rem;
+        border-radius: 2px;
+    }
+    .main h2 {
+        font-family: 'DM Sans', sans-serif;
+        font-weight: 600;
+        color: var(--ink);
+        font-size: 0.82rem;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
+        border-bottom: none;
+        padding-bottom: 0;
+        margin-top: 2rem;
+        margin-bottom: 0.35rem;
     }
     .main h3 {
+        font-family: 'DM Sans', sans-serif;
         font-weight: 600;
-        color: #344054;
-        font-size: 0.88rem;
-        margin-top: 1rem;
+        color: var(--ink-soft);
+        font-size: 0.8rem;
+        margin-top: 1.2rem;
+        margin-bottom: 0.25rem;
     }
     .main p, .main li {
-        color: #475467;
-        line-height: 1.55;
-        font-size: 0.82rem;
+        color: var(--ink-soft);
+        line-height: 1.6;
+        font-size: 0.8rem;
     }
 
     /* ---- Metric cards ---- */
     [data-testid="stMetric"] {
-        background: #f8f9fc;
-        border: 1px solid #d5dbe3;
-        border-top: 3px solid #1e3a5f;
-        border-radius: 2px;
-        padding: 10px 14px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 14px 18px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
     }
     [data-testid="stMetricLabel"] {
-        font-family: 'Inter', sans-serif;
-        font-weight: 700;
+        font-family: 'DM Sans', sans-serif;
+        font-weight: 600;
         text-transform: uppercase;
-        font-size: 0.6rem;
-        letter-spacing: 0.08em;
-        color: #667085;
+        font-size: 0.58rem;
+        letter-spacing: 0.1em;
+        color: var(--ink-muted);
     }
     [data-testid="stMetricValue"] {
-        font-family: 'Inter', sans-serif;
-        font-weight: 700;
-        color: #0a1628;
-        font-size: 1rem;
+        font-family: 'JetBrains Mono', 'SF Mono', monospace;
+        font-weight: 500;
+        color: var(--ink);
+        font-size: 1.05rem;
+        letter-spacing: -0.01em;
+    }
+    [data-testid="stMetricDelta"] {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.72rem;
     }
 
     /* ---- Sidebar ---- */
     section[data-testid="stSidebar"] {
-        background: #f8f9fb;
-        border-right: 1px solid #e4e7ec;
+        background: #000000;
+        border-right: none;
     }
+    /* Text & labels */
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] span,
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] .stMarkdown {
+        color: rgba(255,255,255,0.7) !important;
+        font-family: 'DM Sans', sans-serif;
+    }
+    section[data-testid="stSidebar"] label {
+        font-size: 0.65rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.4) !important;
+        margin-bottom: 2px;
+    }
+    section[data-testid="stSidebar"] b,
+    section[data-testid="stSidebar"] strong {
+        color: rgba(255,255,255,0.85) !important;
+        font-weight: 600;
+    }
+    /* Inputs, selects, date pickers */
+    section[data-testid="stSidebar"] input,
+    section[data-testid="stSidebar"] textarea,
+    section[data-testid="stSidebar"] select,
+    section[data-testid="stSidebar"] [data-baseweb="input"] input,
+    section[data-testid="stSidebar"] [data-baseweb="select"] div,
+    section[data-testid="stSidebar"] [data-baseweb="input"],
+    section[data-testid="stSidebar"] [data-baseweb="base-input"] {
+        background: rgba(255,255,255,0.06) !important;
+        color: rgba(255,255,255,0.9) !important;
+        border-color: rgba(255,255,255,0.12) !important;
+        border-radius: 6px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.76rem;
+    }
+    section[data-testid="stSidebar"] input:focus,
+    section[data-testid="stSidebar"] [data-baseweb="input"]:focus-within {
+        border-color: rgba(207,185,145,0.5) !important;
+        box-shadow: 0 0 0 2px rgba(207,185,145,0.15);
+    }
+    /* Date input */
+    section[data-testid="stSidebar"] [data-testid="stDateInput"] input {
+        background: rgba(255,255,255,0.06) !important;
+        color: rgba(255,255,255,0.85) !important;
+        border-color: rgba(255,255,255,0.12) !important;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.74rem;
+    }
+    /* Select / dropdown */
+    section[data-testid="stSidebar"] [data-baseweb="select"] {
+        background: rgba(255,255,255,0.06);
+        border-radius: 6px;
+    }
+    section[data-testid="stSidebar"] [data-baseweb="select"] [data-testid="stMarkdownContainer"] p {
+        color: rgba(255,255,255,0.85) !important;
+        font-size: 0.76rem;
+    }
+    /* Toggle */
+    section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
+        color: rgba(255,255,255,0.6) !important;
+        font-size: 0.74rem;
+    }
+    /* Nav buttons */
     section[data-testid="stSidebar"] .stButton > button {
         text-align: left;
-        font-family: 'Inter', sans-serif;
-        font-size: 0.8rem;
-        border-radius: 3px;
-        padding: 0.45rem 0.8rem;
-        transition: all 0.1s ease;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.78rem;
+        border-radius: 6px;
+        padding: 0.5rem 0.85rem;
+        transition: all 0.15s ease;
         font-weight: 500;
+        letter-spacing: 0.01em;
     }
     section[data-testid="stSidebar"] .stButton > button[kind="secondary"] {
         background: transparent;
-        border: 1px solid #d0d5dd;
-        color: #344054;
+        border: 1px solid rgba(255,255,255,0.08);
+        color: rgba(255,255,255,0.55) !important;
     }
     section[data-testid="stSidebar"] .stButton > button[kind="secondary"]:hover {
-        background: #eaecf0;
-        border-color: #98a2b3;
+        background: rgba(255,255,255,0.05);
+        border-color: rgba(255,255,255,0.18);
+        color: rgba(255,255,255,0.9) !important;
     }
     section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
-        font-weight: 700;
-        border-left: 3px solid #1e3a5f;
+        background: rgba(207,185,145,0.12);
+        border: 1px solid rgba(207,185,145,0.3);
+        color: #CFB991 !important;
+        font-weight: 600;
+    }
+    section[data-testid="stSidebar"] hr {
+        border-color: rgba(255,255,255,0.06);
+        margin: 0.8rem 0;
+    }
+    /* Multiselect / slider chips in sidebar */
+    section[data-testid="stSidebar"] [data-baseweb="tag"] {
+        background: rgba(207,185,145,0.15) !important;
+        color: #CFB991 !important;
+        border: none;
+    }
+    /* Sidebar collapse arrow — ensure visible */
+    button[data-testid="stSidebarCollapseButton"],
+    [data-testid="collapsedControl"] {
+        color: rgba(255,255,255,0.6) !important;
+        visibility: visible !important;
+        display: flex !important;
+    }
+    button[data-testid="stSidebarCollapseButton"] svg {
+        fill: rgba(255,255,255,0.6);
+        stroke: rgba(255,255,255,0.6);
+    }
+    button[data-testid="stSidebarCollapseButton"]:hover svg {
+        fill: #CFB991;
+        stroke: #CFB991;
     }
 
     /* ---- Expander ---- */
     .streamlit-expanderHeader {
-        font-family: 'Inter', sans-serif;
+        font-family: 'DM Sans', sans-serif;
         font-weight: 600;
-        font-size: 0.82rem;
-        color: #0a1628;
+        font-size: 0.8rem;
+        color: var(--ink);
     }
     details[data-testid="stExpander"] {
-        border: 1px solid #e4e7ec;
-        border-radius: 3px;
-        margin-bottom: 0.4rem;
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        background: var(--surface);
     }
 
-    /* ---- Plotly chart containers ---- */
+    /* ---- Chart containers ---- */
     [data-testid="stPlotlyChart"] {
-        border: 1px solid #e4e7ec;
-        border-radius: 3px;
-        background: #ffffff;
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        background: var(--surface);
+        overflow: hidden;
     }
 
     /* ---- Dataframes ---- */
     [data-testid="stDataFrame"] {
-        border: 1px solid #e4e7ec;
-        border-radius: 3px;
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        overflow: hidden;
     }
 
     /* ---- Divider ---- */
     hr {
         border: none;
-        border-top: 1px solid #e4e7ec;
-        margin: 1rem 0;
+        border-top: 1px solid var(--border-light);
+        margin: 1.2rem 0;
     }
 
     /* ---- Download button ---- */
     .stDownloadButton > button {
-        font-family: 'Inter', sans-serif;
-        background: #1e3a5f;
-        color: #ffffff;
-        border: none;
+        font-family: 'DM Sans', sans-serif;
+        background: #000000;
+        color: #CFB991;
+        border: 1px solid #CFB991;
         font-weight: 600;
-        border-radius: 3px;
-        padding: 0.4rem 1.2rem;
-        font-size: 0.78rem;
-        letter-spacing: 0.03em;
+        border-radius: 6px;
+        padding: 0.5rem 1.4rem;
+        font-size: 0.74rem;
+        letter-spacing: 0.04em;
         text-transform: uppercase;
+        transition: all 0.15s ease;
     }
     .stDownloadButton > button:hover {
-        background: #15304f;
+        background: #CFB991;
+        color: #000000;
+        box-shadow: 0 2px 8px rgba(207,185,145,0.3);
     }
 
     /* ---- Alerts ---- */
     [data-testid="stAlert"] {
-        border-radius: 3px;
-        font-size: 0.82rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        border: none;
     }
 
-    /* ---- Tabs / Toggle ---- */
+    /* ---- Tabs ---- */
     .stTabs [data-baseweb="tab"] {
-        font-size: 0.8rem;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.78rem;
         font-weight: 600;
+        letter-spacing: 0.02em;
+    }
+
+    /* ---- Chat (AI Q&A page) ---- */
+    [data-testid="stChatMessage"] {
+        border-radius: 10px;
+        border: 1px solid var(--border-light);
+        padding: 0.8rem 1rem;
+        font-size: 0.82rem;
+    }
+    .stChatInput textarea {
+        font-family: 'DM Sans', sans-serif;
+        font-size: 0.82rem;
+        border-radius: 10px;
+    }
+
+    /* ---- Spinner ---- */
+    .stSpinner > div {
+        font-size: 0.78rem;
+        color: var(--ink-muted);
+    }
+
+    /* ---- Hide Streamlit chrome ---- */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header[data-testid="stHeader"] {
+        background: rgba(255,255,255,0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(0,0,0,0.04);
     }
     </style>
     """,
@@ -215,14 +390,15 @@ st.markdown(
 # Sidebar: navigation + global controls
 # ---------------------------------------------------------------------------
 st.sidebar.markdown(
-    "<div style='padding:0.5rem 0 0.8rem 0; border-bottom:2px solid #1e3a5f; "
-    "margin-bottom:0.6rem;'>"
-    "<div style='font-size:0.55rem; font-weight:700; text-transform:uppercase; "
-    "letter-spacing:0.14em; color:#98a2b3;'>Rates Strategy Desk</div>"
-    "<div style='font-size:1.15rem; font-weight:700; color:#0a1628; "
-    "letter-spacing:-0.02em; line-height:1.25; margin-top:0.1rem;'>JGB Repricing</div>"
-    "<div style='font-size:0.68rem; font-weight:500; color:#667085; "
-    "margin-top:0.1rem;'>Quantitative Framework</div></div>",
+    "<div style='padding:0.8rem 0 1rem 0; border-bottom:1px solid rgba(207,185,145,0.15); "
+    "margin-bottom:0.8rem;'>"
+    "<div style='font-size:0.52rem; font-weight:600; text-transform:uppercase; "
+    "letter-spacing:0.18em; color:#CFB991;'>Rates Strategy Desk</div>"
+    "<div style='font-size:1.2rem; font-weight:700; color:rgba(255,255,255,0.95); "
+    "letter-spacing:-0.03em; line-height:1.2; margin-top:0.25rem; "
+    "font-family:DM Sans,sans-serif;'>JGB Repricing</div>"
+    "<div style='font-size:0.65rem; font-weight:400; color:rgba(255,255,255,0.35); "
+    "margin-top:0.2rem; letter-spacing:0.02em;'>Quantitative Framework · Purdue Daniels</div></div>",
     unsafe_allow_html=True,
 )
 
@@ -236,6 +412,7 @@ _NAV_ITEMS = [
     ("Regime Detection", "regime"),
     ("Spillover & Info Flow", "spillover"),
     ("Trade Ideas", "trades"),
+    ("AI Q&A", "ai_qa"),
 ]
 
 for _label, _key in _NAV_ITEMS:
@@ -252,7 +429,12 @@ for _label, _key in _NAV_ITEMS:
 page = st.session_state.current_page
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("**Settings**")
+st.sidebar.markdown(
+    "<p style='font-size:0.55rem;font-weight:600;text-transform:uppercase;"
+    "letter-spacing:0.14em;color:rgba(255,255,255,0.3);margin:0 0 0.5rem 0;"
+    "font-family:DM Sans,sans-serif;'>Configuration</p>",
+    unsafe_allow_html=True,
+)
 
 use_simulated = st.sidebar.toggle("Simulated data", value=False)
 fred_api_key = st.sidebar.text_input("FRED API Key", type="password")
@@ -272,111 +454,135 @@ else:
 # ===================================================================
 # Plotly template (institutional palette)
 # ===================================================================
-_PALETTE = ["#1e3a5f", "#c0392b", "#2e7d32", "#7b1fa2", "#e67e22", "#00838f"]
+_PALETTE = [
+    "#000000",  # Purdue Black
+    "#CFB991",  # Boilermaker Gold
+    "#8E6F3E",  # Aged
+    "#c0392b",  # red (for contrast)
+    "#2e7d32",  # green (for contrast)
+    "#555960",  # Steel
+    "#DAAA00",  # Rush
+    "#6F727B",  # Cool Gray
+]
 
 _PLOTLY_LAYOUT = dict(
-    font=dict(family="Inter, -apple-system, Helvetica Neue, sans-serif", size=11, color="#475467"),
+    font=dict(family="DM Sans, -apple-system, sans-serif", size=11, color="#555960"),
     paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="#fcfcfd",
+    plot_bgcolor="rgba(0,0,0,0)",
     title_text="",
-    title_font=dict(size=12, color="#0a1628", family="Inter, sans-serif"),
+    title_font=dict(size=11, color="#0b0f19", family="DM Sans, sans-serif"),
     legend=dict(
         orientation="h",
         yanchor="bottom",
-        y=1.01,
+        y=1.02,
         xanchor="left",
         x=0,
-        font=dict(size=10, color="#475467"),
+        font=dict(size=10, color="#6F727B", family="DM Sans, sans-serif"),
         bgcolor="rgba(0,0,0,0)",
+        itemsizing="constant",
     ),
-    margin=dict(l=45, r=15, t=30, b=35),
+    margin=dict(l=48, r=16, t=28, b=36),
     hovermode="x unified",
-    hoverlabel=dict(font_size=11, font_family="Inter, sans-serif"),
+    hoverlabel=dict(
+        font_size=11,
+        font_family="DM Sans, sans-serif",
+        bgcolor="rgba(0,0,0,0.92)",
+        font_color="#ffffff",
+        bordercolor="rgba(0,0,0,0)",
+    ),
     xaxis=dict(
-        gridcolor="#f2f4f7",
-        linecolor="#e4e7ec",
-        zerolinecolor="#e4e7ec",
-        tickfont=dict(size=10),
+        gridcolor="rgba(0,0,0,0.04)",
+        linecolor="rgba(0,0,0,0.08)",
+        zerolinecolor="rgba(0,0,0,0.06)",
+        tickfont=dict(size=10, color="#9D9795", family="JetBrains Mono, monospace"),
+        showgrid=True,
+        gridwidth=1,
     ),
     yaxis=dict(
-        gridcolor="#f2f4f7",
-        linecolor="#e4e7ec",
-        zerolinecolor="#e4e7ec",
-        tickfont=dict(size=10),
+        gridcolor="rgba(0,0,0,0.04)",
+        linecolor="rgba(0,0,0,0.08)",
+        zerolinecolor="rgba(0,0,0,0.06)",
+        tickfont=dict(size=10, color="#9D9795", family="JetBrains Mono, monospace"),
+        showgrid=True,
+        gridwidth=1,
     ),
 )
 
 
 def _style_fig(fig: go.Figure, height: int = 380) -> go.Figure:
-    """Apply the global institutional template to a plotly figure."""
+    """Apply the institutional plotly template."""
     fig.update_layout(**_PLOTLY_LAYOUT, height=height)
     for i, trace in enumerate(fig.data):
-        # Only recolour Scatter traces that haven't been explicitly coloured
         if isinstance(trace, go.Scatter):
             has_color = getattr(trace.line, "color", None) or getattr(trace.marker, "color", None)
             if not has_color:
-                fig.data[i].update(line=dict(color=_PALETTE[i % len(_PALETTE)]))
+                fig.data[i].update(
+                    line=dict(color=_PALETTE[i % len(_PALETTE)], width=1.5),
+                )
     return fig
 
 
 def _page_intro(text: str):
-    """Render a page introduction in a muted, professional style."""
+    """Render a page introduction."""
     st.markdown(
-        f"<p style='color:#667085;font-family:Inter,sans-serif;font-size:0.78rem;"
-        f"line-height:1.6;margin:0 0 1rem 0;padding:0;'>{text}</p>",
+        f"<p style='color:#6b7394;font-family:DM Sans,sans-serif;font-size:0.78rem;"
+        f"line-height:1.65;margin:0 0 1.2rem 0;padding:0;max-width:720px;'>{text}</p>",
         unsafe_allow_html=True,
     )
 
 
 def _section_note(text: str):
-    """Render a brief analytical note below a chart section header."""
+    """Render analytical context below a section header."""
     st.markdown(
-        f"<p style='color:#475467;font-size:0.76rem;line-height:1.55;"
-        f"margin:-0.2rem 0 0.5rem 0;'>{text}</p>",
+        f"<div style='background:#f9f8f6;border-left:3px solid #CFB991;padding:8px 14px;"
+        f"border-radius:0 6px 6px 0;margin:-0.1rem 0 0.7rem 0;'>"
+        f"<p style='color:#555960;font-size:0.76rem;line-height:1.6;margin:0;"
+        f"font-family:DM Sans,sans-serif;'>{text}</p></div>",
         unsafe_allow_html=True,
     )
 
 
 def _page_conclusion(verdict: str, summary: str):
-    """Render an integrated verdict + summary panel at the bottom of a page."""
+    """Render verdict + assessment panel."""
     st.markdown(
-        f"<div style='margin-top:1.5rem;border-top:2px solid #1e3a5f;padding:0;'>"
-        # verdict row
-        f"<div style='background:linear-gradient(135deg,#0a1628 0%,#1e3a5f 100%);"
-        f"padding:14px 20px;'>"
-        f"<p style='margin:0;color:#ffffff;font-family:Inter,sans-serif;"
-        f"font-size:0.92rem;font-weight:600;line-height:1.5;letter-spacing:-0.01em;'>"
+        f"<div style='margin-top:2rem;border-radius:10px;overflow:hidden;"
+        f"border:1px solid rgba(0,0,0,0.08);'>"
+        # verdict — Purdue Black with gold accent
+        f"<div style='background:#000000;padding:16px 22px;"
+        f"border-top:3px solid #CFB991;'>"
+        f"<p style='margin:0;color:#CFB991;font-family:DM Sans,sans-serif;"
+        f"font-size:0.88rem;font-weight:600;line-height:1.55;letter-spacing:-0.01em;'>"
         f"{verdict}</p></div>"
-        # summary row
-        f"<div style='background:#f8f9fb;padding:12px 20px;border-bottom:1px solid #e4e7ec;'>"
-        f"<p style='margin:0;color:#475467;font-family:Inter,sans-serif;"
-        f"font-size:0.78rem;line-height:1.6;'>"
-        f"<span style='color:#1e3a5f;font-weight:600;text-transform:uppercase;"
-        f"font-size:0.68rem;letter-spacing:0.06em;'>Assessment </span>"
-        f"{summary}</p></div>"
+        # assessment
+        f"<div style='background:#f9f8f6;padding:14px 22px;'>"
+        f"<p style='margin:0 0 4px 0;color:#9D9795;font-family:DM Sans,sans-serif;"
+        f"font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;'>"
+        f"Assessment</p>"
+        f"<p style='margin:0;color:#555960;font-family:DM Sans,sans-serif;"
+        f"font-size:0.78rem;line-height:1.65;'>{summary}</p></div>"
         f"</div>",
         unsafe_allow_html=True,
     )
 
 
 def _page_footer():
-    """Render an institutional disclaimer footer with credits."""
+    """Render institutional disclaimer footer."""
     st.markdown(
-        "<div style='margin-top:2rem;padding:12px 0 6px 0;border-top:1px solid #e4e7ec;'>"
-        "<p style='color:#98a2b3;font-size:0.65rem;line-height:1.5;margin:0 0 8px 0;"
-        "font-family:Inter,sans-serif;'>"
+        "<div style='margin-top:2.5rem;padding:14px 0 8px 0;border-top:1px solid #eceef5;'>"
+        "<p style='color:#9ca3bf;font-size:0.62rem;line-height:1.55;margin:0 0 6px 0;"
+        "font-family:DM Sans,sans-serif;letter-spacing:0.01em;'>"
         "This material is produced by a quantitative framework for informational purposes only. "
-        "It does not constitute investment advice, a solicitation, or an offer to buy or sell any securities. "
-        "Past performance is not indicative of future results. All models are approximations. "
+        "It does not constitute investment advice. "
+        "Past performance is not indicative of future results. "
         f"Generated {datetime.now():%Y-%m-%d %H:%M} UTC.</p>"
-        "<p style='color:#667085;font-size:0.65rem;line-height:1.6;margin:0;"
-        "font-family:Inter,sans-serif;'>"
-        "Developed by <a href='https://www.linkedin.com/in/heramb-patkar/' "
-        "target='_blank' style='color:#1e3a5f;text-decoration:none;font-weight:600;'>"
-        "Heramb S. Patkar</a>, MSF, Purdue University. "
-        "Faculty Advisor: <a href='https://cinderzhang.github.io/' "
-        "target='_blank' style='color:#1e3a5f;text-decoration:none;font-weight:600;'>"
-        "Dr. Cinder Zhang</a>.</p></div>",
+        "<p style='color:#6F727B;font-size:0.62rem;line-height:1.6;margin:0;"
+        "font-family:DM Sans,sans-serif;'>"
+        "<a href='https://www.linkedin.com/in/heramb-patkar/' "
+        "target='_blank' style='color:#8E6F3E;text-decoration:none;font-weight:600;'>"
+        "Heramb S. Patkar</a> · MSF, Purdue Daniels School of Business · "
+        "Advisor: <a href='https://cinderzhang.github.io/' "
+        "target='_blank' style='color:#8E6F3E;text-decoration:none;font-weight:600;'>"
+        "Dr. Cinder Zhang</a></p></div>",
         unsafe_allow_html=True,
     )
 
@@ -465,7 +671,7 @@ def page_overview():
 
     # --- Rates chart ---
     st.subheader("Sovereign Yields & VIX")
-    rate_cols = [c for c in ["JP_10Y", "US_10Y", "DE_10Y", "VIX"] if c in df.columns]
+    rate_cols = [c for c in ["JP_10Y", "US_10Y", "DE_10Y", "UK_10Y", "AU_10Y", "VIX"] if c in df.columns]
     if rate_cols:
         # Compute chart-specific insights
         _jp = df["JP_10Y"].dropna() if "JP_10Y" in df.columns else pd.Series(dtype=float)
@@ -1168,6 +1374,49 @@ def page_regime():
     else:
         st.warning("Insufficient data for GARCH model.")
 
+    # --- Regime Comparison Table by BOJ Era ---
+    st.subheader("Regime Comparison by BOJ Policy Era")
+    try:
+        df_full = load_unified(use_simulated, str(start_date), str(end_date), fred_api_key or None)
+        regime_rows = []
+        for era_name, (era_start, era_end) in ANALYSIS_WINDOWS.items():
+            if era_name == "full":
+                continue
+            mask = (df_full.index >= pd.Timestamp(era_start)) & (df_full.index <= pd.Timestamp(era_end))
+            era_df = df_full.loc[mask]
+            if len(era_df) < 5:
+                continue
+            row = {"Era": era_name.replace("_", " ").title(), "Period": f"{era_start} → {era_end}", "Obs": len(era_df)}
+            if "JP_10Y" in era_df.columns:
+                jp = era_df["JP_10Y"].dropna()
+                if len(jp) > 0:
+                    row["JP 10Y Mean"] = f"{jp.mean():.3f}%"
+                    row["JP 10Y Vol (bps)"] = f"{jp.diff().std() * 100:.1f}"
+            if "US_10Y" in era_df.columns and "JP_10Y" in era_df.columns:
+                spread = (era_df["JP_10Y"] - era_df["US_10Y"]).dropna()
+                if len(spread) > 0:
+                    row["JP-US Spread"] = f"{spread.mean():.2f}%"
+            if "USDJPY" in era_df.columns:
+                fx = era_df["USDJPY"].dropna()
+                if len(fx) > 0:
+                    row["USDJPY Mean"] = f"{fx.mean():.1f}"
+            if ensemble is not None:
+                ens_mask = (ensemble.index >= pd.Timestamp(era_start)) & (ensemble.index <= pd.Timestamp(era_end))
+                era_ens = ensemble.loc[ens_mask].dropna()
+                if len(era_ens) > 0:
+                    row["Avg Regime Prob"] = f"{era_ens.mean():.0%}"
+            regime_rows.append(row)
+        if regime_rows:
+            regime_table = pd.DataFrame(regime_rows)
+            _section_note(
+                "Summary statistics by BOJ policy era. Compare yield levels, volatility, and regime probability across "
+                "structural breaks. <b>Actionable: Eras with high vol + high regime probability = confirmed repricing episodes. "
+                "Current era metrics should be compared against these benchmarks for positioning.</b>"
+            )
+            st.dataframe(regime_table, use_container_width=True, hide_index=True)
+    except Exception:
+        st.info("Could not compute regime comparison table.")
+
     # --- Page conclusion ---
     if ensemble is not None and len(ensemble.dropna()) > 0:
         _ep = float(ensemble.dropna().iloc[-1])
@@ -1205,7 +1454,7 @@ def _run_granger(simulated, start, end, api_key):
     from src.spillover.granger import pairwise_granger
 
     df = load_unified(simulated, start, end, api_key)
-    cols = [c for c in ["JP_10Y", "US_10Y", "DE_10Y", "USDJPY", "NIKKEI", "VIX"] if c in df.columns]
+    cols = [c for c in ["JP_10Y", "US_10Y", "DE_10Y", "UK_10Y", "AU_10Y", "USDJPY", "NIKKEI", "VIX"] if c in df.columns]
     if len(cols) < 2:
         return None
     sub = df[cols].diff().dropna()
@@ -1219,7 +1468,8 @@ def _run_te(simulated, start, end, api_key):
     from src.spillover.transfer_entropy import pairwise_transfer_entropy
 
     df = load_unified(simulated, start, end, api_key)
-    cols = [c for c in ["JP_10Y", "US_10Y", "DE_10Y", "USDJPY", "NIKKEI", "VIX"] if c in df.columns]
+    # Keep TE to 6 core variables (56 pairs at 8 vars is slow; 30 pairs at 6 is 2x faster)
+    cols = [c for c in ["JP_10Y", "US_10Y", "DE_10Y", "UK_10Y", "USDJPY", "VIX"] if c in df.columns]
     if len(cols) < 2:
         return None
     sub = df[cols].diff().dropna()
@@ -1233,7 +1483,7 @@ def _run_spillover(simulated, start, end, api_key):
     from src.spillover.diebold_yilmaz import compute_spillover_index
 
     df = load_unified(simulated, start, end, api_key)
-    cols = [c for c in ["JP_10Y", "US_10Y", "DE_10Y", "USDJPY", "NIKKEI"] if c in df.columns]
+    cols = [c for c in ["JP_10Y", "US_10Y", "DE_10Y", "UK_10Y", "AU_10Y", "USDJPY", "NIKKEI"] if c in df.columns]
     if len(cols) < 2:
         return None
     sub = df[cols].diff().dropna()
@@ -1254,6 +1504,20 @@ def _run_dcc(simulated, start, end, api_key):
     if len(sub) < 60:
         return None
     return compute_dcc(sub, p=1, q=1)
+
+
+@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
+def _run_te_pca(simulated, start, end, api_key):
+    """Transfer Entropy on PCA factor scores (PC1/PC2/PC3)."""
+    from src.spillover.transfer_entropy import pairwise_transfer_entropy
+
+    pca_res = _run_pca(simulated, start, end, api_key)
+    if pca_res is None:
+        return None
+    scores = pca_res["scores"]
+    if scores.shape[1] < 2 or len(scores) < 30:
+        return None
+    return pairwise_transfer_entropy(scores, lag=1, n_bins=3)
 
 
 @st.cache_data(show_spinner=False, ttl=900, max_entries=3)
@@ -1302,6 +1566,7 @@ def page_spillover():
     with st.spinner("Computing cross-market spillover analysis..."):
         granger_df = _run_granger(*args)
         te_df = _run_te(*args)
+        te_pca_df = _run_te_pca(*args)
         spill = _run_spillover(*args)
         dcc = _run_dcc(*args)
         carry = _run_carry(*args)
@@ -1419,6 +1684,49 @@ def page_spillover():
         st.plotly_chart(_style_fig(fig_te, 450), use_container_width=True)
     else:
         st.warning("Insufficient data for transfer entropy.")
+
+    # --- Transfer Entropy on PCA Factor Scores ---
+    st.subheader("Transfer Entropy on PCA Factors")
+    if te_pca_df is not None and not te_pca_df.empty:
+        pca_sources = te_pca_df["source"].unique()
+        pca_targets = te_pca_df["target"].unique()
+        pca_labels = sorted(set(pca_sources) | set(pca_targets))
+        te_pca_matrix = pd.DataFrame(0.0, index=pca_labels, columns=pca_labels)
+        for _, row in te_pca_df.iterrows():
+            te_pca_matrix.loc[row["source"], row["target"]] = row["te_value"]
+
+        # Find dominant information flow among factors
+        te_pca_vals = te_pca_matrix.values.copy()
+        np.fill_diagonal(te_pca_vals, np.nan)
+        flat_idx = int(np.nanargmax(te_pca_vals))
+        n_pca = len(pca_labels)
+        pca_src = pca_labels[flat_idx // n_pca]
+        pca_tgt = pca_labels[flat_idx % n_pca]
+        pca_te_val = te_pca_vals[flat_idx // n_pca, flat_idx % n_pca]
+
+        pca_te_insight = (
+            f"Transfer entropy computed on PCA factor scores (PC1=Level, PC2=Slope, PC3=Curvature). "
+            f"<b>Strongest factor link:</b> {pca_src} → {pca_tgt} (TE = {pca_te_val:.4f}). "
+        )
+        if "PC1" in pca_src:
+            pca_te_insight += f"<b>Actionable: Level factor drives information to {pca_tgt}. Broad yield moves propagate to curve shape changes with a tradeable lag.</b>"
+        elif "PC2" in pca_src:
+            pca_te_insight += f"<b>Actionable: Slope factor leads {pca_tgt}. Steepening/flattening signals precede the next factor's move — position the slope first.</b>"
+        else:
+            pca_te_insight += f"<b>Actionable: Curvature factor ({pca_src}) leads {pca_tgt}. Belly moves are driving the curve; butterfly trades have predictive power.</b>"
+        _section_note(pca_te_insight)
+
+        fig_te_pca = px.imshow(
+            te_pca_matrix.values,
+            x=te_pca_matrix.columns.tolist(),
+            y=te_pca_matrix.index.tolist(),
+            color_continuous_scale="Viridis",
+            aspect="auto",
+            labels=dict(color="TE"),
+        )
+        st.plotly_chart(_style_fig(fig_te_pca, 350), use_container_width=True)
+    else:
+        st.info("Insufficient PCA data for factor-level transfer entropy.")
 
     # --- Diebold-Yilmaz ---
     st.subheader("Diebold-Yilmaz Spillover")
@@ -1726,7 +2034,12 @@ def page_trade_ideas():
 
     # --- Sidebar filters ---
     st.sidebar.markdown("---")
-    st.sidebar.subheader("Trade Filters")
+    st.sidebar.markdown(
+        "<p style='font-size:0.55rem;font-weight:600;text-transform:uppercase;"
+        "letter-spacing:0.14em;color:rgba(255,255,255,0.3);margin:0 0 0.5rem 0;"
+        "font-family:DM Sans,sans-serif;'>Trade Filters</p>",
+        unsafe_allow_html=True,
+    )
     all_cats = sorted(set(c.category for c in cards))
     selected_cats = st.sidebar.multiselect("Categories", all_cats, default=all_cats)
     min_conv, max_conv = st.sidebar.slider("Conviction range", 0.0, 1.0, (0.0, 1.0), 0.05)
@@ -1772,45 +2085,50 @@ def page_trade_ideas():
     )
     for card in sorted(filtered, key=lambda c: -c.conviction):
         direction_tag = "LONG" if card.direction == "long" else "SHORT"
-        dir_color = "#2e7d32" if card.direction == "long" else "#c0392b"
+        dir_color = "#16a34a" if card.direction == "long" else "#dc2626"
         if card.conviction >= 0.7:
-            conv_tag, conv_color = "HIGH", "#2e7d32"
+            conv_tag, conv_color = "HIGH", "#16a34a"
         elif card.conviction >= 0.4:
-            conv_tag, conv_color = "MED", "#e67e22"
+            conv_tag, conv_color = "MED", "#d97706"
         else:
-            conv_tag, conv_color = "LOW", "#c0392b"
+            conv_tag, conv_color = "LOW", "#dc2626"
 
         with st.expander(
-            f"[{direction_tag}] **{card.name}** | {conv_tag} {card.conviction:.0%} | {card.category}"
+            f"{direction_tag}  {card.name}  ·  {card.conviction:.0%}  ·  {card.category}"
         ):
-            # Styled card header
             st.markdown(
-                f"<div style='display:flex;align-items:center;gap:10px;margin-bottom:12px;'>"
+                f"<div style='display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;'>"
                 f"<span style='background:{dir_color};color:#fff;padding:3px 10px;"
-                f"border-radius:4px;font-weight:700;font-size:0.78rem;letter-spacing:0.04em;'>{direction_tag}</span>"
+                f"border-radius:20px;font-weight:600;font-size:0.68rem;letter-spacing:0.06em;"
+                f"font-family:DM Sans,sans-serif;'>{direction_tag}</span>"
                 f"<span style='background:{conv_color};color:#fff;padding:3px 10px;"
-                f"border-radius:4px;font-weight:700;font-size:0.78rem;'>{card.conviction:.0%}</span>"
-                f"<span style='background:#f0f2f6;color:#344054;padding:3px 10px;"
-                f"border-radius:4px;font-size:0.78rem;font-weight:500;'>{card.category}</span>"
+                f"border-radius:20px;font-weight:600;font-size:0.68rem;"
+                f"font-family:JetBrains Mono,monospace;'>{card.conviction:.0%}</span>"
+                f"<span style='background:#f7f8fb;color:#3b4259;padding:3px 12px;"
+                f"border-radius:20px;font-size:0.7rem;font-weight:500;"
+                f"border:1px solid #dfe2ec;font-family:DM Sans,sans-serif;'>{card.category}</span>"
                 f"</div>",
                 unsafe_allow_html=True,
             )
             col_l, col_r = st.columns(2)
             with col_l:
                 st.markdown(
-                    f"<div style='font-size:0.85rem;line-height:1.8;color:#344054;'>"
-                    f"<b style='color:#1e3a5f;'>Instruments:</b> {', '.join(card.instruments)}<br>"
-                    f"<b style='color:#1e3a5f;'>Regime Condition:</b> {card.regime_condition}<br>"
-                    f"<b style='color:#1e3a5f;'>Edge Source:</b> {card.edge_source}<br>"
-                    f"<b style='color:#1e3a5f;'>Entry Signal:</b> {card.entry_signal}</div>",
+                    f"<div style='font-size:0.8rem;line-height:1.85;color:#3b4259;"
+                    f"font-family:DM Sans,sans-serif;'>"
+                    f"<b style='color:#0b0f19;'>Instruments:</b> {', '.join(card.instruments)}<br>"
+                    f"<b style='color:#0b0f19;'>Regime Condition:</b> {card.regime_condition}<br>"
+                    f"<b style='color:#0b0f19;'>Edge Source:</b> {card.edge_source}<br>"
+                    f"<b style='color:#0b0f19;'>Entry Signal:</b> {card.entry_signal}</div>",
                     unsafe_allow_html=True,
                 )
             with col_r:
                 st.markdown(
-                    f"<div style='font-size:0.85rem;line-height:1.8;color:#344054;'>"
-                    f"<b style='color:#1e3a5f;'>Exit Signal:</b> {card.exit_signal}<br>"
-                    f"<b style='color:#1e3a5f;'>Sizing:</b> {card.sizing_method}<br>"
-                    f"<b style='color:#c0392b;'>Failure Scenario:</b> {card.failure_scenario}</div>",
+                    f"<div style='font-size:0.8rem;line-height:1.85;color:#3b4259;"
+                    f"font-family:DM Sans,sans-serif;'>"
+                    f"<b style='color:#0b0f19;'>Exit Signal:</b> {card.exit_signal}<br>"
+                    f"<b style='color:#0b0f19;'>Sizing:</b> {card.sizing_method}<br>"
+                    f"<b style='color:#dc2626;font-weight:600;'>Failure Scenario:</b> "
+                    f"<span style='color:#6b7394;'>{card.failure_scenario}</span></div>",
                     unsafe_allow_html=True,
                 )
 
@@ -1855,32 +2173,238 @@ def page_trade_ideas():
 
 
 # ===================================================================
-# Pre-warm all caches so page switches are instant
+# Page 6: AI Q&A
+# ===================================================================
+def _build_analysis_context(args):
+    """Serialize current analysis outputs into a text context for the LLM."""
+    parts = []
+
+    # Regime state
+    try:
+        ensemble = _run_ensemble(*args)
+        if ensemble is not None and len(ensemble.dropna()) > 0:
+            prob = float(ensemble.dropna().iloc[-1])
+            regime = "REPRICING" if prob > 0.5 else "SUPPRESSED"
+            parts.append(f"REGIME: Ensemble probability = {prob:.2%} ({regime}). Avg over sample = {ensemble.mean():.2%}.")
+    except Exception:
+        pass
+
+    # PCA
+    try:
+        pca_res = _run_pca(*args)
+        if pca_res is not None:
+            ev = pca_res["explained_variance_ratio"]
+            parts.append(f"PCA: PC1 explains {ev[0]:.1%}, PC2 {ev[1]:.1%}, PC3 {ev[2]:.1%} of yield variance (cumulative {sum(ev):.1%}).")
+    except Exception:
+        pass
+
+    # Spillover
+    try:
+        spill = _run_spillover(*args)
+        if spill is not None:
+            net = spill["net_spillover"]
+            top_t = net.idxmax()
+            parts.append(f"SPILLOVER: Total = {spill['total_spillover']:.1f}%. Net transmitter = {top_t}.")
+    except Exception:
+        pass
+
+    # Carry
+    try:
+        carry = _run_carry(*args)
+        if carry is not None and len(carry["carry_to_vol"].dropna()) > 0:
+            ctv = float(carry["carry_to_vol"].dropna().iloc[-1])
+            parts.append(f"FX CARRY: Carry-to-vol ratio = {ctv:.2f}. {'Attractive' if ctv > 1 else 'Marginal' if ctv > 0.5 else 'Unattractive'}.")
+    except Exception:
+        pass
+
+    # Liquidity
+    try:
+        liq = _run_liquidity(*args)
+        if liq is not None and len(liq["composite_index"].dropna()) > 0:
+            liq_v = float(liq["composite_index"].dropna().iloc[-1])
+            parts.append(f"LIQUIDITY: Composite index = {liq_v:+.2f} z-score. {'Stressed' if liq_v < -1 else 'Healthy' if liq_v > 0 else 'Neutral'}.")
+    except Exception:
+        pass
+
+    # Latest data snapshot
+    try:
+        df = load_unified(*args)
+        if not df.empty:
+            latest = df.iloc[-1]
+            snap = []
+            for col in ["JP_10Y", "US_10Y", "DE_10Y", "UK_10Y", "AU_10Y", "USDJPY", "VIX", "NIKKEI"]:
+                if col in latest.index and pd.notna(latest[col]):
+                    snap.append(f"{col}={latest[col]:.2f}")
+            if snap:
+                parts.append(f"LATEST DATA ({df.index[-1]:%Y-%m-%d}): {', '.join(snap)}.")
+    except Exception:
+        pass
+
+    # Trade ideas summary
+    try:
+        cards, rs = _generate_trades(*args)
+        if cards:
+            top_3 = sorted(cards, key=lambda c: -c.conviction)[:3]
+            trade_lines = [f"  - {c.name} ({c.direction.upper()}, {c.conviction:.0%} conviction, {c.category})" for c in top_3]
+            parts.append(f"TOP TRADE IDEAS:\n" + "\n".join(trade_lines))
+    except Exception:
+        pass
+
+    # BOJ events
+    from src.data.config import BOJ_EVENTS as _boj_events
+    parts.append("BOJ POLICY DATES: " + "; ".join(f"{d}: {e}" for d, e in _boj_events.items()))
+
+    return "\n\n".join(parts)
+
+
+def page_ai_qa():
+    st.header("AI Q&A")
+    _page_intro(
+        "Ask questions about the JGB repricing analysis. The AI assistant has access to all model outputs, "
+        "regime state, and trade ideas computed in this session. Powered by Claude (Anthropic) or OpenAI."
+    )
+
+    # --- API key setup (secrets.toml > env var > sidebar) ---
+    ai_provider = st.sidebar.selectbox("AI Provider", ["OpenAI (GPT)", "Anthropic (Claude)"], key="ai_provider")
+    _secret_key = ""
+    if "OpenAI" in ai_provider:
+        _secret_key = st.secrets.get("OPENAI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
+    else:
+        _secret_key = st.secrets.get("ANTHROPIC_API_KEY", "") or os.environ.get("ANTHROPIC_API_KEY", "")
+    ai_api_key = st.sidebar.text_input(
+        "AI API Key",
+        value=_secret_key,
+        type="password",
+        key="ai_api_key",
+        help="Auto-loaded from .streamlit/secrets.toml if set. Or paste here.",
+    )
+
+    if not ai_api_key:
+        st.info(
+            "Enter your API key in the sidebar to activate the AI Q&A panel. "
+            "Your key is not stored and only used for this session."
+        )
+        # Still show the analysis context for transparency
+        with st.expander("Current Analysis Context (what the AI sees)"):
+            args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
+            ctx = _build_analysis_context(args)
+            st.text(ctx)
+        _page_footer()
+        return
+
+    # --- Chat state ---
+    if "qa_messages" not in st.session_state:
+        st.session_state.qa_messages = []
+
+    # Display chat history
+    for msg in st.session_state.qa_messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    # --- Chat input ---
+    user_input = st.chat_input("Ask about JGB repricing, regime state, trade ideas...")
+
+    if user_input:
+        st.session_state.qa_messages.append({"role": "user", "content": user_input})
+        with st.chat_message("user"):
+            st.markdown(user_input)
+
+        # Build context
+        args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
+        analysis_context = _build_analysis_context(args)
+
+        system_prompt = (
+            "You are a senior rates strategist at a major investment bank, specialising in Japanese Government Bonds (JGBs). "
+            "You have access to the following live analysis outputs from a quantitative JGB repricing framework. "
+            "Answer questions grounded in this data. Be concise, actionable, and cite specific numbers. "
+            "If a question falls outside the available data, say so clearly.\n\n"
+            f"=== ANALYSIS CONTEXT ===\n{analysis_context}\n=== END CONTEXT ==="
+        )
+
+        # Build message history for the API
+        api_messages = [{"role": m["role"], "content": m["content"]} for m in st.session_state.qa_messages]
+
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking..."):
+                try:
+                    if "Anthropic" in ai_provider:
+                        import anthropic
+                        client = anthropic.Anthropic(api_key=ai_api_key)
+                        response = client.messages.create(
+                            model="claude-sonnet-4-5-20250929",
+                            max_tokens=1024,
+                            system=system_prompt,
+                            messages=api_messages,
+                        )
+                        assistant_msg = response.content[0].text
+                    else:
+                        import openai
+                        client = openai.OpenAI(api_key=ai_api_key)
+                        oai_messages = [{"role": "system", "content": system_prompt}] + api_messages
+                        response = client.chat.completions.create(
+                            model="gpt-4o",
+                            messages=oai_messages,
+                            max_tokens=1024,
+                        )
+                        assistant_msg = response.choices[0].message.content
+
+                    st.markdown(assistant_msg)
+                    st.session_state.qa_messages.append({"role": "assistant", "content": assistant_msg})
+                except ImportError as e:
+                    missing = "anthropic" if "anthropic" in str(e) else "openai"
+                    st.error(f"Missing package: `{missing}`. Install with `pip install {missing}`.")
+                except Exception as e:
+                    st.error(f"API call failed: {e}")
+
+    # Show context transparency
+    with st.expander("Analysis Context (what the AI sees)"):
+        args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
+        ctx = _build_analysis_context(args)
+        st.text(ctx)
+
+    _page_footer()
+
+
+# ===================================================================
+# Lazy per-page cache warming (only load what the current page needs)
 # ===================================================================
 _args = (use_simulated, str(start_date), str(end_date), fred_api_key)
 
-if "warmed" not in st.session_state:
-    with st.spinner("Loading models (one-time)..."):
+# Always pre-load the unified dataset (shared by all pages)
+_warm_key = f"warmed_{page}"
+if "data_warmed" not in st.session_state:
+    try:
+        load_unified(*_args)
+    except Exception:
+        pass
+    st.session_state["data_warmed"] = True
+
+# Pre-warm only the models needed for the current page
+if _warm_key not in st.session_state:
+    _page_fns = {
+        "Overview & Data": [],
+        "Yield Curve Analytics": [_run_pca, _run_ns, _run_liquidity],
+        "Regime Detection": [_run_markov, _run_hmm, _run_breaks, _run_entropy, _run_garch],
+        "Spillover & Info Flow": [_run_granger, _run_te, _run_spillover, _run_dcc, _run_carry],
+        "Trade Ideas": [],  # _generate_trades calls its deps internally
+        "AI Q&A": [],
+    }
+    for _fn in _page_fns.get(page, []):
         try:
-            load_unified(*_args)
+            _fn(*_args)
         except Exception:
             pass
-        for _fn in [_run_pca, _run_ns, _run_liquidity,
-                    _run_markov, _run_hmm, _run_breaks, _run_entropy, _run_garch,
-                    _run_granger, _run_te, _run_spillover, _run_dcc, _run_carry]:
-            try:
-                _fn(*_args)
-            except Exception:
-                pass
+    if page == "Regime Detection":
         try:
             _run_ensemble(*_args)
         except Exception:
             pass
+    if page == "Trade Ideas":
         try:
             _generate_trades(*_args)
         except Exception:
             pass
-    st.session_state["warmed"] = True
+    st.session_state[_warm_key] = True
 
 
 # ===================================================================
@@ -1896,3 +2420,5 @@ elif page == "Spillover & Info Flow":
     page_spillover()
 elif page == "Trade Ideas":
     page_trade_ideas()
+elif page == "AI Q&A":
+    page_ai_qa()
