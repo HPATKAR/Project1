@@ -489,6 +489,9 @@ def generate_vol_trades(
     regime_prob: float,
     garch_vol: float,
     entropy_signal: float,
+    *,
+    jp10_level: float | None = None,
+    usdjpy_level: float | None = None,
 ) -> list[TradeCard]:
     """Generate volatility trade ideas.
 
@@ -512,23 +515,34 @@ def generate_vol_trades(
     # --- 1. Long JGB Volatility (regime transitioning) -------------------
     regime_uncertainty = regime_prob * (1 - regime_prob) * 4
     _garch_bps = garch_vol * 10000  # annualised vol in bps
+    _jp10 = jp10_level if jp10_level is not None else 1.0
+    _fx = usdjpy_level if usdjpy_level is not None else 150.0
+    # JGB future price ~ 100 - yield*10 (simplified proxy for ATM strike)
+    _jgb_future_px = round(100 - _jp10 * 10, 2)
+    _straddle_strike = round(_jgb_future_px, 1)
+    _upper_wing = round(_jgb_future_px + 0.10, 2)  # +10 ticks
+    _lower_wing = round(_jgb_future_px - 0.10, 2)  # -10 ticks
+
     if regime_uncertainty > 0.7 or (regime_prob > 0.5 and entropy_signal > 0.6):
         conviction = min(
             0.90, 0.3 + regime_uncertainty * 0.25 + entropy_signal * 0.2
         )
+        # Payer swaption strike = current swap rate
+        _payer_strike = round(_jp10, 3)
         cards.append(
             TradeCard(
                 name="Long JGB Volatility",
                 category="volatility",
                 direction="long",
                 instruments=[
-                    "JB1 Options ATM Straddle (TSE)",
-                    "JPY 10Y1Y Payer Swaption (OTC, JYSW1Y10Y)",
+                    f"JB1 Options {_straddle_strike:.1f} Straddle (TSE, 1M expiry)",
+                    f"JPY 10Y1Y Payer Swaption K={_payer_strike:.3f}% (OTC, JYSW1Y10Y)",
                 ],
                 regime_condition=(
                     f"Regime transitioning: uncertainty={regime_uncertainty:.2f}. "
                     f"GARCH vol={_garch_bps:.1f} bps annualised. "
-                    f"Entropy={entropy_signal:.2f}"
+                    f"Entropy={entropy_signal:.2f}. "
+                    f"JGB 10Y at {_jp10:.3f}%"
                 ),
                 edge_source=(
                     f"GARCH estimates current vol at {_garch_bps:.1f} bps. "
@@ -537,7 +551,9 @@ def generate_vol_trades(
                     "2-4x premium if vol doubles"
                 ),
                 entry_signal=(
-                    "Buy JB1 ATM straddle (1M expiry) + buy 10Y1Y payer swaption. "
+                    f"Buy JB1 {_straddle_strike:.1f} straddle (ATM, 1M expiry). "
+                    f"Call strike: {_straddle_strike:.1f}, Put strike: {_straddle_strike:.1f}. "
+                    f"+ Buy 10Y1Y payer swaption strike {_payer_strike:.3f}%. "
                     f"Implied vol likely ~{_garch_bps * 0.8:.0f}-{_garch_bps * 1.2:.0f} bps. "
                     "Premium budget: 0.3-0.5% of portfolio NAV"
                 ),
@@ -557,6 +573,8 @@ def generate_vol_trades(
                     "regime_uncertainty": round(regime_uncertainty, 4),
                     "garch_vol_bps": round(_garch_bps, 2),
                     "entropy_signal": round(entropy_signal, 4),
+                    "straddle_strike": _straddle_strike,
+                    "payer_strike": _payer_strike,
                 },
             )
         )
@@ -564,19 +582,20 @@ def generate_vol_trades(
     # --- 2. Vol Selling in Stable Regime ---------------------------------
     if regime_prob < 0.25 and garch_vol < 0.03 and entropy_signal < 0.3:
         conviction = min(0.80, 0.5 + (0.25 - regime_prob) * 0.8)
+        _recv_strike = round(_jp10 - 0.10, 3)  # 10 bps OTM receiver
         cards.append(
             TradeCard(
                 name="JGB Vol Selling (Stable Regime)",
                 category="volatility",
                 direction="short",
                 instruments=[
-                    "JB1 Options OTM Strangle (sell, +/-10 bps wings)",
-                    "JPY 10Y1Y Receiver Swaption (sell, OTC)",
+                    f"JB1 Options {_upper_wing:.2f}/{_lower_wing:.2f} Strangle (sell, 1M)",
+                    f"JPY 10Y1Y Receiver Swaption K={_recv_strike:.3f}% (sell, OTC)",
                 ],
                 regime_condition=(
                     f"Stable suppressed regime: regime_prob={regime_prob:.2f}, "
                     f"GARCH vol={_garch_bps:.1f} bps, entropy={entropy_signal:.2f}. "
-                    "All three below threshold"
+                    f"JGB 10Y at {_jp10:.3f}%. All three below threshold"
                 ),
                 edge_source=(
                     f"GARCH vol at only {_garch_bps:.1f} bps but implied typically "
@@ -584,7 +603,9 @@ def generate_vol_trades(
                     "Systematic theta harvesting: ~0.3-0.5 bps/day premium capture"
                 ),
                 entry_signal=(
-                    "Sell JB1 1M strangle (+/-10 bps OTM wings). "
+                    f"Sell JB1 1M strangle: sell {_upper_wing:.2f} call + sell {_lower_wing:.2f} put "
+                    f"(+/-10 bps OTM from ATM {_straddle_strike:.1f}). "
+                    f"Also sell 10Y1Y receiver swaption strike {_recv_strike:.3f}%. "
                     "Collect premium: ~0.8-1.2% of notional. "
                     "Max loss if breached: hedge with delta at wing strike"
                 ),
@@ -596,7 +617,8 @@ def generate_vol_trades(
                 failure_scenario=(
                     "Sudden exogenous shock triggers regime jump before model "
                     "detects transition. Short-gamma: losses accelerate beyond "
-                    "wing strikes. Historical worst case: 20-30 bps move in 1 day"
+                    f"wing strikes ({_lower_wing:.2f}/{_upper_wing:.2f}). "
+                    "Historical worst case: 20-30 bps move in 1 day"
                 ),
                 sizing_method="notional-limited (short gamma budget)",
                 conviction=round(conviction, 2),
@@ -604,6 +626,9 @@ def generate_vol_trades(
                     "regime_prob": round(regime_prob, 4),
                     "garch_vol_bps": round(_garch_bps, 2),
                     "entropy_signal": round(entropy_signal, 4),
+                    "call_strike": _upper_wing,
+                    "put_strike": _lower_wing,
+                    "receiver_strike": _recv_strike,
                 },
             )
         )
@@ -612,19 +637,22 @@ def generate_vol_trades(
     if regime_prob > 0.4 and entropy_signal > 0.5:
         # Asymmetry detected -- prefer payer side (higher yields)
         conviction = min(0.75, 0.3 + regime_prob * 0.2 + entropy_signal * 0.15)
+        _atm_strike = round(_jp10, 3)
+        _otm_strike = round(_jp10 + 0.25, 3)  # ATM + 25 bps
+        _breakeven = round(_jp10 + 0.10, 3)   # ~10-12 bps above ATM
         cards.append(
             TradeCard(
                 name="JGB Vol Skew: Payer Spread",
                 category="volatility",
                 direction="long",
                 instruments=[
-                    "JPY 10Y1Y Payer Swaption ATM (buy, OTC)",
-                    "JPY 10Y1Y Payer Swaption ATM+25bp (sell, OTC)",
+                    f"JPY 10Y1Y Payer Swaption K={_atm_strike:.3f}% (buy, OTC)",
+                    f"JPY 10Y1Y Payer Swaption K={_otm_strike:.3f}% (sell, OTC)",
                 ],
                 regime_condition=(
                     f"Asymmetric repricing: regime_prob={regime_prob:.2f}, "
-                    f"entropy={entropy_signal:.2f}. Skew toward higher yields "
-                    "is under-priced relative to regime signal"
+                    f"entropy={entropy_signal:.2f}. JGB 10Y at {_jp10:.3f}%. "
+                    "Skew toward higher yields is under-priced relative to regime signal"
                 ),
                 edge_source=(
                     "Payer skew historically cheapens 2-3 vol points ahead of "
@@ -632,10 +660,11 @@ def generate_vol_trades(
                     f"Entropy at {entropy_signal:.2f} confirms non-linear dynamics"
                 ),
                 entry_signal=(
-                    "Buy ATM payer swaption, sell ATM+25bp payer swaption. "
+                    f"Buy payer swaption strike {_atm_strike:.3f}% (ATM), "
+                    f"sell payer swaption strike {_otm_strike:.3f}% (ATM+25bp). "
                     "Net debit: ~15-25 bps running. "
-                    "Max profit: 25 bps (width of spread) minus premium. "
-                    "Breakeven: rates rise ~10-12 bps from ATM strike"
+                    f"Max profit: 25 bps (width of spread) minus premium. "
+                    f"Breakeven: 10Y swap rate rises above {_breakeven:.3f}%"
                 ),
                 exit_signal=(
                     "Payer-receiver skew normalises (spread compresses >50%) OR "
@@ -651,6 +680,9 @@ def generate_vol_trades(
                 metadata={
                     "regime_prob": round(regime_prob, 4),
                     "entropy_signal": round(entropy_signal, 4),
+                    "atm_strike": _atm_strike,
+                    "otm_strike": _otm_strike,
+                    "breakeven": _breakeven,
                 },
             )
         )
@@ -930,6 +962,8 @@ def generate_all_trades(regime_state: dict) -> list[TradeCard]:
             regime_prob=rp,
             garch_vol=float(regime_state["garch_vol"]),
             entropy_signal=float(regime_state["entropy_signal"]),
+            jp10_level=regime_state.get("jp10_level"),
+            usdjpy_level=regime_state.get("usdjpy_level"),
         )
     )
 
