@@ -683,47 +683,56 @@ def _page_conclusion(verdict: str, summary: str):
 def _page_footer():
     """Render full-bleed institutional footer with Daniels School branding."""
     yr = datetime.now().year
-    ts = datetime.now().strftime("%Y-%m-%d %H:%M")
-    _w = "color:rgba(255,255,255,0.75);text-decoration:none;font-size:0.72rem;font-weight:500;transition:color 0.15s ease;border-bottom:1px solid transparent;"
+    ts = datetime.now().strftime("%B %d, %Y at %H:%M UTC")
+    _w = "color:rgba(255,255,255,0.75);text-decoration:none;font-size:0.72rem;font-weight:500;transition:color 0.15s ease;"
     _g = "font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.16em;color:#CFB991;margin:0 0 14px 0;padding-bottom:8px;border-bottom:1px solid rgba(207,185,145,0.15);"
-    _n = "font-size:0.58rem;color:rgba(255,255,255,0.4);margin:0;font-weight:400;line-height:1;"
     st.markdown(
         "<style>"
         ".main .block-container { padding-bottom: 0 !important; }"
         "</style>"
         "<div style='margin-top:4rem;font-family:DM Sans,sans-serif;"
         "position:relative;width:100vw;left:50%;right:50%;margin-left:-50vw;margin-right:-50vw;'>"
-        "<div style='background:#000000;padding:40px 0 36px 0;'>"
+        # ── main black section ──
+        "<div style='background:#000000;padding:44px 0 40px 0;'>"
         "<div style='display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1fr;gap:28px;max-width:1280px;margin:0 auto;padding:0 48px;'>"
+        # col 1: branding
         "<div>"
         "<a href='https://business.purdue.edu/' target='_blank'>"
         "<img src='https://business.purdue.edu/includes/img/medsb_h-full-reverse-rgb_1.png' "
         "alt='Purdue Daniels School of Business' "
         "style='height:40px;margin-bottom:16px;display:block;' /></a>"
-        "<p style='font-size:0.68rem;color:rgba(255,255,255,0.8);line-height:1.65;margin:0;max-width:260px;'>"
-        "MGMT 69000 · Mastering AI for Finance<br/>"
+        "<p style='font-size:0.68rem;color:rgba(255,255,255,0.7);line-height:1.65;margin:0 0 16px 0;max-width:260px;'>"
+        "MGMT 69000 &middot; Mastering AI for Finance<br/>"
         "West Lafayette, Indiana</p>"
+        # timestamp placed formally under the branding block
+        f"<p style='font-size:0.6rem;color:rgba(207,185,145,0.6);margin:0;"
+        f"font-weight:600;letter-spacing:0.04em;'>"
+        f"Last updated {ts}</p>"
         "</div>"
+        # col 2: navigate
         f"<div><p style='{_g}'>Navigate</p>"
         "<ul style='list-style:none;padding:0;margin:0;'>"
-        f"<li style='margin-bottom:8px;'><a href='?page=overview' target='_self' style='{_w}'>Overview & Data</a></li>"
+        f"<li style='margin-bottom:8px;'><a href='?page=overview' target='_self' style='{_w}'>Overview &amp; Data</a></li>"
         f"<li style='margin-bottom:8px;'><a href='?page=yield_curve' target='_self' style='{_w}'>Yield Curve Analytics</a></li>"
         f"<li style='margin-bottom:8px;'><a href='?page=regime' target='_self' style='{_w}'>Regime Detection</a></li>"
-        f"<li style='margin-bottom:8px;'><a href='?page=spillover' target='_self' style='{_w}'>Spillover & Info Flow</a></li>"
+        f"<li style='margin-bottom:8px;'><a href='?page=spillover' target='_self' style='{_w}'>Spillover &amp; Info Flow</a></li>"
         f"<li style='margin-bottom:8px;'><a href='?page=trades' target='_self' style='{_w}'>Trade Ideas</a></li>"
-        f"<li style='margin-bottom:8px;'><a href='?page=ai_qa' target='_self' style='{_w}'>AI Q&A</a></li>"
+        f"<li style='margin-bottom:8px;'><a href='?page=ai_qa' target='_self' style='{_w}'>AI Q&amp;A</a></li>"
         "</ul></div>"
+        # col 3: about
         f"<div><p style='{_g}'>About</p>"
         "<ul style='list-style:none;padding:0;margin:0;'>"
         f"<li style='margin-bottom:8px;'><a href='?page=about_heramb' target='_self' style='{_w}'>Heramb S. Patkar</a></li>"
         f"<li style='margin-bottom:8px;'><a href='?page=about_zhang' target='_self' style='{_w}'>Dr. Cinder Zhang</a></li>"
         f"<li><a href='https://business.purdue.edu/' target='_blank' style='{_w}'>Daniels School of Business</a></li>"
         "</ul></div>"
+        # col 4: connect
         f"<div><p style='{_g}'>Connect</p>"
         "<ul style='list-style:none;padding:0;margin:0;'>"
         f"<li style='margin-bottom:8px;'><a href='https://www.linkedin.com/in/heramb-patkar/' target='_blank' style='{_w}'>LinkedIn: Heramb S. Patkar</a></li>"
         f"<li><a href='https://www.linkedin.com/in/cinder-zhang/' target='_blank' style='{_w}'>LinkedIn: Dr. Cinder Zhang</a></li>"
         "</ul></div>"
+        # col 5: source code
         f"<div><p style='{_g}'>Source Code</p>"
         "<ul style='list-style:none;padding:0;margin:0;'>"
         f"<li style='margin-bottom:8px;'><a href='https://github.com/HPATKAR' target='_blank' style='{_w}'>GitHub: Heramb S. Patkar</a></li>"
@@ -731,11 +740,10 @@ def _page_footer():
         f"<li><a href='https://cinderzhang.github.io/' target='_blank' style='{_w}'>DRIVER Framework</a></li>"
         "</ul></div>"
         "</div></div>"
-        "<div style='background:linear-gradient(90deg,#8E6F3E 0%,#CFB991 45%,#DDB945 70%,#CFB991 100%);"
-        "padding:12px 48px;display:flex;justify-content:space-between;align-items:center;'>"
-        f"<p style='font-size:0.56rem;color:rgba(0,0,0,0.5);margin:0;font-weight:500;"
-        f"font-family:JetBrains Mono,monospace;letter-spacing:0.02em;'>{ts} UTC</p>"
-        f"<p style='font-size:0.56rem;color:rgba(0,0,0,0.75);margin:0;font-weight:600;letter-spacing:0.03em;'>"
+        # ── gold accent bar: copyright only ──
+        "<div style='background:#CFB991;padding:10px 48px;text-align:center;'>"
+        f"<p style='font-size:0.58rem;color:#000000;margin:0;font-weight:600;letter-spacing:0.04em;"
+        f"font-family:DM Sans,sans-serif;'>"
         f"&copy; {yr} Purdue University &middot; For educational purposes only &middot; Not investment advice</p>"
         "</div></div>",
         unsafe_allow_html=True,
