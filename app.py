@@ -98,10 +98,6 @@ st.markdown(
     [data-testid="stAppViewContainer"] > section > div {
         padding-bottom: 0 !important;
     }
-    [data-testid="stBottom"] {
-        display: none !important;
-    }
-
     /* Smooth transitions on interactive elements */
     button, a, [data-testid="stMetric"], details[data-testid="stExpander"] {
         transition: all 0.18s ease;
@@ -524,6 +520,8 @@ _QP_MAP = {
 _qp = st.query_params.get("page", "")
 if _qp in _QP_MAP:
     st.session_state.current_page = _QP_MAP[_qp]
+    # Clear the query param so it doesn't override sidebar button clicks on rerun
+    st.query_params.clear()
 elif "current_page" not in st.session_state:
     st.session_state.current_page = "Overview & Data"
 
@@ -2435,9 +2433,10 @@ def _build_analysis_context(args):
 
 
 def page_ai_qa():
-    # Chat-optimised layout
+    # Chat-optimised layout — re-show stBottom (hidden by footer on other pages)
     st.markdown(
         "<style>"
+        "[data-testid='stBottom'] { display: block !important; }"
         ".main .block-container { padding-bottom: 80px !important; }"
         "</style>",
         unsafe_allow_html=True,
