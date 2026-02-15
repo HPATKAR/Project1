@@ -2620,7 +2620,7 @@ def _about_page_styles():
         "margin-right:-50vw;background:linear-gradient(168deg,#000 0%,#0a0a0a 60%,#111 100%);"
         "padding:64px 0 56px 0;margin-top:-1rem;margin-bottom:2.5rem;"
         "border-bottom:3px solid #CFB991;}"
-        ".about-hero-inner{max-width:1040px;margin:0 auto;padding:0 52px;}"
+        ".about-hero-inner{max-width:960px;margin:0 auto;padding:0 40px;}"
         ".about-hero .overline{font-size:0.58rem;font-weight:700;text-transform:uppercase;"
         "letter-spacing:0.22em;color:#CFB991;margin:0 0 12px 0;"
         "display:inline-block;padding:4px 14px;border:1px solid rgba(207,185,145,0.25);"
@@ -2723,29 +2723,29 @@ def page_about_heramb():
         _photo_html = (
             "<div style='flex-shrink:0;'>"
             f"<img src='data:image/jpeg;base64,{_img_b64}' "
-            "alt='Heramb S. Patkar' style='width:190px;height:190px;border-radius:50%;"
-            "object-fit:cover;border:4px solid rgba(207,185,145,0.3);"
-            "box-shadow:0 12px 40px rgba(0,0,0,0.45);' />"
+            "alt='Heramb S. Patkar' style='width:160px;height:160px;border-radius:50%;"
+            "object-fit:cover;border:3px solid rgba(207,185,145,0.3);"
+            "box-shadow:0 10px 36px rgba(0,0,0,0.4);' />"
             "</div>"
         )
 
     # ── hero banner ──
     st.markdown(
         "<div class='about-hero'><div class='about-hero-inner' "
-        "style='display:flex;align-items:center;gap:44px;'>"
-        "<div style='flex:1;'>"
+        "style='display:flex;align-items:center;gap:36px;'>"
+        f"{_photo_html}"
+        "<div style='flex:1;min-width:0;'>"
         "<p class='overline'>About the Author</p>"
         "<h1>Heramb S. Patkar</h1>"
         "<p class='subtitle'>MSF Candidate, Purdue Daniels School of Business</p>"
-        "<p class='tagline'>BITS Pilani engineering graduate and NISM XV certified research analyst "
-        "with equity research experience spanning Indian and U.S. capital markets. "
-        "Published researcher in biomedical device design.</p>"
+        "<p class='tagline'>BITS Pilani engineering graduate with equity research experience "
+        "across Indian and U.S. capital markets. NISM XV certified research analyst. "
+        "Published in the Bulletin of Materials Science (IAS, 2025).</p>"
         "<div class='links'>"
         "<a href='https://www.linkedin.com/in/heramb-patkar/' target='_blank'>LinkedIn</a>"
         "<a href='https://github.com/HPATKAR' target='_blank'>GitHub</a>"
         "<a href='https://www.ias.ac.in/article/fulltext/boms/048/0028' target='_blank'>Publication</a>"
         "</div></div>"
-        f"{_photo_html}"
         "</div></div>",
         unsafe_allow_html=True,
     )
