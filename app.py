@@ -88,8 +88,19 @@ st.markdown(
     .main .block-container {
         padding: 2.2rem 3rem 0 3rem;
         max-width: 1360px;
+        padding-bottom: 0 !important;
     }
-    .main { padding-bottom: 0 !important; }
+    .main {
+        padding-bottom: 0 !important;
+        margin-bottom: 0 !important;
+        overflow: hidden;
+    }
+    [data-testid="stAppViewContainer"] > section > div {
+        padding-bottom: 0 !important;
+    }
+    [data-testid="stBottom"] {
+        display: none !important;
+    }
 
     /* Smooth transitions on interactive elements */
     button, a, [data-testid="stMetric"], details[data-testid="stExpander"] {
@@ -688,10 +699,14 @@ def _page_footer():
     _g = "font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.16em;color:#CFB991;margin:0 0 14px 0;padding-bottom:8px;border-bottom:1px solid rgba(207,185,145,0.15);"
     st.markdown(
         "<style>"
-        ".main .block-container { padding-bottom: 0 !important; }"
+        ".main .block-container { padding-bottom: 0 !important; margin-bottom: 0 !important; }"
+        ".main { padding-bottom: 0 !important; margin-bottom: 0 !important; }"
+        "[data-testid='stAppViewContainer'] { padding-bottom: 0 !important; }"
+        "[data-testid='stBottom'] { display: none !important; }"
         "</style>"
         "<div style='margin-top:4rem;font-family:DM Sans,sans-serif;"
-        "position:relative;width:100vw;left:50%;right:50%;margin-left:-50vw;margin-right:-50vw;'>"
+        "position:relative;width:100vw;left:50%;right:50%;margin-left:-50vw;margin-right:-50vw;"
+        "margin-bottom:-10rem;padding-bottom:0;'>"
         # ── main black section ──
         "<div style='background:#000000;padding:44px 0 40px 0;'>"
         "<div style='display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1fr;gap:28px;max-width:1280px;margin:0 auto;padding:0 48px;'>"
