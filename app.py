@@ -731,11 +731,11 @@ def _page_footer():
         f"<li><a href='https://cinderzhang.github.io/' target='_blank' style='{_w}'>DRIVER Framework</a></li>"
         "</ul></div>"
         "</div></div>"
-        "<div style='background:linear-gradient(90deg,#CFB991 0%,#DAAA00 100%);padding:12px 48px;"
-        "display:flex;justify-content:space-between;align-items:center;'>"
-        f"<p style='font-size:0.56rem;color:rgba(0,0,0,0.45);margin:0;font-weight:500;"
+        "<div style='background:linear-gradient(90deg,#8E6F3E 0%,#CFB991 45%,#DDB945 70%,#CFB991 100%);"
+        "padding:12px 48px;display:flex;justify-content:space-between;align-items:center;'>"
+        f"<p style='font-size:0.56rem;color:rgba(0,0,0,0.5);margin:0;font-weight:500;"
         f"font-family:JetBrains Mono,monospace;letter-spacing:0.02em;'>{ts} UTC</p>"
-        f"<p style='font-size:0.56rem;color:#000000;margin:0;font-weight:600;letter-spacing:0.03em;'>"
+        f"<p style='font-size:0.56rem;color:rgba(0,0,0,0.75);margin:0;font-weight:600;letter-spacing:0.03em;'>"
         f"&copy; {yr} Purdue University &middot; For educational purposes only &middot; Not investment advice</p>"
         "</div></div>",
         unsafe_allow_html=True,
