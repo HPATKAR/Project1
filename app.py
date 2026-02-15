@@ -2856,8 +2856,8 @@ def page_about_heramb():
             "<p class='edu-degree'>Master of Science in Finance</p>"
             "<p class='edu-year'>2025 &ndash; 2026</p></div>"
             "<div class='edu-item'>"
-            "<p class='edu-school'>BITS Pilani, Hyderabad</p>"
-            "<p class='edu-dept'>Birla Institute of Technology and Science</p>"
+            "<p class='edu-school'>BITS Pilani</p>"
+            "<p class='edu-dept'>Hyderabad Campus</p>"
             "<p class='edu-degree'>B.E. (Hons.) Mechanical Engineering</p>"
             "<p class='edu-year'>2020 &ndash; 2024</p></div>"
             "</div>",
