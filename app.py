@@ -110,11 +110,11 @@ st.markdown(
     .main h1::after {
         content: '';
         display: block;
-        width: 40px;
+        width: 48px;
         height: 3px;
         background: linear-gradient(90deg, var(--gold) 0%, var(--gold-bright) 100%);
         margin-top: 0.5rem;
-        margin-bottom: 1rem;
+        margin-bottom: 1.2rem;
         border-radius: 2px;
     }
     .main h2 {
@@ -126,8 +126,18 @@ st.markdown(
         text-transform: uppercase;
         border-bottom: none;
         padding-bottom: 0;
-        margin-top: 2rem;
-        margin-bottom: 0.35rem;
+        margin-top: 2.2rem;
+        margin-bottom: 0.4rem;
+    }
+    .main h2::before {
+        content: '';
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 2px;
+        background: var(--gold);
+        margin-right: 8px;
+        transform: translateY(-1px);
     }
     .main h3 {
         font-family: 'DM Sans', sans-serif;
@@ -178,7 +188,7 @@ st.markdown(
     /* ---- Sidebar ---- */
     section[data-testid="stSidebar"] {
         background: #000000;
-        border-right: none;
+        border-right: 1px solid rgba(207,185,145,0.1);
     }
     /* Text & labels */
     section[data-testid="stSidebar"] p,
@@ -267,6 +277,7 @@ st.markdown(
     section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
         background: rgba(207,185,145,0.12);
         border: 1px solid rgba(207,185,145,0.3);
+        border-left: 3px solid #CFB991;
         color: #CFB991 !important;
         font-weight: 600;
     }
@@ -333,17 +344,22 @@ st.markdown(
         color: #CFB991;
         border: 1px solid #CFB991;
         font-weight: 600;
-        border-radius: 6px;
-        padding: 0.5rem 1.4rem;
+        border-radius: 8px;
+        padding: 0.55rem 1.6rem;
         font-size: 0.74rem;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
-        transition: all 0.15s ease;
+        transition: all 0.18s ease;
     }
     .stDownloadButton > button:hover {
         background: #CFB991;
         color: #000000;
-        box-shadow: 0 2px 8px rgba(207,185,145,0.3);
+        box-shadow: 0 4px 16px rgba(207,185,145,0.35);
+        transform: translateY(-1px);
+    }
+    .stDownloadButton > button:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 4px rgba(207,185,145,0.2);
     }
 
     /* ---- Alerts ---- */
@@ -400,6 +416,16 @@ st.markdown(
     .stSpinner > div {
         font-size: 0.78rem;
         color: var(--ink-muted);
+        font-weight: 500;
+    }
+
+    /* ---- Focus ring (accessibility + polish) ---- */
+    button:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    select:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(207,185,145,0.35);
     }
 
     /* ---- Scrollbar ---- */
@@ -411,19 +437,42 @@ st.markdown(
     /* ---- Selection highlight ---- */
     ::selection { background: rgba(207,185,145,0.25); color: var(--ink); }
 
-    /* ---- Hide Streamlit chrome ---- */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header[data-testid="stHeader"] {
-        background: rgba(255,255,255,0.92);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border-bottom: 1px solid rgba(0,0,0,0.04);
+    /* ---- Tabular numerics for finance-grade numbers ---- */
+    * { font-variant-numeric: tabular-nums lining-nums; }
+
+    /* ---- Dataframe table polish ---- */
+    [data-testid="stDataFrame"] [role="columnheader"] {
+        background: #f6f6f4 !important;
+        color: var(--ink) !important;
+        border-bottom: 1px solid var(--border) !important;
+        font-weight: 700;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    [data-testid="stDataFrame"] [role="row"]:hover {
+        background: rgba(207,185,145,0.08);
+    }
+    [data-testid="stDataFrame"] * {
+        font-size: 0.78rem;
     }
 
-    /* ---- Sidebar collapse button (permanently hidden) ---- */
-    button[data-testid="stSidebarCollapseButton"],
+    /* ---- Hide ALL Streamlit chrome ---- */
+    #MainMenu { display: none !important; }
+    footer { display: none !important; }
+    header[data-testid="stHeader"] { display: none !important; }
+    div[data-testid="stToolbar"] { display: none !important; }
+    div[data-testid="stDecoration"] { display: none !important; }
+    div[data-testid="stStatusWidget"] { display: none !important; }
+
+    /* ---- Sidebar collapse: kill EVERY variant across Streamlit versions ---- */
+    button[data-testid="stSidebarCollapseButton"] { display: none !important; }
+    div[data-testid="stSidebarCollapseButton"] { display: none !important; }
+    header [data-testid="stSidebarCollapseButton"] { display: none !important; }
+    div[data-testid="collapsedControl"] { display: none !important; }
+    button[kind="header"] { display: none !important; }
     button[kind="headerNoPadding"] { display: none !important; }
+    [data-testid="stSidebar"] > div:first-child > button { display: none !important; }
 
     /* ---- Column gap polish ---- */
     [data-testid="column"] { padding: 0 0.4rem; }
@@ -436,15 +485,17 @@ st.markdown(
 # Sidebar: navigation + global controls
 # ---------------------------------------------------------------------------
 st.sidebar.markdown(
-    "<div style='padding:0.8rem 0 1rem 0; border-bottom:1px solid rgba(207,185,145,0.15); "
-    "margin-bottom:0.8rem;'>"
-    "<div style='font-size:0.52rem; font-weight:600; text-transform:uppercase; "
-    "letter-spacing:0.18em; color:#CFB991;'>Rates Strategy Desk</div>"
-    "<div style='font-size:1.2rem; font-weight:700; color:rgba(255,255,255,0.95); "
-    "letter-spacing:-0.03em; line-height:1.2; margin-top:0.25rem; "
+    "<div style='padding:1rem 0 1.2rem 0; border-bottom:1px solid rgba(207,185,145,0.15); "
+    "margin-bottom:1rem;'>"
+    "<div style='font-size:0.5rem; font-weight:700; text-transform:uppercase; "
+    "letter-spacing:0.2em; color:#CFB991; margin-bottom:6px;'>Rates Strategy Desk</div>"
+    "<div style='font-size:1.3rem; font-weight:800; color:rgba(255,255,255,0.95); "
+    "letter-spacing:-0.03em; line-height:1.15; "
     "font-family:DM Sans,sans-serif;'>JGB Repricing</div>"
-    "<div style='font-size:0.65rem; font-weight:400; color:rgba(255,255,255,0.35); "
-    "margin-top:0.2rem; letter-spacing:0.02em;'>Quantitative Framework · Purdue Daniels</div></div>",
+    "<div style='font-size:0.64rem; font-weight:400; color:rgba(255,255,255,0.3); "
+    "margin-top:4px; letter-spacing:0.02em;'>Quantitative Framework</div>"
+    "<div style='font-size:0.58rem; font-weight:500; color:rgba(207,185,145,0.5); "
+    "margin-top:2px; letter-spacing:0.04em;'>Purdue Daniels School of Business</div></div>",
     unsafe_allow_html=True,
 )
 
@@ -633,8 +684,8 @@ def _page_footer():
     """Render full-bleed institutional footer with Daniels School branding."""
     yr = datetime.now().year
     ts = datetime.now().strftime("%Y-%m-%d %H:%M")
-    _w = "color:rgba(255,255,255,0.85);text-decoration:none;font-size:0.72rem;font-weight:500;"
-    _g = "font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;color:#CFB991;margin:0 0 12px 0;"
+    _w = "color:rgba(255,255,255,0.75);text-decoration:none;font-size:0.72rem;font-weight:500;transition:color 0.15s ease;border-bottom:1px solid transparent;"
+    _g = "font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.16em;color:#CFB991;margin:0 0 14px 0;padding-bottom:8px;border-bottom:1px solid rgba(207,185,145,0.15);"
     _n = "font-size:0.58rem;color:rgba(255,255,255,0.4);margin:0;font-weight:400;line-height:1;"
     st.markdown(
         "<style>"
@@ -680,11 +731,12 @@ def _page_footer():
         f"<li><a href='https://cinderzhang.github.io/' target='_blank' style='{_w}'>DRIVER Framework</a></li>"
         "</ul></div>"
         "</div></div>"
-        "<div style='background:#CFB991;padding:10px 48px;"
+        "<div style='background:linear-gradient(90deg,#CFB991 0%,#DAAA00 100%);padding:12px 48px;"
         "display:flex;justify-content:space-between;align-items:center;'>"
-        f"<p style='font-size:0.56rem;color:rgba(0,0,0,0.5);margin:0;font-weight:500;'>{ts} UTC</p>"
-        f"<p style='font-size:0.56rem;color:#000000;margin:0;font-weight:600;letter-spacing:0.02em;'>"
-        f"© {yr} Purdue University · For educational purposes only · Not investment advice</p>"
+        f"<p style='font-size:0.56rem;color:rgba(0,0,0,0.45);margin:0;font-weight:500;"
+        f"font-family:JetBrains Mono,monospace;letter-spacing:0.02em;'>{ts} UTC</p>"
+        f"<p style='font-size:0.56rem;color:#000000;margin:0;font-weight:600;letter-spacing:0.03em;'>"
+        f"&copy; {yr} Purdue University &middot; For educational purposes only &middot; Not investment advice</p>"
         "</div></div>",
         unsafe_allow_html=True,
     )
