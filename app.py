@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import sys
 import os
+import base64
+from pathlib import Path
 from datetime import date, datetime
 from pathlib import Path
 
@@ -39,7 +41,7 @@ from src.data.config import BOJ_EVENTS, JGB_TENORS, DEFAULT_START, DEFAULT_END, 
 # ---------------------------------------------------------------------------
 st.set_page_config(
     page_title="JGB Repricing Framework",
-    page_icon="https://em-content.zobj.net/source/apple/391/chart-increasing_1f4c8.png",
+    page_icon="https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Purdue_Boilermakers_logo.svg/1200px-Purdue_Boilermakers_logo.svg.png",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -79,11 +81,19 @@ st.markdown(
     html, body, .main, [data-testid="stAppViewContainer"] {
         font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
         color: var(--ink-soft);
+        text-rendering: optimizeLegibility;
     }
     .main .block-container {
-        padding: 2rem 2.5rem 1.5rem 2.5rem;
+        padding: 2.2rem 3rem 0 3rem;
         max-width: 1360px;
+    }
+    .main { padding-bottom: 0 !important; }
+
+    /* Smooth transitions on interactive elements */
+    button, a, [data-testid="stMetric"], details[data-testid="stExpander"] {
+        transition: all 0.18s ease;
     }
 
     /* ---- Typography ---- */
@@ -136,10 +146,14 @@ st.markdown(
     /* ---- Metric cards ---- */
     [data-testid="stMetric"] {
         background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 14px 18px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        padding: 16px 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.02);
+    }
+    [data-testid="stMetric"]:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06), 0 0 0 1px rgba(207,185,145,0.2);
+        border-color: var(--gold-dust);
     }
     [data-testid="stMetricLabel"] {
         font-family: 'DM Sans', sans-serif;
@@ -266,25 +280,6 @@ st.markdown(
         color: #CFB991 !important;
         border: none;
     }
-    /* Sidebar collapse/expand — style Streamlit's default SVG arrow */
-    button[data-testid="stSidebarCollapseButton"] {
-        visibility: visible !important;
-        display: flex !important;
-        background: transparent;
-        border: none;
-    }
-    button[data-testid="stSidebarCollapseButton"] svg {
-        fill: rgba(255,255,255,0.5);
-        stroke: rgba(255,255,255,0.5);
-    }
-    button[data-testid="stSidebarCollapseButton"]:hover svg {
-        fill: #CFB991;
-        stroke: #CFB991;
-    }
-    [data-testid="collapsedControl"] {
-        visibility: visible !important;
-    }
-
     /* ---- Expander ---- */
     .streamlit-expanderHeader {
         font-family: 'DM Sans', sans-serif;
@@ -294,24 +289,34 @@ st.markdown(
     }
     details[data-testid="stExpander"] {
         border: 1px solid var(--border-light);
-        border-radius: 8px;
-        margin-bottom: 0.5rem;
+        border-radius: 10px;
+        margin-bottom: 0.6rem;
         background: var(--surface);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+    details[data-testid="stExpander"]:hover {
+        border-color: var(--gold-dust);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    details[data-testid="stExpander"][open] {
+        border-color: rgba(207,185,145,0.3);
     }
 
     /* ---- Chart containers ---- */
     [data-testid="stPlotlyChart"] {
         border: 1px solid var(--border-light);
-        border-radius: 8px;
+        border-radius: 10px;
         background: var(--surface);
         overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03);
     }
 
     /* ---- Dataframes ---- */
     [data-testid="stDataFrame"] {
         border: 1px solid var(--border-light);
-        border-radius: 8px;
+        border-radius: 10px;
         overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03);
     }
 
     /* ---- Divider ---- */
@@ -343,30 +348,52 @@ st.markdown(
 
     /* ---- Alerts ---- */
     [data-testid="stAlert"] {
-        border-radius: 8px;
+        border-radius: 10px;
         font-size: 0.8rem;
         border: none;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
     }
 
     /* ---- Tabs ---- */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0;
+        border-bottom: 2px solid var(--border-light);
+    }
     .stTabs [data-baseweb="tab"] {
         font-family: 'DM Sans', sans-serif;
         font-size: 0.78rem;
         font-weight: 600;
         letter-spacing: 0.02em;
+        padding: 0.6rem 1.2rem;
+        border-radius: 6px 6px 0 0;
+    }
+    .stTabs [data-baseweb="tab"][aria-selected="true"] {
+        border-bottom: 2px solid var(--gold);
+        color: var(--ink);
     }
 
     /* ---- Chat (AI Q&A page) ---- */
     [data-testid="stChatMessage"] {
-        border-radius: 10px;
+        border-radius: 12px;
         border: 1px solid var(--border-light);
-        padding: 0.8rem 1rem;
+        padding: 1rem 1.2rem;
         font-size: 0.82rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        margin-bottom: 0.5rem;
+    }
+    [data-testid="stChatMessage"][data-testid*="user"] {
+        background: var(--surface-1);
     }
     .stChatInput textarea {
         font-family: 'DM Sans', sans-serif;
         font-size: 0.82rem;
-        border-radius: 10px;
+        border-radius: 12px;
+        border: 1px solid var(--border-light);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .stChatInput textarea:focus {
+        border-color: rgba(207,185,145,0.5);
+        box-shadow: 0 2px 12px rgba(207,185,145,0.1);
     }
 
     /* ---- Spinner ---- */
@@ -375,15 +402,31 @@ st.markdown(
         color: var(--ink-muted);
     }
 
+    /* ---- Scrollbar ---- */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
+
+    /* ---- Selection highlight ---- */
+    ::selection { background: rgba(207,185,145,0.25); color: var(--ink); }
+
     /* ---- Hide Streamlit chrome ---- */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header[data-testid="stHeader"] {
-        background: rgba(255,255,255,0.85);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+        background: rgba(255,255,255,0.92);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         border-bottom: 1px solid rgba(0,0,0,0.04);
     }
+
+    /* ---- Sidebar collapse button (permanently hidden) ---- */
+    button[data-testid="stSidebarCollapseButton"],
+    button[kind="headerNoPadding"] { display: none !important; }
+
+    /* ---- Column gap polish ---- */
+    [data-testid="column"] { padding: 0 0.4rem; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -406,7 +449,20 @@ st.sidebar.markdown(
 )
 
 # Button-based navigation with session state
-if "current_page" not in st.session_state:
+_QP_MAP = {
+    "about_heramb": "About: Heramb Patkar",
+    "about_zhang": "About: Dr. Zhang",
+    "overview": "Overview & Data",
+    "yield_curve": "Yield Curve Analytics",
+    "regime": "Regime Detection",
+    "spillover": "Spillover & Info Flow",
+    "trades": "Trade Ideas",
+    "ai_qa": "AI Q&A",
+}
+_qp = st.query_params.get("page", "")
+if _qp in _QP_MAP:
+    st.session_state.current_page = _QP_MAP[_qp]
+elif "current_page" not in st.session_state:
     st.session_state.current_page = "Overview & Data"
 
 _NAV_ITEMS = [
@@ -528,8 +584,9 @@ def _style_fig(fig: go.Figure, height: int = 380) -> go.Figure:
 def _page_intro(text: str):
     """Render a page introduction."""
     st.markdown(
-        f"<p style='color:#6b7394;font-family:DM Sans,sans-serif;font-size:0.78rem;"
-        f"line-height:1.65;margin:0 0 1.2rem 0;padding:0;max-width:720px;'>{text}</p>",
+        f"<p style='color:#6b7394;font-family:DM Sans,sans-serif;font-size:0.8rem;"
+        f"line-height:1.7;margin:0 0 1.5rem 0;padding:0;max-width:740px;"
+        f"letter-spacing:0.005em;'>{text}</p>",
         unsafe_allow_html=True,
     )
 
@@ -537,9 +594,10 @@ def _page_intro(text: str):
 def _section_note(text: str):
     """Render analytical context below a section header."""
     st.markdown(
-        f"<div style='background:#f9f8f6;border-left:3px solid #CFB991;padding:8px 14px;"
-        f"border-radius:0 6px 6px 0;margin:-0.1rem 0 0.7rem 0;'>"
-        f"<p style='color:#555960;font-size:0.76rem;line-height:1.6;margin:0;"
+        f"<div style='background:#fafaf8;border-left:3px solid #CFB991;padding:10px 16px;"
+        f"border-radius:0 8px 8px 0;margin:-0.1rem 0 0.8rem 0;"
+        f"box-shadow:0 1px 3px rgba(0,0,0,0.02);'>"
+        f"<p style='color:#555960;font-size:0.76rem;line-height:1.65;margin:0;"
         f"font-family:DM Sans,sans-serif;'>{text}</p></div>",
         unsafe_allow_html=True,
     )
@@ -548,44 +606,86 @@ def _section_note(text: str):
 def _page_conclusion(verdict: str, summary: str):
     """Render verdict + assessment panel."""
     st.markdown(
-        f"<div style='margin-top:2rem;border-radius:10px;overflow:hidden;"
-        f"border:1px solid rgba(0,0,0,0.08);'>"
-        # verdict — Purdue Black with gold accent
-        f"<div style='background:#000000;padding:16px 22px;"
+        f"<div style='margin-top:2.5rem;border-radius:12px;overflow:hidden;"
+        f"border:1px solid rgba(0,0,0,0.06);box-shadow:0 2px 12px rgba(0,0,0,0.06);'>"
+        # verdict block
+        f"<div style='background:#000000;padding:18px 24px;"
         f"border-top:3px solid #CFB991;'>"
+        f"<p style='margin:0 0 2px 0;color:rgba(207,185,145,0.6);font-family:DM Sans,sans-serif;"
+        f"font-size:0.55rem;font-weight:700;text-transform:uppercase;letter-spacing:0.16em;'>"
+        f"Verdict</p>"
         f"<p style='margin:0;color:#CFB991;font-family:DM Sans,sans-serif;"
         f"font-size:0.88rem;font-weight:600;line-height:1.55;letter-spacing:-0.01em;'>"
         f"{verdict}</p></div>"
-        # assessment
-        f"<div style='background:#f9f8f6;padding:14px 22px;'>"
-        f"<p style='margin:0 0 4px 0;color:#9D9795;font-family:DM Sans,sans-serif;"
-        f"font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;'>"
+        # assessment block
+        f"<div style='background:#fafaf8;padding:16px 24px;'>"
+        f"<p style='margin:0 0 6px 0;color:#9D9795;font-family:DM Sans,sans-serif;"
+        f"font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;'>"
         f"Assessment</p>"
         f"<p style='margin:0;color:#555960;font-family:DM Sans,sans-serif;"
-        f"font-size:0.78rem;line-height:1.65;'>{summary}</p></div>"
+        f"font-size:0.78rem;line-height:1.7;'>{summary}</p></div>"
         f"</div>",
         unsafe_allow_html=True,
     )
 
 
 def _page_footer():
-    """Render institutional disclaimer footer."""
+    """Render full-bleed institutional footer with Daniels School branding."""
+    yr = datetime.now().year
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M")
+    _w = "color:rgba(255,255,255,0.85);text-decoration:none;font-size:0.72rem;font-weight:500;"
+    _g = "font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;color:#CFB991;margin:0 0 12px 0;"
+    _n = "font-size:0.58rem;color:rgba(255,255,255,0.4);margin:0;font-weight:400;line-height:1;"
     st.markdown(
-        "<div style='margin-top:2.5rem;padding:14px 0 8px 0;border-top:1px solid #eceef5;'>"
-        "<p style='color:#9ca3bf;font-size:0.62rem;line-height:1.55;margin:0 0 6px 0;"
-        "font-family:DM Sans,sans-serif;letter-spacing:0.01em;'>"
-        "This material is produced by a quantitative framework for informational purposes only. "
-        "It does not constitute investment advice. "
-        "Past performance is not indicative of future results. "
-        f"Generated {datetime.now():%Y-%m-%d %H:%M} UTC.</p>"
-        "<p style='color:#6F727B;font-size:0.62rem;line-height:1.6;margin:0;"
-        "font-family:DM Sans,sans-serif;'>"
-        "<a href='https://www.linkedin.com/in/heramb-patkar/' "
-        "target='_blank' style='color:#8E6F3E;text-decoration:none;font-weight:600;'>"
-        "Heramb S. Patkar</a> · MSF, Purdue Daniels School of Business · "
-        "Advisor: <a href='https://cinderzhang.github.io/' "
-        "target='_blank' style='color:#8E6F3E;text-decoration:none;font-weight:600;'>"
-        "Dr. Cinder Zhang</a></p></div>",
+        "<style>"
+        ".main .block-container { padding-bottom: 0 !important; }"
+        "</style>"
+        "<div style='margin-top:4rem;font-family:DM Sans,sans-serif;"
+        "position:relative;width:100vw;left:50%;right:50%;margin-left:-50vw;margin-right:-50vw;'>"
+        "<div style='background:#000000;padding:40px 0 36px 0;'>"
+        "<div style='display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1fr;gap:28px;max-width:1280px;margin:0 auto;padding:0 48px;'>"
+        "<div>"
+        "<a href='https://business.purdue.edu/' target='_blank'>"
+        "<img src='https://business.purdue.edu/includes/img/medsb_h-full-reverse-rgb_1.png' "
+        "alt='Purdue Daniels School of Business' "
+        "style='height:40px;margin-bottom:16px;display:block;' /></a>"
+        "<p style='font-size:0.68rem;color:rgba(255,255,255,0.8);line-height:1.65;margin:0;max-width:260px;'>"
+        "MGMT 69000 · Mastering AI for Finance<br/>"
+        "West Lafayette, Indiana</p>"
+        "</div>"
+        f"<div><p style='{_g}'>Navigate</p>"
+        "<ul style='list-style:none;padding:0;margin:0;'>"
+        f"<li style='margin-bottom:8px;'><a href='?page=overview' target='_self' style='{_w}'>Overview & Data</a></li>"
+        f"<li style='margin-bottom:8px;'><a href='?page=yield_curve' target='_self' style='{_w}'>Yield Curve Analytics</a></li>"
+        f"<li style='margin-bottom:8px;'><a href='?page=regime' target='_self' style='{_w}'>Regime Detection</a></li>"
+        f"<li style='margin-bottom:8px;'><a href='?page=spillover' target='_self' style='{_w}'>Spillover & Info Flow</a></li>"
+        f"<li style='margin-bottom:8px;'><a href='?page=trades' target='_self' style='{_w}'>Trade Ideas</a></li>"
+        f"<li style='margin-bottom:8px;'><a href='?page=ai_qa' target='_self' style='{_w}'>AI Q&A</a></li>"
+        "</ul></div>"
+        f"<div><p style='{_g}'>About</p>"
+        "<ul style='list-style:none;padding:0;margin:0;'>"
+        f"<li style='margin-bottom:8px;'><a href='?page=about_heramb' target='_self' style='{_w}'>Heramb S. Patkar</a></li>"
+        f"<li style='margin-bottom:8px;'><a href='?page=about_zhang' target='_self' style='{_w}'>Dr. Cinder Zhang</a></li>"
+        f"<li><a href='https://business.purdue.edu/' target='_blank' style='{_w}'>Daniels School of Business</a></li>"
+        "</ul></div>"
+        f"<div><p style='{_g}'>Connect</p>"
+        "<ul style='list-style:none;padding:0;margin:0;'>"
+        f"<li style='margin-bottom:8px;'><a href='https://www.linkedin.com/in/heramb-patkar/' target='_blank' style='{_w}'>LinkedIn: Heramb S. Patkar</a></li>"
+        f"<li><a href='https://www.linkedin.com/in/cinder-zhang/' target='_blank' style='{_w}'>LinkedIn: Dr. Cinder Zhang</a></li>"
+        "</ul></div>"
+        f"<div><p style='{_g}'>Source Code</p>"
+        "<ul style='list-style:none;padding:0;margin:0;'>"
+        f"<li style='margin-bottom:8px;'><a href='https://github.com/HPATKAR' target='_blank' style='{_w}'>GitHub: Heramb S. Patkar</a></li>"
+        f"<li style='margin-bottom:8px;'><a href='https://github.com/CinderZhang' target='_blank' style='{_w}'>GitHub: Dr. Cinder Zhang</a></li>"
+        f"<li><a href='https://cinderzhang.github.io/' target='_blank' style='{_w}'>DRIVER Framework</a></li>"
+        "</ul></div>"
+        "</div></div>"
+        "<div style='background:#CFB991;padding:10px 48px;"
+        "display:flex;justify-content:space-between;align-items:center;'>"
+        f"<p style='font-size:0.56rem;color:rgba(0,0,0,0.5);margin:0;font-weight:500;'>{ts} UTC</p>"
+        f"<p style='font-size:0.56rem;color:#000000;margin:0;font-weight:600;letter-spacing:0.02em;'>"
+        f"© {yr} Purdue University · For educational purposes only · Not investment advice</p>"
+        "</div></div>",
         unsafe_allow_html=True,
     )
 
@@ -593,24 +693,24 @@ def _page_footer():
 # ===================================================================
 # Cached helpers
 # ===================================================================
-@st.cache_resource(ttl=900, max_entries=2)
+@st.cache_resource(ttl=3600, max_entries=2)
 def get_data_store(simulated: bool) -> DataStore:
     return DataStore(use_simulated=simulated)
 
 
-@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
 def load_unified(simulated: bool, start: str, end: str, api_key: str | None):
     store = get_data_store(simulated)
     return store.get_unified(start=start, end=end, fred_api_key=api_key or None)
 
 
-@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
 def load_rates(simulated: bool, start: str, end: str, api_key: str | None):
     store = get_data_store(simulated)
     return store.get_rates(start=start, end=end, fred_api_key=api_key or None)
 
 
-@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
 def load_market(simulated: bool, start: str, end: str):
     store = get_data_store(simulated)
     return store.get_market(start=start, end=end)
@@ -777,7 +877,7 @@ def page_overview():
 # ===================================================================
 # Page 2: Yield Curve Analytics
 # ===================================================================
-@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
 def _run_pca(simulated, start, end, api_key):
     from src.yield_curve.pca import fit_yield_pca, validate_pca_factors
 
@@ -793,7 +893,7 @@ def _run_pca(simulated, start, end, api_key):
     return fit_yield_pca(changes, n_components=min(3, len(yield_cols)))
 
 
-@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
 def _run_ns(simulated, start, end, api_key):
     from src.yield_curve.nelson_siegel import fit_ns_timeseries
 
@@ -816,7 +916,7 @@ def _run_ns(simulated, start, end, api_key):
     return fit_ns_timeseries(yield_weekly, tenors=tenors)
 
 
-@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
 def _run_liquidity(simulated, start, end, api_key):
     from src.yield_curve.liquidity import roll_measure, composite_liquidity_index
 
@@ -1077,7 +1177,7 @@ def page_yield_curve():
 # ===================================================================
 # Page 3: Regime Detection
 # ===================================================================
-@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
 def _run_markov(simulated, start, end, api_key):
     from src.regime.markov_switching import fit_markov_regime
 
@@ -1101,7 +1201,7 @@ def _run_markov(simulated, start, end, api_key):
             return None
 
 
-@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
 def _run_hmm(simulated, start, end, api_key):
     from src.regime.hmm_regime import fit_multivariate_hmm
 
@@ -1115,7 +1215,7 @@ def _run_hmm(simulated, start, end, api_key):
     return fit_multivariate_hmm(sub, n_states=2)
 
 
-@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
 def _run_breaks(simulated, start, end, api_key):
     from src.regime.structural_breaks import detect_breaks_pelt
 
@@ -1128,7 +1228,7 @@ def _run_breaks(simulated, start, end, api_key):
     return changes, bkps
 
 
-@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
 def _run_entropy(simulated, start, end, api_key):
     from src.regime.entropy_regime import rolling_permutation_entropy, entropy_regime_signal
 
@@ -1142,7 +1242,7 @@ def _run_entropy(simulated, start, end, api_key):
     return ent, sig
 
 
-@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
 def _run_garch(simulated, start, end, api_key):
     from src.regime.garch_regime import fit_garch, volatility_regime_breaks
 
@@ -1157,7 +1257,7 @@ def _run_garch(simulated, start, end, api_key):
     return vol, breaks
 
 
-@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
 def _run_ensemble(simulated, start, end, api_key):
     from src.regime.ensemble import ensemble_regime_probability
 
@@ -1451,7 +1551,7 @@ def page_regime():
 # ===================================================================
 # Page 4: Spillover & Information Flow
 # ===================================================================
-@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
 def _run_granger(simulated, start, end, api_key):
     from src.spillover.granger import pairwise_granger
 
@@ -1465,7 +1565,7 @@ def _run_granger(simulated, start, end, api_key):
     return pairwise_granger(sub, max_lag=5, significance=0.05)
 
 
-@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
 def _run_te(simulated, start, end, api_key):
     from src.spillover.transfer_entropy import pairwise_transfer_entropy
 
@@ -1480,7 +1580,7 @@ def _run_te(simulated, start, end, api_key):
     return pairwise_transfer_entropy(sub, lag=1, n_bins=3)
 
 
-@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
 def _run_spillover(simulated, start, end, api_key):
     from src.spillover.diebold_yilmaz import compute_spillover_index
 
@@ -1494,7 +1594,7 @@ def _run_spillover(simulated, start, end, api_key):
     return compute_spillover_index(sub, var_lags=4, forecast_horizon=10)
 
 
-@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
 def _run_dcc(simulated, start, end, api_key):
     from src.spillover.dcc_garch import compute_dcc
 
@@ -1508,7 +1608,7 @@ def _run_dcc(simulated, start, end, api_key):
     return compute_dcc(sub, p=1, q=1)
 
 
-@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
 def _run_te_pca(simulated, start, end, api_key):
     """Transfer Entropy on PCA factor scores (PC1/PC2/PC3)."""
     from src.spillover.transfer_entropy import pairwise_transfer_entropy
@@ -1522,7 +1622,7 @@ def _run_te_pca(simulated, start, end, api_key):
     return pairwise_transfer_entropy(scores, lag=1, n_bins=3)
 
 
-@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
 def _run_carry(simulated, start, end, api_key):
     from src.fx.carry_analytics import compute_carry, carry_to_vol
 
@@ -1883,7 +1983,7 @@ def page_spillover():
 # ===================================================================
 # Page 5: Trade Ideas
 # ===================================================================
-@st.cache_data(show_spinner=False, ttl=900, max_entries=3)
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
 def _generate_trades(simulated, start, end, api_key):
     from src.strategy.trade_generator import generate_all_trades
     from src.yield_curve.term_premium import estimate_acm_term_premium
@@ -2260,6 +2360,14 @@ def _build_analysis_context(args):
 
 
 def page_ai_qa():
+    # Clean chat-optimised layout: remove default bottom padding, give chat area room
+    st.markdown(
+        "<style>"
+        ".main .block-container { padding-bottom: 80px !important; }"
+        "section[data-testid='stChatInput'] { bottom: 0 !important; }"
+        "</style>",
+        unsafe_allow_html=True,
+    )
     st.header("AI Q&A")
     _page_intro(
         "Ask questions about the JGB repricing analysis. The AI assistant has access to all model outputs, "
@@ -2286,12 +2394,11 @@ def page_ai_qa():
             "Enter your API key in the sidebar to activate the AI Q&A panel. "
             "Your key is not stored and only used for this session."
         )
-        # Still show the analysis context for transparency
-        with st.expander("Current Analysis Context (what the AI sees)"):
+        # Context in sidebar to keep layout clean
+        with st.sidebar.expander("Analysis Context"):
             args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
             ctx = _build_analysis_context(args)
             st.text(ctx)
-        _page_footer()
         return
 
     # --- Chat state ---
@@ -2304,7 +2411,7 @@ def page_ai_qa():
             st.markdown(msg["content"])
 
     # --- Chat input ---
-    user_input = st.chat_input("Ask about JGB repricing, regime state, trade ideas...")
+    user_input = st.chat_input("Ask anything: JGBs, rates, macro, BOJ policy, trading strategies, yield curves...")
 
     if user_input:
         st.session_state.qa_messages.append({"role": "user", "content": user_input})
@@ -2316,11 +2423,14 @@ def page_ai_qa():
         analysis_context = _build_analysis_context(args)
 
         system_prompt = (
-            "You are a senior rates strategist at a major investment bank, specialising in Japanese Government Bonds (JGBs). "
-            "You have access to the following live analysis outputs from a quantitative JGB repricing framework. "
-            "Answer questions grounded in this data. Be concise, actionable, and cite specific numbers. "
-            "If a question falls outside the available data, say so clearly.\n\n"
-            f"=== ANALYSIS CONTEXT ===\n{analysis_context}\n=== END CONTEXT ==="
+            "You are a senior rates strategist at a major investment bank, specialising in Japanese Government Bonds (JGBs), "
+            "global fixed income, macro trading, and quantitative finance. "
+            "You have access to live analysis outputs from a JGB repricing framework (below), but you can also "
+            "answer broader questions about bond markets, monetary policy, BOJ, Fed, yield curve theory, "
+            "trading strategies, financial concepts, and anything related to rates and macro. "
+            "When relevant, ground your answers in the live data and cite specific numbers. "
+            "Be concise, professional, and actionable.\n\n"
+            f"=== LIVE ANALYSIS CONTEXT ===\n{analysis_context}\n=== END CONTEXT ==="
         )
 
         # Build message history for the API
@@ -2334,7 +2444,7 @@ def page_ai_qa():
                         client = anthropic.Anthropic(api_key=ai_api_key)
                         response = client.messages.create(
                             model="claude-sonnet-4-5-20250929",
-                            max_tokens=1024,
+                            max_tokens=2048,
                             system=system_prompt,
                             messages=api_messages,
                         )
@@ -2346,7 +2456,7 @@ def page_ai_qa():
                         response = client.chat.completions.create(
                             model="gpt-4o",
                             messages=oai_messages,
-                            max_tokens=1024,
+                            max_tokens=2048,
                         )
                         assistant_msg = response.choices[0].message.content
 
@@ -2358,17 +2468,396 @@ def page_ai_qa():
                 except Exception as e:
                     st.error(f"API call failed: {e}")
 
-    # Show context transparency
-    with st.expander("Analysis Context (what the AI sees)"):
+    # Context transparency in sidebar to keep chat area clean
+    with st.sidebar.expander("Analysis Context"):
         args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
         ctx = _build_analysis_context(args)
         st.text(ctx)
+
+
+# ===================================================================
+# Page 7: About — Heramb Patkar
+# ===================================================================
+def _about_page_styles():
+    """Inject shared CSS for About pages (hero banner, cards, tags)."""
+    st.markdown(
+        "<style>"
+        ".about-hero{position:relative;width:100vw;left:50%;right:50%;margin-left:-50vw;"
+        "margin-right:-50vw;background:#000;padding:56px 0 48px 0;margin-top:-1rem;margin-bottom:2rem;}"
+        ".about-hero-inner{max-width:960px;margin:0 auto;padding:0 48px;}"
+        ".about-hero .overline{font-size:0.6rem;font-weight:600;text-transform:uppercase;"
+        "letter-spacing:0.2em;color:#CFB991;margin:0 0 10px 0;}"
+        ".about-hero h1{font-size:1.85rem;font-weight:800;color:#fff;margin:0 0 8px 0;"
+        "letter-spacing:-0.03em;line-height:1.15;}"
+        ".about-hero .tagline{font-size:0.82rem;color:rgba(255,255,255,0.7);font-weight:400;"
+        "margin:0 0 20px 0;line-height:1.55;max-width:680px;}"
+        ".about-hero .links a{display:inline-block;padding:6px 18px;border:1px solid rgba(207,185,145,0.5);"
+        "border-radius:6px;color:#CFB991;font-size:0.7rem;font-weight:600;text-decoration:none;"
+        "margin-right:10px;transition:all 0.2s;}"
+        ".about-hero .links a:hover{background:#CFB991;color:#000;}"
+        ".about-card{background:#fafaf9;border:1px solid #eceae6;border-radius:10px;padding:24px 26px;"
+        "margin-bottom:16px;}"
+        ".about-card-title{font-size:0.62rem;font-weight:700;text-transform:uppercase;"
+        "letter-spacing:0.14em;color:#CFB991;margin:0 0 16px 0;padding-bottom:10px;"
+        "border-bottom:1px solid #eceae6;}"
+        ".exp-item{margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #f0eeeb;}"
+        ".exp-item:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none;}"
+        ".exp-role{font-size:0.78rem;font-weight:700;color:#000;margin:0 0 2px 0;line-height:1.35;}"
+        ".exp-org{font-size:0.72rem;font-weight:600;color:#8E6F3E;margin:0 0 3px 0;}"
+        ".exp-meta{font-size:0.62rem;color:#9D9795;margin:0 0 8px 0;font-weight:500;}"
+        ".exp-desc{font-size:0.7rem;color:#555960;line-height:1.65;margin:0;}"
+        ".edu-item{margin-bottom:14px;}.edu-item:last-child{margin-bottom:0;}"
+        ".edu-school{font-size:0.74rem;font-weight:700;color:#000;margin:0 0 1px 0;}"
+        ".edu-degree{font-size:0.66rem;color:#555960;margin:0 0 2px 0;font-weight:500;}"
+        ".edu-year{font-size:0.6rem;color:#9D9795;margin:0;}"
+        ".cert-item{margin-bottom:10px;}.cert-item:last-child{margin-bottom:0;}"
+        ".cert-name{font-size:0.7rem;font-weight:600;color:#000;margin:0 0 1px 0;}"
+        ".cert-issuer{font-size:0.6rem;color:#9D9795;margin:0;}"
+        ".interest-tag{display:inline-block;padding:5px 14px;border-radius:20px;font-size:0.64rem;"
+        "font-weight:600;margin:3px 4px 3px 0;}"
+        ".interest-gold{background:rgba(207,185,145,0.13);color:#8E6F3E;}"
+        ".interest-neutral{background:rgba(0,0,0,0.05);color:#555960;}"
+        ".ack-text{font-size:0.68rem;color:#555960;line-height:1.7;margin:0;}"
+        "</style>",
+        unsafe_allow_html=True,
+    )
+
+
+def page_about_heramb():
+    _about_page_styles()
+    _f = "font-family:'DM Sans',sans-serif;"
+
+    # ── load profile image as base64 ──
+    _img_path = Path(__file__).parent / "FinDis.jpeg"
+    _img_b64 = ""
+    if _img_path.exists():
+        _img_b64 = base64.b64encode(_img_path.read_bytes()).decode()
+
+    _photo_html = ""
+    if _img_b64:
+        _photo_html = (
+            "<div style='flex-shrink:0;'>"
+            f"<img src='data:image/jpeg;base64,{_img_b64}' "
+            "alt='Heramb S. Patkar' style='width:180px;height:180px;border-radius:50%;"
+            "object-fit:cover;border:4px solid rgba(207,185,145,0.35);"
+            "box-shadow:0 8px 32px rgba(0,0,0,0.4);' />"
+            "</div>"
+        )
+
+    # ── hero banner ──
+    st.markdown(
+        "<div class='about-hero'><div class='about-hero-inner' "
+        "style='display:flex;align-items:center;gap:36px;'>"
+        "<div style='flex:1;'>"
+        "<p class='overline'>About the Author</p>"
+        "<h1>Heramb S. Patkar</h1>"
+        "<p class='tagline'>MSF Candidate at Purdue Daniels School of Business. "
+        "BITS Pilani engineering graduate with equity research experience across "
+        "Indian and U.S. markets. NISM XV certified research analyst.</p>"
+        "<div class='links'>"
+        "<a href='https://www.linkedin.com/in/heramb-patkar/' target='_blank'>LinkedIn</a>"
+        "<a href='https://github.com/HPATKAR' target='_blank'>GitHub</a>"
+        "</div></div>"
+        f"{_photo_html}"
+        "</div></div>",
+        unsafe_allow_html=True,
+    )
+
+    # ── two-column body ──
+    col_main, col_side = st.columns([1.55, 1], gap="large")
+
+    with col_main:
+        # bio
+        st.markdown(
+            "<div class='about-card'>"
+            "<p class='about-card-title'>Profile</p>"
+            f"<p style='{_f}color:#555960;font-size:0.76rem;line-height:1.75;margin:0 0 10px 0;'>"
+            "Driven by curiosity about how businesses create impact and grow stronger. "
+            "With a background in engineering and experience in global equity research, "
+            "I enjoy analysing industries, building financial models, and uncovering insights "
+            "that drive smarter decisions. Excited by opportunities where analytical thinking "
+            "and creativity intersect to solve complex problems and deliver meaningful value.</p>"
+            f"<p style='{_f}color:#555960;font-size:0.76rem;line-height:1.75;margin:0;'>"
+            "Beyond work, I enjoy exploring new places, listening to Carnatic music, "
+            "and learning from different cultures and perspectives. Always open to connecting "
+            ", feel free to reach out.</p>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+        # project
+        st.markdown(
+            "<div class='about-card'>"
+            "<p class='about-card-title'>This Project</p>"
+            f"<p style='{_f}color:#555960;font-size:0.76rem;line-height:1.75;margin:0;'>"
+            "Built this JGB Repricing Framework as Course Project 1 for Prof. Xinde Zhang's "
+            "MGMT 69000-119, a quantitative dashboard that detects regime shifts in Japanese "
+            "Government Bond markets and generates institutional-grade trade ideas. It runs four "
+            "regime detection models (Markov-switching, HMM, permutation entropy, GARCH) in an "
+            "ensemble, decomposes the yield curve via PCA and the Nelson-Siegel method, measures "
+            "cross-market spillovers using Granger causality and transfer entropy, and outputs "
+            "trade cards with Bloomberg tickers, DV01 sizing, and concrete entry / exit levels.</p>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+        # experience
+        st.markdown(
+            "<div class='about-card'>"
+            "<p class='about-card-title'>Experience</p>"
+
+            "<div class='exp-item'>"
+            "<p class='exp-role'>Practicum Analyst</p>"
+            "<p class='exp-org'>Fino Advisors LLC</p>"
+            "<p class='exp-meta'>Jan 2026 – Present &middot; Houston, TX (Remote)</p>"
+            "<p class='exp-desc'>Build and update a Series A financial model with revenue "
+            "assumptions and simple scenarios. Conduct valuation and comparable company research "
+            "and help prepare the investor deck and narrative.</p></div>"
+
+            "<div class='exp-item'>"
+            "<p class='exp-role'>Equity Research Associate</p>"
+            "<p class='exp-org'>Axis Direct</p>"
+            "<p class='exp-meta'>Sep 2024 – Apr 2025 &middot; Mumbai, India &middot; Full-time</p>"
+            "<p class='exp-desc'>Collaborated with the lead equity research analyst on Auto and "
+            "Auto Ancillary sector coverage across three quarters. Built and maintained detailed "
+            "cash flow / PE models with forecasts for 14 listed names (7 OEMs, 7 ancillaries). "
+            "Co-authored IPO notes (Hyundai Motor India, Ather Energy, etc.), earnings updates "
+            "and industry volume outlooks. Built a comprehensive Indian auto and farming equipment "
+            "industry tracker integrating data from FADA, SIAM, and company filings. Converted "
+            "internship into a full-time role.</p></div>"
+
+            "<div class='exp-item'>"
+            "<p class='exp-role'>Equity Research Intern</p>"
+            "<p class='exp-org'>Axis Direct</p>"
+            "<p class='exp-meta'>Jul 2024 – Aug 2024 &middot; Mumbai, India</p>"
+            "<p class='exp-desc'>Supported the lead analyst in Pharma and Hospitality sectors "
+            "through industry analysis, financial modelling, and co-authoring research reports. "
+            "Co-authored two initiating coverage reports on Chalet Hotels and Juniper.</p></div>"
+
+            "<div class='exp-item'>"
+            "<p class='exp-role'>Undergraduate Research Assistant</p>"
+            "<p class='exp-org'>BITS Pilani</p>"
+            "<p class='exp-meta'>Apr 2022 – May 2024 &middot; Hyderabad, India</p></div>"
+
+            "<div class='exp-item'>"
+            "<p class='exp-role'>Manufacturing Engineer Intern</p>"
+            "<p class='exp-org'>Divgi TorqTransfer Systems Ltd</p>"
+            "<p class='exp-meta'>Jul 2023 – Dec 2023 &middot; Sirsi, Karnataka, India</p></div>"
+
+            "<div class='exp-item'>"
+            "<p class='exp-role'>HVAC Engineer Intern</p>"
+            "<p class='exp-org'>Grasim Industries Limited &middot; Pulp &amp; Fibre</p>"
+            "<p class='exp-meta'>May 2022 – Jul 2022 &middot; Nagda, Madhya Pradesh, India</p></div>"
+
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+    with col_side:
+        # education
+        st.markdown(
+            "<div class='about-card'>"
+            "<p class='about-card-title'>Education</p>"
+            "<div class='edu-item'>"
+            "<p class='edu-school'>Purdue University</p>"
+            "<p class='edu-degree'>Mitchell E. Daniels, Jr. School of Business</p>"
+            "<p class='edu-degree'>Master of Science in Finance</p>"
+            "<p class='edu-year'>2025 – 2026</p></div>"
+            "<div class='edu-item'>"
+            "<p class='edu-school'>BITS Pilani, Hyderabad</p>"
+            "<p class='edu-degree'>Bachelor of Science (Hons.)</p>"
+            "<p class='edu-degree'>Mechanical Engineering</p>"
+            "<p class='edu-year'>2020 – 2024</p></div>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+        # certifications
+        st.markdown(
+            "<div class='about-card'>"
+            "<p class='about-card-title'>Licenses &amp; Certifications</p>"
+            "<div class='cert-item'>"
+            "<p class='cert-name'>NISM Series XV: Research Analyst</p>"
+            "<p class='cert-issuer'>NISM &middot; Oct 2024 – Oct 2027</p></div>"
+            "<div class='cert-item'>"
+            "<p class='cert-name'>Bloomberg Market Concepts</p>"
+            "<p class='cert-issuer'>Bloomberg LP &middot; Feb 2024</p></div>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+        # interests
+        st.markdown(
+            "<div class='about-card'>"
+            "<p class='about-card-title'>Interests</p>"
+            "<div>"
+            "<span class='interest-tag interest-gold'>Investment Banking</span>"
+            "<span class='interest-tag interest-neutral'>Corporate Finance</span>"
+            "<span class='interest-tag interest-gold'>Valuations</span>"
+            "<span class='interest-tag interest-neutral'>Private Equity</span>"
+            "<span class='interest-tag interest-gold'>Equity Research</span>"
+            "</div></div>",
+            unsafe_allow_html=True,
+        )
+
+        # acknowledgments
+        st.markdown(
+            "<div class='about-card'>"
+            "<p class='about-card-title'>Acknowledgments</p>"
+            "<p class='ack-text'><strong>Prof. Xinde Zhang</strong>: framework-first thinking "
+            "behind regime and spillover design</p>"
+            "<p class='ack-text' style='margin-top:6px;'><strong>Prof. Adem Atmaz</strong> "
+            "(MGMT 511): fixed income intuition behind PCA decomposition and Nelson-Siegel "
+            "approach</p>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
 
     _page_footer()
 
 
 # ===================================================================
-# Lazy per-page cache warming (only load what the current page needs)
+# Page 8: About — Dr. Cinder Zhang
+# ===================================================================
+def page_about_zhang():
+    _about_page_styles()
+    _f = "font-family:'DM Sans',sans-serif;"
+
+    # ── hero banner ──
+    st.markdown(
+        "<div class='about-hero'><div class='about-hero-inner'>"
+        "<p class='overline'>Course Instructor</p>"
+        "<h1>Dr. Xinde (Cinder) Zhang, Ph.D.</h1>"
+        "<p class='tagline'>Finance Faculty at the Mitchell E. Daniels, Jr. School of Business, "
+        "Purdue University. Creator of the DRIVER Framework. Award-winning educator "
+        "pioneering AI-integrated finance pedagogy.</p>"
+        "<div class='links'>"
+        "<a href='https://www.linkedin.com/in/cinder-zhang/' target='_blank'>LinkedIn</a>"
+        "<a href='https://github.com/CinderZhang' target='_blank'>GitHub</a>"
+        "<a href='https://cinderzhang.github.io/' target='_blank'>DRIVER Framework</a>"
+        "</div></div></div>",
+        unsafe_allow_html=True,
+    )
+
+    # ── two-column body ──
+    col_main, col_side = st.columns([1.55, 1], gap="large")
+
+    with col_main:
+        # bio
+        st.markdown(
+            "<div class='about-card'>"
+            "<p class='about-card-title'>Profile</p>"
+            f"<p style='{_f}color:#555960;font-size:0.76rem;line-height:1.75;margin:0 0 10px 0;'>"
+            "Dr. Cinder Zhang is an award-winning finance professor and pioneer in AI-integrated "
+            "finance education at Purdue University. He is the creator of the "
+            "<strong>DRIVER Framework</strong> (Define &amp; Discover, Represent, Implement, "
+            "Validate, Evolve, Reflect), a comprehensive methodology that transforms how financial "
+            "management is taught by integrating AI as a cognitive amplifier rather than a "
+            "replacement tool.</p>"
+            f"<p style='{_f}color:#555960;font-size:0.76rem;line-height:1.75;margin:0;'>"
+            "Dr. Zhang advocates shifting finance education from traditional analysis toward "
+            "practical implementation, teaching students to <em>build financial tools and "
+            "solutions</em> rather than compete with AI in analytical tasks. His approach "
+            "emphasizes systematic problem-solving, data-driven decision making, and ethical "
+            "AI collaboration.</p>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+        # impact
+        st.markdown(
+            "<div class='about-card'>"
+            "<p class='about-card-title'>Impact</p>"
+            f"<p style='{_f}color:#555960;font-size:0.76rem;line-height:1.75;margin:0 0 10px 0;'>"
+            "As founder of the Financial Analytics program (130+ students), Dr. Zhang has mentored "
+            "graduates into roles at Goldman Sachs, JPMorgan, State Street, Mastercard, EY, "
+            "Walmart Global Tech, and FinTech startups.</p>"
+            f"<p style='{_f}color:#555960;font-size:0.76rem;line-height:1.75;margin:0;'>"
+            "His free, open-source textbooks, <em>DRIVER: Financial Management</em>, "
+            "<em>DRIVER: Financial Modeling</em>, and <em>DRIVER: Essentials of Investment</em>, "
+            "are transforming finance pedagogy nationwide.</p>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+        # publications / textbooks
+        st.markdown(
+            "<div class='about-card'>"
+            "<p class='about-card-title'>Open-Source Textbooks</p>"
+
+            "<div class='exp-item'>"
+            "<p class='exp-role'>DRIVER: Financial Management</p>"
+            "<p class='exp-desc'>Comprehensive financial management through the DRIVER lens, "
+            "integrating AI tools throughout the learning process.</p></div>"
+
+            "<div class='exp-item'>"
+            "<p class='exp-role'>DRIVER: Financial Modeling</p>"
+            "<p class='exp-desc'>Hands-on financial modeling with Python, Excel, and AI-assisted "
+            "workflows for real-world applications.</p></div>"
+
+            "<div class='exp-item'>"
+            "<p class='exp-role'>DRIVER: Essentials of Investment</p>"
+            "<p class='exp-desc'>Investment fundamentals reimagined with modern analytics "
+            "and AI-driven research methodologies.</p></div>"
+
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+    with col_side:
+        # education
+        st.markdown(
+            "<div class='about-card'>"
+            "<p class='about-card-title'>Education</p>"
+            "<div class='edu-item'>"
+            "<p class='edu-school'>University of North Carolina</p>"
+            "<p class='edu-degree'>Ph.D., Finance</p></div>"
+            "<div class='edu-item'>"
+            "<p class='edu-school'>University of Missouri</p>"
+            "<p class='edu-degree'>Doctoral Studies, MIS / Computer Science</p></div>"
+            "<div class='edu-item'>"
+            "<p class='edu-school'>Youngstown State University</p>"
+            "<p class='edu-degree'>M.S., Mathematics</p></div>"
+            "<div class='edu-item'>"
+            "<p class='edu-school'>Jilin University</p>"
+            "<p class='edu-degree'>B.S., Computer Science</p></div>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+        # awards
+        st.markdown(
+            "<div class='about-card'>"
+            "<p class='about-card-title'>Awards &amp; Recognition</p>"
+            "<div class='cert-item'>"
+            "<p class='cert-name'>FMA Teaching Innovation Award</p>"
+            "<p class='cert-issuer'>Financial Management Association</p></div>"
+            "<div class='cert-item'>"
+            "<p class='cert-name'>Teaching Innovation Award</p>"
+            "<p class='cert-issuer'>University of Arkansas</p></div>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+        # focus areas
+        st.markdown(
+            "<div class='about-card'>"
+            "<p class='about-card-title'>Focus Areas</p>"
+            "<div>"
+            "<span class='interest-tag interest-gold'>AI in Finance</span>"
+            "<span class='interest-tag interest-neutral'>Financial Analytics</span>"
+            "<span class='interest-tag interest-gold'>DRIVER Framework</span>"
+            "<span class='interest-tag interest-neutral'>Python in Finance</span>"
+            "<span class='interest-tag interest-gold'>Pedagogy</span>"
+            "</div></div>",
+            unsafe_allow_html=True,
+        )
+
+    _page_footer()
+
+
+# ===================================================================
+# Cache warming args
 # ===================================================================
 _args = (use_simulated, str(start_date), str(end_date), fred_api_key)
 
@@ -2388,3 +2877,7 @@ elif page == "Trade Ideas":
     page_trade_ideas()
 elif page == "AI Q&A":
     page_ai_qa()
+elif page == "About: Heramb Patkar":
+    page_about_heramb()
+elif page == "About: Dr. Zhang":
+    page_about_zhang()
