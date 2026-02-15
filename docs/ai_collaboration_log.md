@@ -100,6 +100,24 @@ AI was used as a **pair-programming partner and research accelerator** — provi
   - This collaboration log: structured, honest, decision-focused
 - **Verification:** All existing tests pass after changes. Dashboard renders correctly with new sections.
 
+### Session 9: Purdue Daniels Theme Redesign, Navigation, and New Pages
+- **AI Tool:** Claude Code (primary) + **GPT-5.2 via PAL MCP** (targeted CSS design guidance, color palette validation)
+- **What I asked:** Redesign the Streamlit UI to match Purdue Daniels School of Business branding; expand dashboard from 5 to 8 pages; add full-bleed footer navigation; add AI Q&A page; create two About pages (student + instructor).
+- **What I decided:**
+  - Adopted Purdue Daniels theme tokens: Black `#000000`, Boilermaker Gold `#CFB991`, Aged `#8E6F3E`, DM Sans typography; removed the prior institutional blue (`#1e3a5f`) styling entirely
+  - Implemented a full-bleed footer with 5-column grid (branding, navigate, about, connect, source code) and persistent navigation links to reduce friction when switching among 8 pages
+  - Added AI Q&A page powered by OpenAI/Anthropic endpoints with full analysis context injection (regime state, PCA, spillover, carry, trade ideas)
+  - Built About pages with hero banners, card-based layouts, and profile photo integration
+  - Used GPT-5.2 via PAL specifically for CSS best practices (sidebar collapse button removal across Streamlit versions, institutional-grade table styling, Purdue palette gradient validation)
+- **What AI generated vs. what I owned:**
+  - AI proposed CSS layout patterns, footer structure, About page card designs, and draft copy; I selected the final visual design, verified brand color usage against official Purdue guidelines, and integrated components into the existing app architecture
+  - AI suggested the AI Q&A system prompt structure; I defined the allowed behaviors, disclaimers, and failure modes (no confidential data, no investment advice framing, graceful API key handling)
+  - AI recommended gradient values for the footer gold bar; I rejected the initial Rush `#DAAA00` endpoint as too yellow and selected an Aged-to-Gold sweep that matches Purdue brand standards
+- **What I rejected:**
+  - AI initially used Rush (#DAAA00) in footer gradient, which looked off-brand on wide-gamut displays; replaced with Aged-to-Boilermaker Gold gradient
+  - AI suggested hiding only the sidebar collapse button via CSS; I opted to hide the entire Streamlit header for a cleaner institutional look
+- **Verification:** Manually validated all 8 pages render under the new theme; checked footer navigation links across all pages; confirmed AI Q&A page handles missing API keys gracefully; verified profile photo renders correctly via base64 embedding.
+
 ## AI Usage Summary
 
 | Category | AI Role | My Role |

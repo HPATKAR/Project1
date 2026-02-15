@@ -20,12 +20,12 @@ The framework integrates five analytical layers:
 
 ```
 jgb-repricing-framework/
-|-- app.py                          # Streamlit 5-page dashboard (1858 lines)
+|-- app.py                          # Streamlit 8-page dashboard (Purdue Daniels theme)
 |-- run_analysis.py                 # CLI batch analysis runner
 |-- requirements.txt                # 15 core dependencies
 |-- Dockerfile                      # Docker deployment (Python 3.11-slim)
 |-- render.yaml                     # Render.com cloud deployment config
-|-- .streamlit/config.toml          # Institutional desk theme (Inter font, muted palette)
+|-- .streamlit/config.toml          # Purdue Daniels theme (DM Sans, Black/Gold palette)
 |-- src/
 |   |-- data/
 |   |   |-- config.py               # FRED/yfinance tickers, BOJ events, date ranges
@@ -87,7 +87,8 @@ Principal Component Analysis on daily yield changes across tenors (2Y, 5Y, 7Y, 1
 - **Scaling:** Covariance-based (preserves bps-scale economic meaning)
 - **Rolling PCA:** 252-day window tracks time-varying factor structure
 - **Interpretation:** Automated heuristic validates factor identity against fixed-income literature (Litterman-Scheinkman 1991)
-- **Implementation:** `src/yield_curve/pca.py` — `fit_yield_pca()`, `rolling_pca()`, `interpret_pca()`
+- **Validation:** `validate_pca_factors()` checks sign-change patterns, coefficient of variation, and explained variance ratios against known yield curve factor benchmarks (PC1 > 60%, PC2 10-20%, PC3 5-10%). Results displayed on Yield Curve Analytics page
+- **Implementation:** `src/yield_curve/pca.py` — `fit_yield_pca()`, `rolling_pca()`, `interpret_pca()`, `validate_pca_factors()`
 
 ### 4-Model Ensemble Regime Detection
 
@@ -145,15 +146,18 @@ Trade categories: **Rates** (JGB shorts, curve steepeners, butterflies, liquidit
 
 All charts overlay these events as red vertical dashed lines for policy-model alignment validation.
 
-## Dashboard (5 Pages)
+## Dashboard (8 Pages)
 
-The Streamlit dashboard (`app.py`) provides five interactive pages:
+The Streamlit dashboard (`app.py`) provides eight interactive pages with Purdue Daniels School of Business branding (Black/Gold palette, DM Sans typography, full-bleed institutional footer with page navigation):
 
-1. **Overview & Data** — KPI metrics, sovereign yields + VIX chart, FX + equity chart, actionable spread/trend/vol insights
-2. **Yield Curve Analytics** — PCA explained variance + loadings heatmap + score time series, liquidity metrics, Nelson-Siegel factor evolution
+1. **Overview & Data** — KPI metrics, sovereign yields + VIX chart, FX + equity chart, actionable spread/trend/vol insights, **Japan sovereign credit ratings** (Moody's, S&P, Fitch, R&I) and **BOJ credibility events** timeline
+2. **Yield Curve Analytics** — PCA explained variance + loadings heatmap + score time series, **PCA factor validation against Litterman-Scheinkman (1991)** with explained variance ratios, liquidity metrics, Nelson-Siegel factor evolution
 3. **Regime Detection** — Ensemble probability gauge + time series, Markov smoothed probabilities, PELT structural breakpoints, permutation entropy signal, GARCH conditional volatility
 4. **Spillover & Info Flow** — Granger causality table, transfer entropy heatmap, Diebold-Yilmaz spillover index + net directional bars, DCC correlations, carry-to-vol ratio
 5. **Trade Ideas** — Regime-conditional trade cards with conviction scores, filterable by category/conviction, CSV export
+6. **AI Q&A** — Conversational interface powered by OpenAI (GPT-4o) or Anthropic (Claude Sonnet), with full analysis context (regime state, PCA, spillover, carry, liquidity, trade ideas) injected as system prompt
+7. **About: Heramb Patkar** — Profile with education, experience (Axis Direct equity research, Fino Advisors practicum), certifications (NISM XV, Bloomberg), and interests
+8. **About: Dr. Zhang** — Course instructor profile with DRIVER Framework description, awards, publications, and academic background
 
 ## Data Pipeline
 
@@ -179,7 +183,7 @@ FRED API (premium, full history) → yfinance (free, FX/equity/ETFs) → MOF Jap
 | Spillover VAR | VAR(4), 10-step horizon | Standard in Diebold-Yilmaz (2012) literature |
 | Entropy | Permutation (order=3, window=120) | Early warning signal; complexity measure |
 | Trade sizing | Vol-target (5 bps/day) or DV01-neutral | Risk parity across trade legs |
-| Dashboard theme | Inter font, institutional blue (#1e3a5f) | Professional desk presentation standard |
+| Dashboard theme | DM Sans font, Purdue Black (#000000) + Boilermaker Gold (#CFB991) | Purdue Daniels School of Business branding with full-bleed footer navigation |
 | Deployment | Docker + Render.com | Reproducible, cloud-deployable |
 
 ## Getting Started
@@ -215,7 +219,7 @@ Without a FRED key, the dashboard falls back to yfinance + synthetic data.
 
 ## Development Process
 
-- **13 iterative commits** showing genuine development progression — from initial framework to institutional UX refinement
+- **21+ iterative commits** showing genuine development progression — from initial framework to institutional UX refinement to Purdue Daniels branding
 - **Docker containerized** with proper `src/` module structure
 - **Cache pre-warming** optimization for production-level performance
 - **Graceful degradation** across data sources (FRED -> yfinance -> MOF -> synthetic)
@@ -225,7 +229,7 @@ Without a FRED key, the dashboard falls back to yfinance + synthetic data.
 - MOF Japan CSV endpoint may have availability gaps; FRED requires API key for full JGB tenor coverage
 - GARCH DCC uses EWMA proxy instead of full MLE bivariate optimization (stability tradeoff)
 - Transfer entropy uses simple histogram binning; could upgrade to KDE or conditional TE (IDTxl)
-- **Future:** Add Japan sovereign CDS spreads as market-implied trust/credibility metric
+- Credit ratings (Moody's A1, S&P A+, Fitch A, R&I AA+) and BOJ credibility events are implemented in `src/data/config.py` and displayed on the Overview page; **future:** add market-implied measures (CDS/OIS spreads) for real-time trust pricing
 - **Future:** Japanese language NLP on BOJ minutes for hawkishness scoring
 - **Future:** Real-time execution layer via broker API integration
 
