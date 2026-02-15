@@ -2435,11 +2435,10 @@ def _build_analysis_context(args):
 
 
 def page_ai_qa():
-    # Clean chat-optimised layout: remove default bottom padding, give chat area room
+    # Chat-optimised layout
     st.markdown(
         "<style>"
         ".main .block-container { padding-bottom: 80px !important; }"
-        "section[data-testid='stChatInput'] { bottom: 0 !important; }"
         "</style>",
         unsafe_allow_html=True,
     )
@@ -2464,21 +2463,83 @@ def page_ai_qa():
         help="Auto-loaded from .streamlit/secrets.toml if set. Or paste here.",
     )
 
+    # --- Build context once ---
+    args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
+
     if not ai_api_key:
-        st.info(
-            "Enter your API key in the sidebar to activate the AI Q&A panel. "
-            "Your key is not stored and only used for this session."
+        # Show a professional empty state instead of just a bare info box
+        st.markdown(
+            "<div style='text-align:center;padding:3rem 2rem;'>"
+            "<div style='font-size:2.5rem;margin-bottom:0.8rem;opacity:0.15;'>&#x1F4AC;</div>"
+            "<p style='font-family:DM Sans,sans-serif;font-size:0.88rem;font-weight:600;"
+            "color:#000;margin:0 0 6px 0;'>AI Research Assistant</p>"
+            "<p style='font-family:DM Sans,sans-serif;font-size:0.76rem;color:#6b7394;"
+            "max-width:480px;margin:0 auto 1.5rem auto;line-height:1.65;'>"
+            "Enter your API key in the sidebar to activate the conversational AI assistant. "
+            "It has access to live regime state, PCA decomposition, spillover metrics, "
+            "and trade ideas from this session.</p>"
+            "</div>",
+            unsafe_allow_html=True,
         )
-        # Context in sidebar to keep layout clean
-        with st.sidebar.expander("Analysis Context"):
-            args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
+        # Suggested topics as visual guidance
+        st.markdown(
+            "<div style='display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:2rem;'>"
+            "<span style='background:#fafaf8;border:1px solid #eceae6;border-radius:8px;"
+            "padding:8px 16px;font-size:0.72rem;color:#555960;font-family:DM Sans,sans-serif;'>"
+            "What is the current regime state?</span>"
+            "<span style='background:#fafaf8;border:1px solid #eceae6;border-radius:8px;"
+            "padding:8px 16px;font-size:0.72rem;color:#555960;font-family:DM Sans,sans-serif;'>"
+            "Explain the PCA decomposition</span>"
+            "<span style='background:#fafaf8;border:1px solid #eceae6;border-radius:8px;"
+            "padding:8px 16px;font-size:0.72rem;color:#555960;font-family:DM Sans,sans-serif;'>"
+            "Best trade ideas right now?</span>"
+            "<span style='background:#fafaf8;border:1px solid #eceae6;border-radius:8px;"
+            "padding:8px 16px;font-size:0.72rem;color:#555960;font-family:DM Sans,sans-serif;'>"
+            "BOJ policy outlook</span>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+        # Show live context snapshot as proof the system is working
+        with st.expander("Live Analysis Context (preview of what the AI sees)"):
             ctx = _build_analysis_context(args)
-            st.text(ctx)
+            st.code(ctx, language="text")
+        _page_footer()
         return
 
     # --- Chat state ---
     if "qa_messages" not in st.session_state:
         st.session_state.qa_messages = []
+
+    # Show empty state with suggestions when no messages yet
+    if not st.session_state.qa_messages:
+        st.markdown(
+            "<div style='text-align:center;padding:2rem 2rem 1rem 2rem;'>"
+            "<p style='font-family:DM Sans,sans-serif;font-size:0.84rem;font-weight:600;"
+            "color:#000;margin:0 0 4px 0;'>Ready to assist</p>"
+            "<p style='font-family:DM Sans,sans-serif;font-size:0.74rem;color:#6b7394;"
+            "margin:0 0 1.2rem 0;'>Ask about JGBs, rates, macro, BOJ policy, "
+            "trading strategies, or yield curves.</p>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+        # Clickable topic cards
+        _topics = [
+            ("What is the current regime probability and what does it mean?", "Regime"),
+            ("Break down the PCA yield curve factors and explain the variance", "PCA"),
+            ("What are the top trade ideas and their conviction levels?", "Trades"),
+            ("How are spillovers flowing between JGBs, USTs, and FX?", "Spillover"),
+        ]
+        _cols = st.columns(len(_topics))
+        for _col, (_q, _label) in zip(_cols, _topics):
+            with _col:
+                if st.button(
+                    _label,
+                    key=f"qa_topic_{_label}",
+                    use_container_width=True,
+                    type="secondary",
+                ):
+                    st.session_state.qa_messages.append({"role": "user", "content": _q})
+                    st.rerun()
 
     # Display chat history
     for msg in st.session_state.qa_messages:
@@ -2486,7 +2547,7 @@ def page_ai_qa():
             st.markdown(msg["content"])
 
     # --- Chat input ---
-    user_input = st.chat_input("Ask anything: JGBs, rates, macro, BOJ policy, trading strategies, yield curves...")
+    user_input = st.chat_input("Ask anything about JGBs, rates, macro, BOJ policy, trading strategies...")
 
     if user_input:
         st.session_state.qa_messages.append({"role": "user", "content": user_input})
@@ -2494,7 +2555,6 @@ def page_ai_qa():
             st.markdown(user_input)
 
         # Build context
-        args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
         analysis_context = _build_analysis_context(args)
 
         system_prompt = (
@@ -2543,9 +2603,8 @@ def page_ai_qa():
                 except Exception as e:
                     st.error(f"API call failed: {e}")
 
-    # Context transparency in sidebar to keep chat area clean
+    # Context transparency in sidebar
     with st.sidebar.expander("Analysis Context"):
-        args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
         ctx = _build_analysis_context(args)
         st.text(ctx)
 
