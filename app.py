@@ -671,7 +671,7 @@ def _style_fig(fig: go.Figure, height: int = 380) -> go.Figure:
 def _page_intro(text: str):
     """Render a page introduction."""
     st.markdown(
-        f"<p style='color:#6b7394;font-family:var(--font-sans);font-size:var(--fs-lg);"
+        f"<p style='color:#2d2d2d;font-family:var(--font-sans);font-size:var(--fs-lg);"
         f"line-height:1.7;margin:0 0 1.5rem 0;padding:0;max-width:740px;"
         f"letter-spacing:0.005em;'>{text}</p>",
         unsafe_allow_html=True,
@@ -684,7 +684,7 @@ def _section_note(text: str):
         f"<div style='background:#fafaf8;border-left:3px solid #CFB991;padding:10px 16px;"
         f"border-radius:0 8px 8px 0;margin:-0.1rem 0 0.8rem 0;"
         f"box-shadow:0 1px 3px rgba(0,0,0,0.02);'>"
-        f"<p style='color:#555960;font-size:var(--fs-md);line-height:1.65;margin:0;"
+        f"<p style='color:#1a1a1a;font-size:var(--fs-md);line-height:1.65;margin:0;"
         f"font-family:var(--font-sans);'>{text}</p></div>",
         unsafe_allow_html=True,
     )
@@ -700,7 +700,7 @@ def _definition_block(title: str, body: str):
         f"text-transform:uppercase;letter-spacing:var(--ls-widest);font-family:var(--font-sans);'>"
         f"{title}</p></div>"
         f"<div style='padding:10px 14px;background:#fff;'>"
-        f"<p style='margin:0;color:#555960;font-size:var(--fs-base);line-height:1.65;"
+        f"<p style='margin:0;color:#1a1a1a;font-size:var(--fs-base);line-height:1.65;"
         f"font-family:var(--font-sans);'>{body}</p></div></div>",
         unsafe_allow_html=True,
     )
@@ -736,10 +736,10 @@ def _page_conclusion(verdict: str, summary: str):
         f"{verdict}</p></div>"
         # assessment block
         f"<div style='background:#fafaf8;padding:16px 24px;'>"
-        f"<p style='margin:0 0 6px 0;color:#9D9795;font-family:var(--font-sans);"
+        f"<p style='margin:0 0 6px 0;color:#4a4a4a;font-family:var(--font-sans);"
         f"font-size:var(--fs-tiny);font-weight:700;text-transform:uppercase;letter-spacing:var(--ls-wider);'>"
         f"Assessment</p>"
-        f"<p style='margin:0;color:#555960;font-family:var(--font-sans);"
+        f"<p style='margin:0;color:#1a1a1a;font-family:var(--font-sans);"
         f"font-size:var(--fs-lg);line-height:1.7;'>{summary}</p></div>"
         f"</div>",
         unsafe_allow_html=True,
@@ -950,6 +950,51 @@ def page_overview():
     else:
         st.info("No rate columns found in data.")
 
+    # --- Asian Equity Returns Comparison ---
+    st.subheader("Asian Equity Returns")
+    _definition_block(
+        "Why Cross-Asian Equity Comparison Matters for JGBs",
+        "Comparing cumulative returns across major Asian equity indices reveals capital flow "
+        "patterns and risk appetite shifts across the region. When the Nikkei diverges from peers "
+        "like the Sensex or Hang Seng, it often reflects Japan-specific drivers (BOJ policy, yen moves) "
+        "rather than broad Asian sentiment. Persistent Nikkei outperformance can indicate foreign inflows "
+        "into Japanese equities, flows that often hedge JPY exposure, creating indirect pressure on JGB yields. "
+        "Conversely, synchronized Asian equity weakness suggests global risk-off dynamics that typically "
+        "benefit JGBs as a safe haven."
+    )
+    asian_eq_cols = [c for c in ["NIKKEI", "SENSEX", "HANGSENG", "SHANGHAI", "KOSPI"] if c in df.columns]
+    if len(asian_eq_cols) >= 2:
+        asian_eq = df[asian_eq_cols].dropna()
+        if len(asian_eq) > 1:
+            cum_returns = (asian_eq / asian_eq.iloc[0] - 1) * 100
+            _section_note(
+                "Cumulative returns (%) from first available date, normalized to 0%. "
+                "Divergence between Nikkei and regional peers highlights Japan-specific risk premia."
+            )
+            fig_asian = go.Figure()
+            color_map = {"NIKKEI": "#E8413C", "SENSEX": "#2196F3", "HANGSENG": "#4CAF50", "SHANGHAI": "#FF9800", "KOSPI": "#9C27B0"}
+            label_map = {"NIKKEI": "Nikkei 225 (Tokyo)", "SENSEX": "Sensex (Mumbai)", "HANGSENG": "Hang Seng (Hong Kong)", "SHANGHAI": "SSE Composite (Shanghai)", "KOSPI": "KOSPI (Seoul)"}
+            for col in asian_eq_cols:
+                fig_asian.add_trace(go.Scatter(
+                    x=cum_returns.index, y=cum_returns[col],
+                    mode="lines", name=label_map.get(col, col),
+                    line=dict(color=color_map.get(col)),
+                ))
+            fig_asian.update_layout(yaxis_title="Cumulative Return (%)")
+            _add_boj_events(fig_asian)
+            st.plotly_chart(_style_fig(fig_asian, 420), use_container_width=True)
+            # Takeaway
+            latest = cum_returns.iloc[-1]
+            best = latest.idxmax()
+            worst = latest.idxmin()
+            _takeaway_block(
+                f"<b>{best}</b> leads with <b>{latest[best]:+.1f}%</b> cumulative return; "
+                f"<b>{worst}</b> trails at <b>{latest[worst]:+.1f}%</b>. "
+                f"{'Nikkei outperformance vs Asian peers suggests Japan-specific inflows. Watch for hedging pressure on JGBs.' if best == 'NIKKEI' else 'Nikkei underperformance relative to Asian peers may reflect BOJ tightening fears or yen-driven headwinds.'}"
+            )
+    else:
+        st.info("Insufficient Asian equity data for cross-market comparison.")
+
     # --- Market chart ---
     st.subheader("FX & Equity")
     _definition_block(
@@ -989,49 +1034,122 @@ def page_overview():
     else:
         st.info("No market columns found in data.")
 
-    # --- Asian Equity Returns Comparison ---
-    st.subheader("Asian Equity Returns — Nikkei vs Sensex vs Hang Seng")
+    # --- Bond ETF Flows Proxy ---
+    st.subheader("Bond ETF Flow Proxy")
     _definition_block(
-        "Why Cross-Asian Equity Comparison Matters for JGBs",
-        "Comparing cumulative returns across major Asian equity indices reveals capital flow "
-        "patterns and risk appetite shifts across the region. When the Nikkei diverges from peers "
-        "like the Sensex or Hang Seng, it often reflects Japan-specific drivers (BOJ policy, yen moves) "
-        "rather than broad Asian sentiment. Persistent Nikkei outperformance can indicate foreign inflows "
-        "into Japanese equities — flows that often hedge JPY exposure, creating indirect pressure on JGB yields. "
-        "Conversely, synchronized Asian equity weakness suggests global risk-off dynamics that typically "
-        "benefit JGBs as a safe haven."
+        "Why Bond ETF Flows Matter for JGBs",
+        "Bond ETFs like TLT (20+ Year Treasury), IEF (7-10Y Treasury), SHY (1-3Y Treasury), "
+        "and BNDX (International Bond) serve as proxies for institutional fixed-income flows. "
+        "When TLT sells off while SHY holds steady, it signals duration reduction by asset managers, "
+        "a pattern that often precedes JGB repricing as global duration risk gets re-assessed. "
+        "TLT/IEF divergence also reveals curve positioning preferences in the US that spill over to JGBs."
     )
-    asian_eq_cols = [c for c in ["NIKKEI", "SENSEX", "HANGSENG"] if c in df.columns]
-    if len(asian_eq_cols) >= 2:
-        asian_eq = df[asian_eq_cols].dropna()
-        if len(asian_eq) > 1:
-            cum_returns = (asian_eq / asian_eq.iloc[0] - 1) * 100
+    etf_cols = [c for c in ["TLT", "IEF", "SHY", "BNDX"] if c in df.columns]
+    if len(etf_cols) >= 2:
+        etf_data = df[etf_cols].dropna()
+        if len(etf_data) > 1:
+            etf_returns = (etf_data / etf_data.iloc[0] - 1) * 100
             _section_note(
-                "Cumulative returns (%) from first available date, normalized to 0%. "
-                "Divergence between Nikkei and regional peers highlights Japan-specific risk premia."
+                "Cumulative returns (%) from base date. TLT/IEF divergence signals duration positioning shifts. "
+                "Broad selloff across all ETFs indicates global rate repricing."
             )
-            fig_asian = go.Figure()
-            color_map = {"NIKKEI": "#E8413C", "SENSEX": "#2196F3", "HANGSENG": "#4CAF50"}
-            for col in asian_eq_cols:
-                fig_asian.add_trace(go.Scatter(
-                    x=cum_returns.index, y=cum_returns[col],
-                    mode="lines", name=col,
-                    line=dict(color=color_map.get(col)),
+            fig_etf = go.Figure()
+            etf_colors = {"TLT": "#1565C0", "IEF": "#4CAF50", "SHY": "#FF9800", "BNDX": "#9C27B0"}
+            etf_labels = {"TLT": "TLT (20+Y UST)", "IEF": "IEF (7-10Y UST)", "SHY": "SHY (1-3Y UST)", "BNDX": "BNDX (Intl Bond)"}
+            for col in etf_cols:
+                fig_etf.add_trace(go.Scatter(
+                    x=etf_returns.index, y=etf_returns[col],
+                    mode="lines", name=etf_labels.get(col, col),
+                    line=dict(color=etf_colors.get(col)),
                 ))
-            fig_asian.update_layout(yaxis_title="Cumulative Return (%)")
-            _add_boj_events(fig_asian)
-            st.plotly_chart(_style_fig(fig_asian, 420), use_container_width=True)
-            # Takeaway
-            latest = cum_returns.iloc[-1]
-            best = latest.idxmax()
-            worst = latest.idxmin()
+            fig_etf.update_layout(yaxis_title="Cumulative Return (%)")
+            _add_boj_events(fig_etf)
+            st.plotly_chart(_style_fig(fig_etf, 380), use_container_width=True)
+            etf_latest = etf_returns.iloc[-1]
+            if "TLT" in etf_latest and "SHY" in etf_latest:
+                duration_gap = float(etf_latest["TLT"] - etf_latest["SHY"])
+                _takeaway_block(
+                    f"TLT vs SHY spread: <b>{duration_gap:+.1f}pp</b>. "
+                    f"{'Long-duration bonds sharply underperforming short-duration: global rate repricing is active and JGBs are exposed.' if duration_gap < -10 else 'Duration spread is moderate; no extreme positioning signal.' if abs(duration_gap) < 10 else 'Long-duration outperformance signals flight-to-safety; JGBs may benefit temporarily.'}"
+                )
+    else:
+        st.info("Bond ETF data not available.")
+
+    # --- Global Equity Benchmarks ---
+    st.subheader("Global Equity Benchmarks")
+    _definition_block(
+        "Why Global Equities Matter for JGBs",
+        "Comparing Nikkei against the S&P 500, Euro Stoxx 50, FTSE 100, and ASX 200 reveals whether "
+        "Japanese equity moves are Japan-specific or part of global risk appetite shifts. Global equity "
+        "weakness tends to drive safe-haven flows into JGBs (bullish), while Japan-only weakness suggests "
+        "domestic capital outflows that pressure both equities and bonds simultaneously."
+    )
+    global_eq_cols = [c for c in ["NIKKEI", "SPX", "EUROSTOXX", "FTSE", "ASX200"] if c in df.columns]
+    if len(global_eq_cols) >= 2:
+        global_eq = df[global_eq_cols].dropna()
+        if len(global_eq) > 1:
+            global_returns = (global_eq / global_eq.iloc[0] - 1) * 100
+            _section_note(
+                "Cumulative returns (%) normalized to 0%. Nikkei divergence from global peers signals Japan-specific dynamics."
+            )
+            fig_global = go.Figure()
+            geq_colors = {"NIKKEI": "#E8413C", "SPX": "#1565C0", "EUROSTOXX": "#4CAF50", "FTSE": "#FF9800", "ASX200": "#9C27B0"}
+            geq_labels = {"NIKKEI": "Nikkei 225 (Tokyo)", "SPX": "S&P 500 (New York)", "EUROSTOXX": "Euro Stoxx 50 (EU)", "FTSE": "FTSE 100 (London)", "ASX200": "ASX 200 (Sydney)"}
+            for col in global_eq_cols:
+                fig_global.add_trace(go.Scatter(
+                    x=global_returns.index, y=global_returns[col],
+                    mode="lines", name=geq_labels.get(col, col),
+                    line=dict(color=geq_colors.get(col)),
+                ))
+            fig_global.update_layout(yaxis_title="Cumulative Return (%)")
+            _add_boj_events(fig_global)
+            st.plotly_chart(_style_fig(fig_global, 380), use_container_width=True)
+            gl = global_returns.iloc[-1]
+            nk_ret = float(gl.get("NIKKEI", 0))
+            spx_ret = float(gl.get("SPX", 0)) if "SPX" in gl else None
+            if spx_ret is not None:
+                _takeaway_block(
+                    f"Nikkei at <b>{nk_ret:+.1f}%</b> vs S&P 500 at <b>{spx_ret:+.1f}%</b>. "
+                    f"{'Nikkei outperformance suggests foreign inflows into Japan, potentially hedging JPY exposure and adding pressure on JGB yields.' if nk_ret > spx_ret + 5 else 'Nikkei underperformance relative to US equities may reflect BOJ tightening fears or structural concerns.' if nk_ret < spx_ret - 5 else 'Broadly aligned performance; equity markets are not signaling Japan-specific stress.'}"
+                )
+    else:
+        st.info("Insufficient global equity data.")
+
+    # --- Rolling JP-US Yield Correlation ---
+    st.subheader("Rolling JP-US Yield Correlation")
+    _definition_block(
+        "Why JP-US Yield Correlation Matters",
+        "When Japanese and US 10Y yields move in lockstep (high correlation), JGBs are driven by global "
+        "rate dynamics. When correlation breaks down, Japan-specific forces (BOJ policy, domestic inflation) "
+        "are dominant. A sudden decorrelation often precedes major policy shifts or regime changes."
+    )
+    _jp10 = df["JP_10Y"].dropna() if "JP_10Y" in df.columns else pd.Series(dtype=float)
+    _us10 = df["US_10Y"].dropna() if "US_10Y" in df.columns else pd.Series(dtype=float)
+    if len(_jp10) > 60 and len(_us10) > 60:
+        _aligned = pd.DataFrame({"JP_10Y": _jp10, "US_10Y": _us10}).dropna()
+        if len(_aligned) > 60:
+            _rolling_corr = _aligned["JP_10Y"].rolling(60).corr(_aligned["US_10Y"])
+            _section_note(
+                "60-day rolling correlation between JP 10Y and US 10Y yields. "
+                "High correlation = global rate forces dominate. Low/negative = Japan-specific dynamics."
+            )
+            fig_corr = go.Figure()
+            fig_corr.add_trace(go.Scatter(
+                x=_rolling_corr.index, y=_rolling_corr,
+                mode="lines", name="60d Rolling Correlation",
+                line=dict(color="#1565C0"),
+            ))
+            fig_corr.add_hline(y=0, line_dash="dot", line_color="grey", line_width=1)
+            fig_corr.update_layout(yaxis_title="Correlation", yaxis_range=[-1, 1])
+            _add_boj_events(fig_corr)
+            st.plotly_chart(_style_fig(fig_corr, 340), use_container_width=True)
+            _latest_corr = float(_rolling_corr.dropna().iloc[-1])
             _takeaway_block(
-                f"<b>{best}</b> leads with <b>{latest[best]:+.1f}%</b> cumulative return; "
-                f"<b>{worst}</b> trails at <b>{latest[worst]:+.1f}%</b>. "
-                f"{'Nikkei outperformance vs Asian peers suggests Japan-specific inflows — watch for hedging pressure on JGBs.' if best == 'NIKKEI' else 'Nikkei underperformance relative to Asian peers may reflect BOJ tightening fears or yen-driven headwinds.'}"
+                f"Current JP-US 10Y correlation: <b>{_latest_corr:.2f}</b>. "
+                f"{'Yields are highly correlated: global rate moves are driving JGBs. US Treasury selloffs will spill directly into JGBs.' if _latest_corr > 0.6 else 'Correlation has broken down: Japan-specific forces are dominating. BOJ policy and domestic factors matter more than US rates.' if _latest_corr < 0.2 else 'Moderate correlation: both global and local factors are at play.'}"
             )
     else:
-        st.info("Insufficient Asian equity data for cross-market comparison.")
+        st.info("Insufficient yield data for correlation analysis.")
 
     # --- Raw data expander ---
     with st.expander("Raw data (last 20 rows)"):
@@ -1403,6 +1521,142 @@ def page_yield_curve():
                 )
         _add_boj_events(fig_ns)
         st.plotly_chart(_style_fig(fig_ns, 380), use_container_width=True)
+
+    # --- Real Yield Proxy ---
+    _df_yc = load_unified(*args)
+    _jp10_yc = _df_yc["JP_10Y"].dropna() if "JP_10Y" in _df_yc.columns else pd.Series(dtype=float)
+    _be_yc = _df_yc["JP_BREAKEVEN"].dropna() if "JP_BREAKEVEN" in _df_yc.columns else pd.Series(dtype=float)
+    if len(_jp10_yc) > 20 and len(_be_yc) > 20:
+        st.subheader("Real Yield Proxy")
+        _definition_block(
+            "What is Japan's Real Yield",
+            "Real yield = nominal yield minus inflation expectations (breakeven). Negative real yields mean "
+            "bondholders are losing purchasing power. As real yields rise from deeply negative territory, "
+            "rational investors demand higher nominal yields, accelerating JGB repricing. Real yield turning "
+            "positive is a critical threshold that can trigger portfolio rebalancing by pension funds and insurers."
+        )
+        _real_aligned = pd.DataFrame({"JP_10Y": _jp10_yc, "JP_BREAKEVEN": _be_yc}).dropna()
+        if len(_real_aligned) > 10:
+            _real_aligned["REAL_YIELD"] = _real_aligned["JP_10Y"] - _real_aligned["JP_BREAKEVEN"]
+            _section_note(
+                "Real yield = JP 10Y nominal minus breakeven inflation proxy. "
+                "Negative = bondholders losing purchasing power. Crossing zero is a regime signal."
+            )
+            fig_real = go.Figure()
+            fig_real.add_trace(go.Scatter(
+                x=_real_aligned.index, y=_real_aligned["JP_10Y"],
+                mode="lines", name="Nominal 10Y", line=dict(color="#1565C0"),
+            ))
+            fig_real.add_trace(go.Scatter(
+                x=_real_aligned.index, y=_real_aligned["JP_BREAKEVEN"],
+                mode="lines", name="Breakeven", line=dict(color="#FF9800"),
+            ))
+            fig_real.add_trace(go.Scatter(
+                x=_real_aligned.index, y=_real_aligned["REAL_YIELD"],
+                mode="lines", name="Real Yield", line=dict(color="#E8413C", width=2),
+            ))
+            fig_real.add_hline(y=0, line_dash="dot", line_color="grey", line_width=1)
+            fig_real.update_layout(yaxis_title="Yield (%)")
+            _add_boj_events(fig_real)
+            st.plotly_chart(_style_fig(fig_real, 380), use_container_width=True)
+            _real_latest = float(_real_aligned["REAL_YIELD"].iloc[-1])
+            _takeaway_block(
+                f"Real yield at <b>{_real_latest:.2f}%</b>. "
+                f"{'Positive real yield: bondholders are compensated for inflation. This is a structural shift from the BOJ suppression era and supports repricing.' if _real_latest > 0 else 'Real yield remains negative: bondholders are still losing purchasing power. BOJ suppression effects persist, but the gap is narrowing.' if _real_latest > -0.5 else 'Deeply negative real yield: extreme financial repression. This is unsustainable long-term and creates latent repricing pressure.'}"
+            )
+
+    # --- Curve Slope and Butterfly ---
+    _jp2 = _df_yc["JP_2Y"].dropna() if "JP_2Y" in _df_yc.columns else pd.Series(dtype=float)
+    _jp5 = _df_yc["JP_5Y"].dropna() if "JP_5Y" in _df_yc.columns else pd.Series(dtype=float)
+    _jp10_s = _df_yc["JP_10Y"].dropna() if "JP_10Y" in _df_yc.columns else pd.Series(dtype=float)
+    _jp20 = _df_yc["JP_20Y"].dropna() if "JP_20Y" in _df_yc.columns else pd.Series(dtype=float)
+    _jp30 = _df_yc["JP_30Y"].dropna() if "JP_30Y" in _df_yc.columns else pd.Series(dtype=float)
+    _slope_data = {}
+    if len(_jp2) > 20 and len(_jp10_s) > 20:
+        _s_aligned = pd.DataFrame({"JP_2Y": _jp2, "JP_10Y": _jp10_s}).dropna()
+        if len(_s_aligned) > 10:
+            _slope_data["2s10s"] = _s_aligned["JP_10Y"] - _s_aligned["JP_2Y"]
+    if len(_jp10_s) > 20 and len(_jp30) > 20:
+        _s_aligned2 = pd.DataFrame({"JP_10Y": _jp10_s, "JP_30Y": _jp30}).dropna()
+        if len(_s_aligned2) > 10:
+            _slope_data["10s30s"] = _s_aligned2["JP_30Y"] - _s_aligned2["JP_10Y"]
+    if len(_jp2) > 20 and len(_jp5) > 20 and len(_jp10_s) > 20:
+        _bf_aligned = pd.DataFrame({"JP_2Y": _jp2, "JP_5Y": _jp5, "JP_10Y": _jp10_s}).dropna()
+        if len(_bf_aligned) > 10:
+            _slope_data["Butterfly (2s5s10s)"] = 2 * _bf_aligned["JP_5Y"] - _bf_aligned["JP_2Y"] - _bf_aligned["JP_10Y"]
+    if _slope_data:
+        st.subheader("Curve Slopes and Butterfly")
+        _definition_block(
+            "What are Curve Slopes and Butterfly Spreads",
+            "The <b>2s10s slope</b> (10Y minus 2Y) measures the term premium for holding longer duration. "
+            "Flattening signals tightening expectations; steepening signals growth or inflation repricing. "
+            "The <b>butterfly spread</b> (2x5Y minus 2Y minus 10Y) captures belly richness/cheapness. "
+            "A positive butterfly means the belly is rich (5Y yields are low relative to wings), "
+            "signaling demand for the most liquid point on the JGB curve."
+        )
+        _section_note(
+            "JGB curve slopes (percentage points) and butterfly spread. "
+            "Steepening 2s10s = repricing pressure on the long end. Butterfly captures belly distortion."
+        )
+        fig_slope = go.Figure()
+        slope_colors = {"2s10s": "#1565C0", "10s30s": "#4CAF50", "Butterfly (2s5s10s)": "#E8413C"}
+        for label, series in _slope_data.items():
+            fig_slope.add_trace(go.Scatter(
+                x=series.index, y=series,
+                mode="lines", name=label,
+                line=dict(color=slope_colors.get(label, "#333")),
+            ))
+        fig_slope.add_hline(y=0, line_dash="dot", line_color="grey", line_width=1)
+        fig_slope.update_layout(yaxis_title="Spread (pp)")
+        _add_boj_events(fig_slope)
+        st.plotly_chart(_style_fig(fig_slope, 380), use_container_width=True)
+        if "2s10s" in _slope_data:
+            _s2s10s = float(_slope_data["2s10s"].iloc[-1])
+            _takeaway_block(
+                f"JGB 2s10s slope at <b>{_s2s10s:.2f}pp</b>. "
+                f"{'Steep curve: the market is pricing in higher long-term rates relative to short rates. Steepener trades are crowded but directionally correct.' if _s2s10s > 0.5 else 'Flat curve: minimal compensation for duration risk. This compresses term premium and makes long-end JGBs vulnerable to repricing.' if _s2s10s < 0.1 else 'Moderate slope: term premium is present but not extreme.'}"
+            )
+
+    # --- Yield Change Correlation Heatmap ---
+    _yield_cols_corr = [c for c in ["JP_2Y", "JP_5Y", "JP_10Y", "JP_20Y", "JP_30Y", "US_10Y", "DE_10Y", "UK_10Y"] if c in _df_yc.columns]
+    if len(_yield_cols_corr) >= 4:
+        st.subheader("Yield Change Correlation Matrix")
+        _definition_block(
+            "What Yield Change Correlations Reveal",
+            "Correlations between daily yield changes across tenors and countries reveal how repricing "
+            "transmits. High correlation across all JP tenors confirms a parallel shift (PC1-dominated). "
+            "High JP-US correlation suggests global rate transmission; low correlation implies domestic drivers. "
+            "Sudden correlation breakdowns often precede regime shifts."
+        )
+        _yc_changes = _df_yc[_yield_cols_corr].diff().dropna()
+        if len(_yc_changes) > 30:
+            _corr_matrix = _yc_changes.corr()
+            fig_heatmap = go.Figure(data=go.Heatmap(
+                z=_corr_matrix.values,
+                x=_corr_matrix.columns.tolist(),
+                y=_corr_matrix.index.tolist(),
+                colorscale="RdBu",
+                zmid=0,
+                zmin=-1, zmax=1,
+                text=[[f"{v:.2f}" for v in row] for row in _corr_matrix.values],
+                texttemplate="%{text}",
+            ))
+            fig_heatmap.update_layout(yaxis_autorange="reversed")
+            st.plotly_chart(_style_fig(fig_heatmap, 420), use_container_width=True)
+            # Find most/least correlated pairs
+            _corr_vals = []
+            for i in range(len(_corr_matrix)):
+                for j in range(i + 1, len(_corr_matrix)):
+                    _corr_vals.append((_corr_matrix.index[i], _corr_matrix.columns[j], _corr_matrix.iloc[i, j]))
+            _corr_vals.sort(key=lambda x: x[2])
+            if _corr_vals:
+                _lowest = _corr_vals[0]
+                _highest = _corr_vals[-1]
+                _takeaway_block(
+                    f"Strongest correlation: <b>{_highest[0]}-{_highest[1]}</b> at <b>{_highest[2]:.2f}</b>. "
+                    f"Weakest: <b>{_lowest[0]}-{_lowest[1]}</b> at <b>{_lowest[2]:.2f}</b>. "
+                    f"{'Low cross-country correlation suggests Japan-specific repricing dynamics.' if _lowest[2] < 0.3 else 'High cross-country correlation confirms global rate transmission is the dominant force.'}"
+                )
 
     # --- Page conclusion ---
     _yc_parts = []
@@ -1856,6 +2110,61 @@ def page_regime():
             st.dataframe(regime_table, use_container_width=True, hide_index=True)
     except Exception:
         st.info("Could not compute regime comparison table.")
+
+    # --- Regime Duration & Transition Analysis ---
+    if ensemble is not None and len(ensemble.dropna()) > 30:
+        st.subheader("Regime Duration and Transitions")
+        _definition_block(
+            "What Regime Duration Reveals",
+            "Regime duration measures how long the market stays in a suppressed or repricing state. "
+            "Short-lived repricing episodes suggest the BOJ can still regain control. Prolonged repricing "
+            "(>60 trading days) signals a structural shift. Transition frequency reveals market indecision: "
+            "frequent switching = unstable equilibrium, which is the most dangerous period for positioning."
+        )
+        _ens_clean = ensemble.dropna()
+        _regime_binary = (_ens_clean > 0.5).astype(int)
+        _transitions = (_regime_binary != _regime_binary.shift()).cumsum()
+        _durations = _regime_binary.groupby(_transitions).agg(["first", "count"])
+        _durations.columns = ["regime", "duration_days"]
+        _repricing_durations = _durations[_durations["regime"] == 1]["duration_days"]
+        _suppressed_durations = _durations[_durations["regime"] == 0]["duration_days"]
+        _n_transitions = len(_durations) - 1
+
+        dur_cols = st.columns(4)
+        dur_cols[0].metric("Total Transitions", f"{_n_transitions}")
+        dur_cols[1].metric("Current Streak", f"{int(_durations.iloc[-1]['duration_days'])}d",
+                          delta=f"{'Repricing' if _durations.iloc[-1]['regime'] == 1 else 'Suppressed'}")
+        if len(_repricing_durations) > 0:
+            dur_cols[2].metric("Avg Repricing Duration", f"{_repricing_durations.mean():.0f}d")
+        if len(_suppressed_durations) > 0:
+            dur_cols[3].metric("Avg Suppressed Duration", f"{_suppressed_durations.mean():.0f}d")
+
+        # Duration distribution chart
+        if len(_durations) > 2:
+            fig_dur = go.Figure()
+            if len(_repricing_durations) > 0:
+                fig_dur.add_trace(go.Histogram(
+                    x=_repricing_durations, name="Repricing",
+                    marker_color="#E8413C", opacity=0.7,
+                ))
+            if len(_suppressed_durations) > 0:
+                fig_dur.add_trace(go.Histogram(
+                    x=_suppressed_durations, name="Suppressed",
+                    marker_color="#1565C0", opacity=0.7,
+                ))
+            fig_dur.update_layout(
+                xaxis_title="Duration (trading days)", yaxis_title="Frequency",
+                barmode="overlay",
+            )
+            st.plotly_chart(_style_fig(fig_dur, 340), use_container_width=True)
+
+        _current_dur = int(_durations.iloc[-1]["duration_days"])
+        _current_regime = "repricing" if _durations.iloc[-1]["regime"] == 1 else "suppressed"
+        _takeaway_block(
+            f"Market has been in <b>{_current_regime}</b> for <b>{_current_dur} trading days</b>. "
+            f"{'Prolonged repricing (>60 days) confirms a structural shift beyond BOJ control. This is not a temporary spike.' if _current_regime == 'repricing' and _current_dur > 60 else 'Repricing episode is still young; could reverse if BOJ intervenes forcefully.' if _current_regime == 'repricing' else 'Suppressed regime is holding. BOJ retains control, but watch for entropy signal to fire as an early warning.' if _current_dur > 60 else 'Short suppressed streak after a transition; regime may be unstable.'}"
+            f" Total of <b>{_n_transitions}</b> regime transitions detected over the sample."
+        )
 
     # --- Page conclusion ---
     if ensemble is not None and len(ensemble.dropna()) > 0:
@@ -2338,6 +2647,58 @@ def page_spillover():
     else:
         st.warning("Insufficient data for carry analytics.")
 
+    # --- Rolling Spillover (time-varying connectedness) ---
+    st.subheader("Rolling Spillover Index")
+    _definition_block(
+        "Why Time-Varying Spillover Matters",
+        "A single spillover number conceals how contagion evolves. Computing the DY spillover index on "
+        "rolling windows (120 trading days) reveals episodes when markets become suddenly interconnected, "
+        "often coinciding with BOJ policy surprises, global risk events, or liquidity crises. "
+        "Rising rolling spillover into a BOJ meeting is an early warning of amplified market reaction."
+    )
+    try:
+        _df_spill = load_unified(use_simulated, str(start_date), str(end_date), fred_api_key or None)
+        from src.spillover.diebold_yilmaz import compute_spillover_index
+        _spill_cols = [c for c in ["JP_10Y", "US_10Y", "USDJPY", "VIX", "NIKKEI"] if c in _df_spill.columns]
+        if len(_spill_cols) >= 3:
+            _spill_df = _df_spill[_spill_cols].diff().dropna()
+            _window = 120
+            if len(_spill_df) > _window + 30:
+                _rolling_spill = []
+                # Sample every 5 days for speed
+                _sample_indices = range(_window, len(_spill_df), 5)
+                for i in _sample_indices:
+                    _window_data = _spill_df.iloc[i - _window:i]
+                    try:
+                        _res = compute_spillover_index(_window_data, var_lags=2, horizon=5)
+                        _rolling_spill.append({"date": _spill_df.index[i], "spillover": _res["total_spillover"]})
+                    except Exception:
+                        continue
+                if _rolling_spill:
+                    _rs_df = pd.DataFrame(_rolling_spill).set_index("date")
+                    _section_note(
+                        f"120-day rolling DY spillover index (sampled every 5 days). "
+                        f"Rising index = markets becoming more interconnected. Spikes often precede or coincide with policy events."
+                    )
+                    fig_rs = go.Figure()
+                    fig_rs.add_trace(go.Scatter(
+                        x=_rs_df.index, y=_rs_df["spillover"],
+                        mode="lines", name="Rolling Spillover (%)",
+                        line=dict(color="#E8413C"),
+                        fill="tozeroy", fillcolor="rgba(232,65,60,0.1)",
+                    ))
+                    fig_rs.update_layout(yaxis_title="Total Spillover (%)")
+                    _add_boj_events(fig_rs)
+                    st.plotly_chart(_style_fig(fig_rs, 380), use_container_width=True)
+                    _rs_latest = float(_rs_df["spillover"].iloc[-1])
+                    _rs_mean = float(_rs_df["spillover"].mean())
+                    _takeaway_block(
+                        f"Current rolling spillover: <b>{_rs_latest:.1f}%</b> vs sample average <b>{_rs_mean:.1f}%</b>. "
+                        f"{'Spillover is elevated above average: markets are more interconnected than usual. Cross-asset hedges may underperform.' if _rs_latest > _rs_mean * 1.1 else 'Spillover is below average: markets are relatively independent. Diversification benefits are intact.'}"
+                    )
+    except Exception:
+        st.info("Could not compute rolling spillover index.")
+
     # --- Page conclusion ---
     _sp_parts = []
     _sp_total = None
@@ -2638,7 +2999,7 @@ def page_trade_ideas():
                     f"<b style='color:#0b0f19;'>Exit Signal:</b> {card.exit_signal}<br>"
                     f"<b style='color:#0b0f19;'>Sizing:</b> {card.sizing_method}<br>"
                     f"<b style='color:#dc2626;font-weight:600;'>Failure Scenario:</b> "
-                    f"<span style='color:#6b7394;'>{card.failure_scenario}</span></div>",
+                    f"<span style='color:#2d2d2d;'>{card.failure_scenario}</span></div>",
                     unsafe_allow_html=True,
                 )
 
@@ -2923,18 +3284,10 @@ def _build_analysis_context(args):
 
 
 def page_ai_qa():
-    # Chat-optimised layout — re-show stBottom (hidden by footer on other pages)
-    st.markdown(
-        "<style>"
-        "[data-testid='stBottom'] { display: block !important; }"
-        ".main .block-container { padding-bottom: 80px !important; }"
-        "</style>",
-        unsafe_allow_html=True,
-    )
     st.header("AI Q&A")
     _page_intro(
-        "Chat interface grounded in the case study. The AI assistant is injected with live framework outputs — "
-        "regime ensemble (4 sub-models), PCA loadings, Nelson-Siegel curve factors, Diebold-Yilmaz spillover edges, "
+        "Chat interface grounded in the case study. The AI assistant is injected with live framework outputs "
+        "including regime ensemble, PCA loadings, Nelson-Siegel curve factors, Diebold-Yilmaz spillover edges, "
         "DCC correlations, Granger causality pairs, GARCH vol, carry analytics, liquidity, structural breaks, "
         "and trade ideas with failure scenarios. Every answer must cite specific metrics from the analysis."
     )
@@ -2954,7 +3307,7 @@ def page_ai_qa():
         help="Auto-loaded from .streamlit/secrets.toml if set. Or paste here.",
     )
 
-    # --- Build context once ---
+    # --- Args for context builder (lazy, only called when needed) ---
     args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
 
     if not ai_api_key:
@@ -2964,7 +3317,7 @@ def page_ai_qa():
             "<div style='font-size:2.5rem;margin-bottom:0.8rem;opacity:0.15;'>&#x1F4AC;</div>"
             "<p style='font-family:var(--font-sans);font-size:var(--fs-2xl);font-weight:600;"
             "color:#000;margin:0 0 6px 0;'>AI Research Assistant</p>"
-            "<p style='font-family:var(--font-sans);font-size:var(--fs-md);color:#6b7394;"
+            "<p style='font-family:var(--font-sans);font-size:var(--fs-md);color:#2d2d2d;"
             "max-width:480px;margin:0 auto 1.5rem auto;line-height:1.65;'>"
             "Enter your API key in the sidebar to activate the conversational AI assistant. "
             "It has access to live regime state, PCA decomposition, spillover metrics, "
@@ -2976,24 +3329,20 @@ def page_ai_qa():
         st.markdown(
             "<div style='display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:2rem;'>"
             "<span style='background:#fafaf8;border:1px solid #eceae6;border-radius:8px;"
-            "padding:8px 16px;font-size:var(--fs-base);color:#555960;font-family:var(--font-sans);'>"
+            "padding:8px 16px;font-size:var(--fs-base);color:#1a1a1a;font-family:var(--font-sans);'>"
             "Regime call with evidence</span>"
             "<span style='background:#fafaf8;border:1px solid #eceae6;border-radius:8px;"
-            "padding:8px 16px;font-size:var(--fs-base);color:#555960;font-family:var(--font-sans);'>"
+            "padding:8px 16px;font-size:var(--fs-base);color:#1a1a1a;font-family:var(--font-sans);'>"
             "PCA loadings &amp; curve factors</span>"
             "<span style='background:#fafaf8;border:1px solid #eceae6;border-radius:8px;"
-            "padding:8px 16px;font-size:var(--fs-base);color:#555960;font-family:var(--font-sans);'>"
+            "padding:8px 16px;font-size:var(--fs-base);color:#1a1a1a;font-family:var(--font-sans);'>"
             "Spillover transmission chain</span>"
             "<span style='background:#fafaf8;border:1px solid #eceae6;border-radius:8px;"
-            "padding:8px 16px;font-size:var(--fs-base);color:#555960;font-family:var(--font-sans);'>"
+            "padding:8px 16px;font-size:var(--fs-base);color:#1a1a1a;font-family:var(--font-sans);'>"
             "Trade thesis &amp; failure scenarios</span>"
             "</div>",
             unsafe_allow_html=True,
         )
-        # Show live context snapshot as proof the system is working
-        with st.expander("Live Analysis Context (preview of what the AI sees)"):
-            ctx = _build_analysis_context(args)
-            st.code(ctx, language="text")
         _page_footer()
         return
 
@@ -3001,19 +3350,22 @@ def page_ai_qa():
     if "qa_messages" not in st.session_state:
         st.session_state.qa_messages = []
 
+    # Determine if a card was just clicked (pending question to process)
+    _pending_card_q = None
+
     # Show empty state with suggestions when no messages yet
     if not st.session_state.qa_messages:
         st.markdown(
             "<div style='text-align:center;padding:2rem 2rem 1rem 2rem;'>"
             "<p style='font-family:var(--font-sans);font-size:var(--fs-2xl);font-weight:600;"
             "color:#000;margin:0 0 4px 0;'>Ready to assist</p>"
-            "<p style='font-family:var(--font-sans);font-size:var(--fs-md);color:#6b7394;"
+            "<p style='font-family:var(--font-sans);font-size:var(--fs-md);color:#2d2d2d;"
             "margin:0 0 1.2rem 0;'>Ask about JGBs, rates, macro, BOJ policy, "
             "trading strategies, or yield curves.</p>"
             "</div>",
             unsafe_allow_html=True,
         )
-        # Clickable topic cards — aligned to case study evaluation questions
+        # Clickable topic cards
         _topics = [
             ("Explain the current regime call: cite the ensemble probability, sub-model signals, and what is driving the reading.", "Regime Call"),
             ("Break down the PCA loadings: what do PC1/PC2/PC3 represent economically, and what does the variance split tell us about yield dynamics?", "PCA Factors"),
@@ -3029,37 +3381,46 @@ def page_ai_qa():
                     use_container_width=True,
                     type="secondary",
                 ):
-                    st.session_state.qa_messages.append({"role": "user", "content": _q})
-                    st.rerun()
+                    _pending_card_q = _q
 
     # Display chat history
     for msg in st.session_state.qa_messages:
-        with st.chat_message(msg["role"]):
+        _avatar = "\U0001F9D1" if msg["role"] == "user" else "\U0001F916"
+        with st.chat_message(msg["role"], avatar=_avatar):
             st.markdown(msg["content"])
 
-    # --- Chat input ---
-    user_input = st.chat_input("Ask anything about JGBs, rates, macro, BOJ policy, trading strategies...")
+    # --- Chat input (inline, not fixed to bottom) ---
+    user_input = st.text_input(
+        "Ask anything about JGBs, rates, macro, BOJ policy, trading strategies...",
+        key="qa_text_input",
+        label_visibility="collapsed",
+        placeholder="Ask anything about JGBs, rates, macro, BOJ policy, trading strategies...",
+    )
 
-    if user_input:
-        st.session_state.qa_messages.append({"role": "user", "content": user_input})
-        with st.chat_message("user"):
-            st.markdown(user_input)
+    # Use card click or text input
+    question = _pending_card_q or (user_input if user_input else None)
 
-        # Build context
-        analysis_context = _build_analysis_context(args)
+    if question:
+        st.session_state.qa_messages.append({"role": "user", "content": question})
+        with st.chat_message("user", avatar="\U0001F9D1"):
+            st.markdown(question)
+
+        # Build context only when actually needed
+        with st.spinner("Building analysis context..."):
+            analysis_context = _build_analysis_context(args)
 
         system_prompt = (
-            "You are an AI research assistant for a JGB Repricing Framework — a quantitative case study "
+            "You are an AI research assistant for a JGB Repricing Framework, a quantitative case study "
             "analyzing the regime shift from BOJ-suppressed yields to market-driven pricing in the Japanese "
             "Government Bond market.\n\n"
             "THESIS: Japan's decade of yield curve control (YCC) and quantitative easing artificially suppressed "
-            "JGB yields. As the BOJ exits these policies (Dec 2022 band widening → Mar 2024 formal YCC exit), "
+            "JGB yields. As the BOJ exits these policies (Dec 2022 band widening, Mar 2024 formal YCC exit), "
             "repricing risk propagates through rates, FX, volatility, and cross-asset channels.\n\n"
             "RULES:\n"
             "1. ALWAYS ground your answers in the live framework data below. Cite at least 2 specific metrics "
             "   from the injected context when discussing regime, spillovers, curve, carry, or trade ideas.\n"
-            "2. Frame answers through the thesis lens: BOJ suppression → cross-asset spillovers → repricing risk "
-            "   → trade implications.\n"
+            "2. Frame answers through the thesis lens: BOJ suppression, cross-asset spillovers, repricing risk, "
+            "   trade implications.\n"
             "3. When referencing PCA, explain what the loadings mean economically (level/slope/curvature).\n"
             "4. When discussing trades, always mention the failure scenario.\n"
             "5. If the data does not support a claim, say so explicitly: 'Not supported by current framework outputs.'\n"
@@ -3071,7 +3432,7 @@ def page_ai_qa():
         # Build message history for the API
         api_messages = [{"role": m["role"], "content": m["content"]} for m in st.session_state.qa_messages]
 
-        with st.chat_message("assistant"):
+        with st.chat_message("assistant", avatar="\U0001F916"):
             with st.spinner("Thinking..."):
                 try:
                     if "Anthropic" in ai_provider:
@@ -3103,10 +3464,7 @@ def page_ai_qa():
                 except Exception as e:
                     st.error(f"API call failed: {e}")
 
-    # Context transparency in sidebar
-    with st.sidebar.expander("Analysis Context"):
-        ctx = _build_analysis_context(args)
-        st.text(ctx)
+    _page_footer()
 
 
 # ===================================================================
@@ -3157,31 +3515,31 @@ def _about_page_styles():
         "border-radius:50%;background:#CFB991;border:2px solid #fff;}"
         ".exp-role{font-size:var(--fs-md);font-weight:700;color:#000;margin:0 0 2px 0;line-height:1.35;}"
         ".exp-org{font-size:var(--fs-base);font-weight:600;color:#8E6F3E;margin:0 0 4px 0;}"
-        ".exp-meta{font-size:var(--fs-xs);color:#9D9795;margin:0 0 8px 0;font-weight:500;"
+        ".exp-meta{font-size:var(--fs-xs);color:#4a4a4a;margin:0 0 8px 0;font-weight:500;"
         "letter-spacing:0.01em;}"
-        ".exp-desc{font-size:var(--fs-base);color:#555960;line-height:1.7;margin:0;}"
+        ".exp-desc{font-size:var(--fs-base);color:#1a1a1a;line-height:1.7;margin:0;}"
         # ── education ──
         ".edu-item{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #f5f3f0;}"
         ".edu-item:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none;}"
         ".edu-school{font-size:var(--fs-md);font-weight:700;color:#000;margin:0 0 2px 0;}"
         ".edu-dept{font-size:var(--fs-sm);color:#8E6F3E;margin:0 0 2px 0;font-weight:600;}"
-        ".edu-degree{font-size:var(--fs-sm);color:#555960;margin:0 0 2px 0;font-weight:500;}"
-        ".edu-year{font-size:var(--fs-tiny);color:#9D9795;margin:0;font-weight:500;}"
+        ".edu-degree{font-size:var(--fs-sm);color:#1a1a1a;margin:0 0 2px 0;font-weight:500;}"
+        ".edu-year{font-size:var(--fs-tiny);color:#4a4a4a;margin:0;font-weight:500;}"
         # ── certifications ──
         ".cert-item{margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #f5f3f0;}"
         ".cert-item:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none;}"
         ".cert-name{font-size:var(--fs-base);font-weight:600;color:#000;margin:0 0 2px 0;}"
-        ".cert-issuer{font-size:var(--fs-xs);color:#9D9795;margin:0;font-weight:500;}"
+        ".cert-issuer{font-size:var(--fs-xs);color:#4a4a4a;margin:0;font-weight:500;}"
         # ── publication ──
         ".pub-item{margin-bottom:16px;padding:16px 18px;background:#fafaf8;"
         "border-left:3px solid #CFB991;border-radius:0 8px 8px 0;}"
         ".pub-item:last-child{margin-bottom:0;}"
         ".pub-title{font-size:var(--fs-md);font-weight:700;color:#000;margin:0 0 6px 0;line-height:1.4;}"
-        ".pub-authors{font-size:var(--fs-sm);color:#555960;margin:0 0 6px 0;line-height:1.5;}"
+        ".pub-authors{font-size:var(--fs-sm);color:#1a1a1a;margin:0 0 6px 0;line-height:1.5;}"
         ".pub-authors strong{color:#000;font-weight:700;}"
         ".pub-journal{font-size:var(--fs-sm);color:#8E6F3E;font-weight:600;margin:0 0 4px 0;"
         "font-style:italic;}"
-        ".pub-detail{font-size:var(--fs-xs);color:#9D9795;margin:0 0 8px 0;line-height:1.5;}"
+        ".pub-detail{font-size:var(--fs-xs);color:#4a4a4a;margin:0 0 8px 0;line-height:1.5;}"
         ".pub-link{display:inline-block;padding:4px 12px;border:1px solid rgba(207,185,145,0.4);"
         "border-radius:4px;color:#8E6F3E;font-size:var(--fs-xs);font-weight:600;text-decoration:none;"
         "transition:all 0.2s;}"
@@ -3192,17 +3550,17 @@ def _about_page_styles():
         ".interest-tag:hover{transform:translateY(-1px);}"
         ".interest-gold{background:rgba(207,185,145,0.12);color:#8E6F3E;"
         "border:1px solid rgba(207,185,145,0.2);}"
-        ".interest-neutral{background:rgba(0,0,0,0.03);color:#555960;"
+        ".interest-neutral{background:rgba(0,0,0,0.03);color:#1a1a1a;"
         "border:1px solid rgba(0,0,0,0.06);}"
         # ── acknowledgment ──
-        ".ack-text{font-size:var(--fs-base);color:#555960;line-height:1.75;margin:0;}"
+        ".ack-text{font-size:var(--fs-base);color:#1a1a1a;line-height:1.75;margin:0;}"
         ".ack-text strong{color:#000;}"
         # ── stat row ──
         ".stat-row{display:flex;gap:16px;margin:16px 0 4px 0;}"
         ".stat-item{flex:1;text-align:center;padding:12px 8px;background:#fafaf8;"
         "border-radius:8px;border:1px solid #f0eeeb;}"
         ".stat-num{font-size:var(--fs-metric);font-weight:800;color:#000;margin:0;line-height:1.2;}"
-        ".stat-label{font-size:var(--fs-tiny);font-weight:600;color:#9D9795;margin:2px 0 0 0;"
+        ".stat-label{font-size:var(--fs-tiny);font-weight:600;color:#4a4a4a;margin:2px 0 0 0;"
         "text-transform:uppercase;letter-spacing:var(--ls-wider);}"
         "</style>",
         unsafe_allow_html=True,
@@ -3259,13 +3617,13 @@ def page_about_heramb():
         st.markdown(
             "<div class='about-card'>"
             "<p class='about-card-title'>Profile</p>"
-            f"<p style='{_f}color:#555960;font-size:var(--fs-md);line-height:1.75;margin:0 0 10px 0;'>"
+            f"<p style='{_f}color:#1a1a1a;font-size:var(--fs-md);line-height:1.75;margin:0 0 10px 0;'>"
             "Driven by curiosity about how businesses create impact and grow stronger. "
             "With a background in engineering and experience in global equity research, "
             "I enjoy analysing industries, building financial models, and uncovering insights "
             "that drive smarter decisions. Excited by opportunities where analytical thinking "
             "and creativity intersect to solve complex problems and deliver meaningful value.</p>"
-            f"<p style='{_f}color:#555960;font-size:var(--fs-md);line-height:1.75;margin:0;'>"
+            f"<p style='{_f}color:#1a1a1a;font-size:var(--fs-md);line-height:1.75;margin:0;'>"
             "Beyond work, I enjoy exploring new places, listening to Carnatic music, "
             "and learning from different cultures and perspectives. Always open to connecting"
             ", feel free to reach out.</p>"
@@ -3277,7 +3635,7 @@ def page_about_heramb():
         st.markdown(
             "<div class='about-card'>"
             "<p class='about-card-title'>This Project</p>"
-            f"<p style='{_f}color:#555960;font-size:var(--fs-md);line-height:1.75;margin:0 0 12px 0;'>"
+            f"<p style='{_f}color:#1a1a1a;font-size:var(--fs-md);line-height:1.75;margin:0 0 12px 0;'>"
             "Built this JGB Repricing Framework as Course Project 1 for Prof. Xinde Zhang's "
             "MGMT 69000-119: a quantitative dashboard that detects regime shifts in Japanese "
             "Government Bond markets and generates institutional-grade trade ideas.</p>"
@@ -3458,14 +3816,14 @@ def page_about_zhang():
         st.markdown(
             "<div class='about-card'>"
             "<p class='about-card-title'>Profile</p>"
-            f"<p style='{_f}color:#555960;font-size:var(--fs-md);line-height:1.75;margin:0 0 10px 0;'>"
+            f"<p style='{_f}color:#1a1a1a;font-size:var(--fs-md);line-height:1.75;margin:0 0 10px 0;'>"
             "Dr. Cinder Zhang is an award-winning finance professor and pioneer in AI-integrated "
             "finance education at Purdue University. He is the creator of the "
             "<strong>DRIVER Framework</strong> (Define &amp; Discover, Represent, Implement, "
             "Validate, Evolve, Reflect), a comprehensive methodology that transforms how financial "
             "management is taught by integrating AI as a cognitive amplifier rather than a "
             "replacement tool.</p>"
-            f"<p style='{_f}color:#555960;font-size:var(--fs-md);line-height:1.75;margin:0;'>"
+            f"<p style='{_f}color:#1a1a1a;font-size:var(--fs-md);line-height:1.75;margin:0;'>"
             "Dr. Zhang advocates shifting finance education from traditional analysis toward "
             "practical implementation, teaching students to <em>build financial tools and "
             "solutions</em> rather than compete with AI in analytical tasks. His approach "
@@ -3479,7 +3837,7 @@ def page_about_zhang():
         st.markdown(
             "<div class='about-card'>"
             "<p class='about-card-title'>Impact</p>"
-            f"<p style='{_f}color:#555960;font-size:var(--fs-md);line-height:1.75;margin:0 0 12px 0;'>"
+            f"<p style='{_f}color:#1a1a1a;font-size:var(--fs-md);line-height:1.75;margin:0 0 12px 0;'>"
             "As founder of the Financial Analytics program, Dr. Zhang has mentored "
             "graduates into roles at Goldman Sachs, JPMorgan, State Street, Mastercard, EY, "
             "Walmart Global Tech, and FinTech startups.</p>"
@@ -3541,39 +3899,39 @@ def page_about_zhang():
         st.markdown(
             "<div class='about-card'>"
             "<p class='about-card-title'>The DRIVER Framework</p>"
-            f"<p style='{_f}color:#555960;font-size:var(--fs-base);line-height:1.7;margin:0 0 12px 0;'>"
+            f"<p style='{_f}color:#1a1a1a;font-size:var(--fs-base);line-height:1.7;margin:0 0 12px 0;'>"
             "A six-phase methodology for AI-integrated finance education:</p>"
             "<div style='display:flex;flex-direction:column;gap:6px;'>"
             "<div style='display:flex;align-items:center;gap:8px;'>"
             "<span style='width:22px;height:22px;border-radius:50%;background:#000;color:#CFB991;"
             "font-size:var(--fs-micro);font-weight:800;display:flex;align-items:center;justify-content:center;"
             "flex-shrink:0;'>D</span>"
-            f"<span style='{_f}font-size:var(--fs-sm);color:#555960;'>Define &amp; Discover</span></div>"
+            f"<span style='{_f}font-size:var(--fs-sm);color:#1a1a1a;'>Define &amp; Discover</span></div>"
             "<div style='display:flex;align-items:center;gap:8px;'>"
             "<span style='width:22px;height:22px;border-radius:50%;background:#000;color:#CFB991;"
             "font-size:var(--fs-micro);font-weight:800;display:flex;align-items:center;justify-content:center;"
             "flex-shrink:0;'>R</span>"
-            f"<span style='{_f}font-size:var(--fs-sm);color:#555960;'>Represent</span></div>"
+            f"<span style='{_f}font-size:var(--fs-sm);color:#1a1a1a;'>Represent</span></div>"
             "<div style='display:flex;align-items:center;gap:8px;'>"
             "<span style='width:22px;height:22px;border-radius:50%;background:#000;color:#CFB991;"
             "font-size:var(--fs-micro);font-weight:800;display:flex;align-items:center;justify-content:center;"
             "flex-shrink:0;'>I</span>"
-            f"<span style='{_f}font-size:var(--fs-sm);color:#555960;'>Implement</span></div>"
+            f"<span style='{_f}font-size:var(--fs-sm);color:#1a1a1a;'>Implement</span></div>"
             "<div style='display:flex;align-items:center;gap:8px;'>"
             "<span style='width:22px;height:22px;border-radius:50%;background:#000;color:#CFB991;"
             "font-size:var(--fs-micro);font-weight:800;display:flex;align-items:center;justify-content:center;"
             "flex-shrink:0;'>V</span>"
-            f"<span style='{_f}font-size:var(--fs-sm);color:#555960;'>Validate</span></div>"
+            f"<span style='{_f}font-size:var(--fs-sm);color:#1a1a1a;'>Validate</span></div>"
             "<div style='display:flex;align-items:center;gap:8px;'>"
             "<span style='width:22px;height:22px;border-radius:50%;background:#000;color:#CFB991;"
             "font-size:var(--fs-micro);font-weight:800;display:flex;align-items:center;justify-content:center;"
             "flex-shrink:0;'>E</span>"
-            f"<span style='{_f}font-size:var(--fs-sm);color:#555960;'>Evolve</span></div>"
+            f"<span style='{_f}font-size:var(--fs-sm);color:#1a1a1a;'>Evolve</span></div>"
             "<div style='display:flex;align-items:center;gap:8px;'>"
             "<span style='width:22px;height:22px;border-radius:50%;background:#000;color:#CFB991;"
             "font-size:var(--fs-micro);font-weight:800;display:flex;align-items:center;justify-content:center;"
             "flex-shrink:0;'>R</span>"
-            f"<span style='{_f}font-size:var(--fs-sm);color:#555960;'>Reflect</span></div>"
+            f"<span style='{_f}font-size:var(--fs-sm);color:#1a1a1a;'>Reflect</span></div>"
             "</div></div>",
             unsafe_allow_html=True,
         )

@@ -81,6 +81,14 @@ def generate_simulated_market(
     hsi_returns = np.random.normal(0.0001, 0.013, n)
     hangseng = 22000 * np.exp(np.cumsum(hsi_returns))
 
+    # Shanghai Composite
+    sse_returns = np.random.normal(0.0001, 0.014, n)
+    shanghai = 3000 * np.exp(np.cumsum(sse_returns))
+
+    # KOSPI
+    kospi_returns = np.random.normal(0.0002, 0.012, n)
+    kospi = 2000 * np.exp(np.cumsum(kospi_returns))
+
     data = {
         "USDJPY": usdjpy,
         "EURJPY": usdjpy * 1.1 + np.random.randn(n) * 0.5,
@@ -92,6 +100,8 @@ def generate_simulated_market(
         "SHY": 82 + np.random.randn(n) * 0.2,
         "SENSEX": sensex,
         "HANGSENG": hangseng,
+        "SHANGHAI": shanghai,
+        "KOSPI": kospi,
     }
 
     df = pd.DataFrame(data, index=dates)

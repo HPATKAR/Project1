@@ -46,6 +46,8 @@ YF_TICKERS = {
     "ASX200": "^AXJO",          # ASX 200 (Australia equity benchmark)
     "SENSEX": "^BSESN",         # BSE Sensex (India)
     "HANGSENG": "^HSI",         # Hang Seng (Hong Kong)
+    "SHANGHAI": "000001.SS",    # SSE Composite (China)
+    "KOSPI": "^KS11",           # KOSPI (South Korea)
     # Bond ETFs (for flow proxy)
     "TLT": "TLT",       # iShares 20+ Year Treasury
     "IEF": "IEF",       # iShares 7-10 Year Treasury
