@@ -1,5 +1,7 @@
 # JGB Repricing Framework
 
+![CI](https://github.com/HPATKAR/Project1/actions/workflows/ci.yml/badge.svg)
+
 **Course:** MGMT 69000 — Mastering AI for Finance | Purdue University
 **Author:** Heramb Patkar
 **Thesis:** Japan Bond Market Repricing — regime shift from BOJ-suppressed yields to market-driven pricing.

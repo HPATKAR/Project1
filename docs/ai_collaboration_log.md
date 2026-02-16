@@ -131,6 +131,20 @@ AI was used as a **pair-programming partner and research accelerator** — provi
   - AI generated the enriched `_build_analysis_context()` and tightened system prompt; I verified all data paths connect to existing cached functions and validated the analytical accuracy of injected content
 - **Verification:** All 37 tests pass. Context injection exercises all 12 analytical modules without error.
 
+### Session 11: CI/CD Pipeline Setup
+- **AI Tool:** Claude Code (Claude Opus 4.6)
+- **What I asked:** Set up a proper CI/CD pipeline with GitHub Actions so code is tested and deployable on every push, per professor's requirement.
+- **What I decided:**
+  - Two-workflow design: `ci.yml` (test + lint on every push/PR) and `deploy.yml` (deploy on push to main, gated behind passing tests)
+  - Python 3.11 to match Dockerfile and render.yaml
+  - Added `ruff` as linter (fast, modern, minimal config)
+  - Deploy workflow triggers Render.com deploy hook via secret (`RENDER_DEPLOY_HOOK_URL`), keeping credentials out of code
+  - CI workflow is reusable (`workflow_call`) so deploy.yml can depend on it without duplicating test steps
+  - Added CI status badge to README for visibility
+- **What AI generated vs. what I owned:**
+  - AI generated the workflow YAML files and badge markdown; I defined the pipeline architecture (separate CI vs deploy, test-gated deployment, secret-based deploy hook)
+- **Verification:** Workflow syntax validated. All 37 existing tests expected to pass in CI. Badge will render after first workflow run.
+
 ## AI Usage Summary
 
 | Category | AI Role | My Role |
