@@ -75,11 +75,38 @@ st.markdown(
         --red:        #c0392b;
         --green:      #2e7d32;
         --amber:      #8E6F3E;          /* Aged as amber */
+
+        /* ── Type scale (12 steps) ── */
+        --fs-micro:  0.52rem;           /* DRIVER step numbers */
+        --fs-tiny:   0.56rem;           /* uppercase overlines, metric labels, stat labels */
+        --fs-xs:     0.60rem;           /* card titles, metadata, cert/pub details */
+        --fs-sm:     0.65rem;           /* tags, sidebar labels, small descriptions */
+        --fs-base:   0.70rem;           /* body secondary, footer links, card content */
+        --fs-md:     0.74rem;           /* body primary, definition text, download btn */
+        --fs-lg:     0.78rem;           /* nav text, section notes, tabs, spinner */
+        --fs-xl:     0.82rem;           /* h2, chat messages, emphasized text */
+        --fs-2xl:    0.88rem;           /* verdict, welcome titles */
+        --fs-metric: 1.05rem;           /* metric values, stat numbers */
+        --fs-h1:     1.25rem;           /* page h1 */
+        --fs-brand:  1.30rem;           /* sidebar brand name */
+        --fs-hero:   2.0rem;            /* about hero headline */
+
+        /* ── Letter-spacing tokens ── */
+        --ls-tight:  -0.025em;          /* h1, large display */
+        --ls-snug:   -0.01em;           /* metric values */
+        --ls-normal:  0;                /* body text */
+        --ls-wide:    0.06em;           /* h2, download btn */
+        --ls-wider:   0.10em;           /* metric labels, sidebar labels */
+        --ls-widest:  0.16em;           /* overlines, footer headers */
+
+        /* ── Font stacks ── */
+        --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
     }
 
     /* ---- Reset & Global ---- */
     html, body, .main, [data-testid="stAppViewContainer"] {
-        font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-family: var(--font-sans);
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         color: var(--ink-soft);
@@ -105,11 +132,11 @@ st.markdown(
 
     /* ---- Typography ---- */
     .main h1 {
-        font-family: 'DM Sans', sans-serif;
+        font-family: var(--font-sans);
         font-weight: 700;
         color: var(--ink);
-        font-size: 1.25rem;
-        letter-spacing: -0.025em;
+        font-size: var(--fs-h1);
+        letter-spacing: var(--ls-tight);
         border-bottom: none;
         padding-bottom: 0;
         margin-bottom: 0.15rem;
@@ -125,11 +152,11 @@ st.markdown(
         border-radius: 2px;
     }
     .main h2 {
-        font-family: 'DM Sans', sans-serif;
+        font-family: var(--font-sans);
         font-weight: 600;
         color: var(--ink);
-        font-size: 0.82rem;
-        letter-spacing: 0.06em;
+        font-size: var(--fs-xl);
+        letter-spacing: var(--ls-wide);
         text-transform: uppercase;
         border-bottom: none;
         padding-bottom: 0;
@@ -147,17 +174,17 @@ st.markdown(
         transform: translateY(-1px);
     }
     .main h3 {
-        font-family: 'DM Sans', sans-serif;
+        font-family: var(--font-sans);
         font-weight: 600;
         color: var(--ink-soft);
-        font-size: 0.8rem;
+        font-size: var(--fs-lg);
         margin-top: 1.2rem;
         margin-bottom: 0.25rem;
     }
     .main p, .main li {
         color: var(--ink-soft);
         line-height: 1.6;
-        font-size: 0.8rem;
+        font-size: var(--fs-lg);
     }
 
     /* ---- Metric cards ---- */
@@ -173,23 +200,23 @@ st.markdown(
         border-color: var(--gold-dust);
     }
     [data-testid="stMetricLabel"] {
-        font-family: 'DM Sans', sans-serif;
+        font-family: var(--font-sans);
         font-weight: 600;
         text-transform: uppercase;
-        font-size: 0.58rem;
-        letter-spacing: 0.1em;
+        font-size: var(--fs-tiny);
+        letter-spacing: var(--ls-wider);
         color: var(--ink-muted);
     }
     [data-testid="stMetricValue"] {
-        font-family: 'JetBrains Mono', 'SF Mono', monospace;
+        font-family: var(--font-mono);
         font-weight: 500;
         color: var(--ink);
-        font-size: 1.05rem;
-        letter-spacing: -0.01em;
+        font-size: var(--fs-metric);
+        letter-spacing: var(--ls-snug);
     }
     [data-testid="stMetricDelta"] {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.72rem;
+        font-family: var(--font-mono);
+        font-size: var(--fs-md);
     }
 
     /* ---- Sidebar ---- */
@@ -203,12 +230,12 @@ st.markdown(
     section[data-testid="stSidebar"] label,
     section[data-testid="stSidebar"] .stMarkdown {
         color: rgba(255,255,255,0.7) !important;
-        font-family: 'DM Sans', sans-serif;
+        font-family: var(--font-sans);
     }
     section[data-testid="stSidebar"] label {
-        font-size: 0.65rem !important;
+        font-size: var(--fs-sm) !important;
         font-weight: 600 !important;
-        letter-spacing: 0.08em;
+        letter-spacing: var(--ls-wider);
         text-transform: uppercase;
         color: rgba(255,255,255,0.4) !important;
         margin-bottom: 2px;
@@ -230,8 +257,8 @@ st.markdown(
         color: rgba(255,255,255,0.9) !important;
         border-color: rgba(255,255,255,0.12) !important;
         border-radius: 6px;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.76rem;
+        font-family: var(--font-mono);
+        font-size: var(--fs-md);
     }
     section[data-testid="stSidebar"] input:focus,
     section[data-testid="stSidebar"] [data-baseweb="input"]:focus-within {
@@ -243,8 +270,8 @@ st.markdown(
         background: rgba(255,255,255,0.06) !important;
         color: rgba(255,255,255,0.85) !important;
         border-color: rgba(255,255,255,0.12) !important;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.74rem;
+        font-family: var(--font-mono);
+        font-size: var(--fs-md);
     }
     /* Select / dropdown */
     section[data-testid="stSidebar"] [data-baseweb="select"] {
@@ -253,18 +280,18 @@ st.markdown(
     }
     section[data-testid="stSidebar"] [data-baseweb="select"] [data-testid="stMarkdownContainer"] p {
         color: rgba(255,255,255,0.85) !important;
-        font-size: 0.76rem;
+        font-size: var(--fs-md);
     }
     /* Toggle */
     section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
         color: rgba(255,255,255,0.6) !important;
-        font-size: 0.74rem;
+        font-size: var(--fs-md);
     }
     /* Nav buttons */
     section[data-testid="stSidebar"] .stButton > button {
         text-align: left;
-        font-family: 'DM Sans', sans-serif;
-        font-size: 0.78rem;
+        font-family: var(--font-sans);
+        font-size: var(--fs-lg);
         border-radius: 6px;
         padding: 0.5rem 0.85rem;
         transition: all 0.15s ease;
@@ -300,9 +327,9 @@ st.markdown(
     }
     /* ---- Expander ---- */
     .streamlit-expanderHeader {
-        font-family: 'DM Sans', sans-serif;
+        font-family: var(--font-sans);
         font-weight: 600;
-        font-size: 0.8rem;
+        font-size: var(--fs-lg);
         color: var(--ink);
     }
     details[data-testid="stExpander"] {
@@ -346,15 +373,15 @@ st.markdown(
 
     /* ---- Download button ---- */
     .stDownloadButton > button {
-        font-family: 'DM Sans', sans-serif;
+        font-family: var(--font-sans);
         background: #000000;
         color: #CFB991;
         border: 1px solid #CFB991;
         font-weight: 600;
         border-radius: 8px;
         padding: 0.55rem 1.6rem;
-        font-size: 0.74rem;
-        letter-spacing: 0.06em;
+        font-size: var(--fs-md);
+        letter-spacing: var(--ls-wide);
         text-transform: uppercase;
         transition: all 0.18s ease;
     }
@@ -372,7 +399,7 @@ st.markdown(
     /* ---- Alerts ---- */
     [data-testid="stAlert"] {
         border-radius: 10px;
-        font-size: 0.8rem;
+        font-size: var(--fs-lg);
         border: none;
         box-shadow: 0 1px 4px rgba(0,0,0,0.04);
     }
@@ -383,8 +410,8 @@ st.markdown(
         border-bottom: 2px solid var(--border-light);
     }
     .stTabs [data-baseweb="tab"] {
-        font-family: 'DM Sans', sans-serif;
-        font-size: 0.78rem;
+        font-family: var(--font-sans);
+        font-size: var(--fs-lg);
         font-weight: 600;
         letter-spacing: 0.02em;
         padding: 0.6rem 1.2rem;
@@ -400,7 +427,7 @@ st.markdown(
         border-radius: 12px;
         border: 1px solid var(--border-light);
         padding: 1rem 1.2rem;
-        font-size: 0.82rem;
+        font-size: var(--fs-xl);
         box-shadow: 0 1px 3px rgba(0,0,0,0.03);
         margin-bottom: 0.5rem;
     }
@@ -408,8 +435,8 @@ st.markdown(
         background: var(--surface-1);
     }
     .stChatInput textarea {
-        font-family: 'DM Sans', sans-serif;
-        font-size: 0.82rem;
+        font-family: var(--font-sans);
+        font-size: var(--fs-xl);
         border-radius: 12px;
         border: 1px solid var(--border-light);
         box-shadow: 0 2px 8px rgba(0,0,0,0.04);
@@ -421,7 +448,7 @@ st.markdown(
 
     /* ---- Spinner ---- */
     .stSpinner > div {
-        font-size: 0.78rem;
+        font-size: var(--fs-lg);
         color: var(--ink-muted);
         font-weight: 500;
     }
@@ -453,15 +480,15 @@ st.markdown(
         color: var(--ink) !important;
         border-bottom: 1px solid var(--border) !important;
         font-weight: 700;
-        font-size: 0.72rem;
+        font-size: var(--fs-base);
         text-transform: uppercase;
-        letter-spacing: 0.04em;
+        letter-spacing: var(--ls-wide);
     }
     [data-testid="stDataFrame"] [role="row"]:hover {
         background: rgba(207,185,145,0.08);
     }
     [data-testid="stDataFrame"] * {
-        font-size: 0.78rem;
+        font-size: var(--fs-lg);
     }
 
     /* ---- Hide ALL Streamlit chrome ---- */
@@ -494,15 +521,15 @@ st.markdown(
 st.sidebar.markdown(
     "<div style='padding:1rem 0 1.2rem 0; border-bottom:1px solid rgba(207,185,145,0.15); "
     "margin-bottom:1rem;'>"
-    "<div style='font-size:0.5rem; font-weight:700; text-transform:uppercase; "
-    "letter-spacing:0.2em; color:#CFB991; margin-bottom:6px;'>Rates Strategy Desk</div>"
-    "<div style='font-size:1.3rem; font-weight:800; color:rgba(255,255,255,0.95); "
-    "letter-spacing:-0.03em; line-height:1.15; "
-    "font-family:DM Sans,sans-serif;'>JGB Repricing</div>"
-    "<div style='font-size:0.64rem; font-weight:400; color:rgba(255,255,255,0.3); "
+    "<div style='font-size:var(--fs-micro); font-weight:700; text-transform:uppercase; "
+    "letter-spacing:var(--ls-widest); color:#CFB991; margin-bottom:6px;'>Rates Strategy Desk</div>"
+    "<div style='font-size:var(--fs-brand); font-weight:800; color:rgba(255,255,255,0.95); "
+    "letter-spacing:var(--ls-tight); line-height:1.15; "
+    "font-family:var(--font-sans);'>JGB Repricing</div>"
+    "<div style='font-size:var(--fs-sm); font-weight:400; color:rgba(255,255,255,0.3); "
     "margin-top:4px; letter-spacing:0.02em;'>Quantitative Framework</div>"
-    "<div style='font-size:0.58rem; font-weight:500; color:rgba(207,185,145,0.5); "
-    "margin-top:2px; letter-spacing:0.04em;'>Purdue Daniels School of Business</div></div>",
+    "<div style='font-size:var(--fs-tiny); font-weight:500; color:rgba(207,185,145,0.5); "
+    "margin-top:2px; letter-spacing:var(--ls-wide);'>Purdue Daniels School of Business</div></div>",
     unsafe_allow_html=True,
 )
 
@@ -549,9 +576,9 @@ page = st.session_state.current_page
 
 st.sidebar.markdown("---")
 st.sidebar.markdown(
-    "<p style='font-size:0.55rem;font-weight:600;text-transform:uppercase;"
-    "letter-spacing:0.14em;color:rgba(255,255,255,0.3);margin:0 0 0.5rem 0;"
-    "font-family:DM Sans,sans-serif;'>Configuration</p>",
+    "<p style='font-size:var(--fs-tiny);font-weight:600;text-transform:uppercase;"
+    "letter-spacing:var(--ls-widest);color:rgba(255,255,255,0.3);margin:0 0 0.5rem 0;"
+    "font-family:var(--font-sans);'>Configuration</p>",
     unsafe_allow_html=True,
 )
 
@@ -644,7 +671,7 @@ def _style_fig(fig: go.Figure, height: int = 380) -> go.Figure:
 def _page_intro(text: str):
     """Render a page introduction."""
     st.markdown(
-        f"<p style='color:#6b7394;font-family:DM Sans,sans-serif;font-size:0.8rem;"
+        f"<p style='color:#6b7394;font-family:var(--font-sans);font-size:var(--fs-lg);"
         f"line-height:1.7;margin:0 0 1.5rem 0;padding:0;max-width:740px;"
         f"letter-spacing:0.005em;'>{text}</p>",
         unsafe_allow_html=True,
@@ -657,8 +684,8 @@ def _section_note(text: str):
         f"<div style='background:#fafaf8;border-left:3px solid #CFB991;padding:10px 16px;"
         f"border-radius:0 8px 8px 0;margin:-0.1rem 0 0.8rem 0;"
         f"box-shadow:0 1px 3px rgba(0,0,0,0.02);'>"
-        f"<p style='color:#555960;font-size:0.76rem;line-height:1.65;margin:0;"
-        f"font-family:DM Sans,sans-serif;'>{text}</p></div>",
+        f"<p style='color:#555960;font-size:var(--fs-md);line-height:1.65;margin:0;"
+        f"font-family:var(--font-sans);'>{text}</p></div>",
         unsafe_allow_html=True,
     )
 
@@ -669,12 +696,12 @@ def _definition_block(title: str, body: str):
         f"<div style='border:1px solid #e8e5e2;border-radius:8px;overflow:hidden;"
         f"margin:0.6rem 0 1rem 0;box-shadow:0 1px 4px rgba(0,0,0,0.03);'>"
         f"<div style='background:#000;padding:6px 14px;'>"
-        f"<p style='margin:0;color:#CFB991;font-size:0.56rem;font-weight:700;"
-        f"text-transform:uppercase;letter-spacing:0.14em;font-family:DM Sans,sans-serif;'>"
+        f"<p style='margin:0;color:#CFB991;font-size:var(--fs-tiny);font-weight:700;"
+        f"text-transform:uppercase;letter-spacing:var(--ls-widest);font-family:var(--font-sans);'>"
         f"{title}</p></div>"
         f"<div style='padding:10px 14px;background:#fff;'>"
-        f"<p style='margin:0;color:#555960;font-size:0.72rem;line-height:1.65;"
-        f"font-family:DM Sans,sans-serif;'>{body}</p></div></div>",
+        f"<p style='margin:0;color:#555960;font-size:var(--fs-base);line-height:1.65;"
+        f"font-family:var(--font-sans);'>{body}</p></div></div>",
         unsafe_allow_html=True,
     )
 
@@ -684,11 +711,11 @@ def _takeaway_block(text: str):
     st.markdown(
         f"<div style='background:rgba(207,185,145,0.08);border-left:3px solid #8E6F3E;"
         f"padding:10px 16px;border-radius:0 8px 8px 0;margin:0.5rem 0 1.2rem 0;'>"
-        f"<p style='margin:0 0 2px 0;color:#8E6F3E;font-size:0.54rem;font-weight:700;"
-        f"text-transform:uppercase;letter-spacing:0.12em;font-family:DM Sans,sans-serif;'>"
+        f"<p style='margin:0 0 2px 0;color:#8E6F3E;font-size:var(--fs-tiny);font-weight:700;"
+        f"text-transform:uppercase;letter-spacing:var(--ls-wider);font-family:var(--font-sans);'>"
         f"Key Takeaway</p>"
-        f"<p style='margin:0;color:#000;font-size:0.74rem;line-height:1.65;font-weight:500;"
-        f"font-family:DM Sans,sans-serif;'>{text}</p></div>",
+        f"<p style='margin:0;color:#000;font-size:var(--fs-md);line-height:1.65;font-weight:500;"
+        f"font-family:var(--font-sans);'>{text}</p></div>",
         unsafe_allow_html=True,
     )
 
@@ -701,19 +728,19 @@ def _page_conclusion(verdict: str, summary: str):
         # verdict block
         f"<div style='background:#000000;padding:18px 24px;"
         f"border-top:3px solid #CFB991;'>"
-        f"<p style='margin:0 0 2px 0;color:rgba(207,185,145,0.6);font-family:DM Sans,sans-serif;"
-        f"font-size:0.55rem;font-weight:700;text-transform:uppercase;letter-spacing:0.16em;'>"
+        f"<p style='margin:0 0 2px 0;color:rgba(207,185,145,0.6);font-family:var(--font-sans);"
+        f"font-size:var(--fs-tiny);font-weight:700;text-transform:uppercase;letter-spacing:var(--ls-widest);'>"
         f"Verdict</p>"
-        f"<p style='margin:0;color:#CFB991;font-family:DM Sans,sans-serif;"
-        f"font-size:0.88rem;font-weight:600;line-height:1.55;letter-spacing:-0.01em;'>"
+        f"<p style='margin:0;color:#CFB991;font-family:var(--font-sans);"
+        f"font-size:var(--fs-2xl);font-weight:600;line-height:1.55;letter-spacing:var(--ls-snug);'>"
         f"{verdict}</p></div>"
         # assessment block
         f"<div style='background:#fafaf8;padding:16px 24px;'>"
-        f"<p style='margin:0 0 6px 0;color:#9D9795;font-family:DM Sans,sans-serif;"
-        f"font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;'>"
+        f"<p style='margin:0 0 6px 0;color:#9D9795;font-family:var(--font-sans);"
+        f"font-size:var(--fs-tiny);font-weight:700;text-transform:uppercase;letter-spacing:var(--ls-wider);'>"
         f"Assessment</p>"
-        f"<p style='margin:0;color:#555960;font-family:DM Sans,sans-serif;"
-        f"font-size:0.78rem;line-height:1.7;'>{summary}</p></div>"
+        f"<p style='margin:0;color:#555960;font-family:var(--font-sans);"
+        f"font-size:var(--fs-lg);line-height:1.7;'>{summary}</p></div>"
         f"</div>",
         unsafe_allow_html=True,
     )
@@ -723,8 +750,8 @@ def _page_footer():
     """Render full-bleed institutional footer with Daniels School branding."""
     yr = datetime.now().year
     ts = datetime.now().strftime("%B %d, %Y at %H:%M UTC")
-    _w = "color:rgba(255,255,255,0.75);text-decoration:none;font-size:0.72rem;font-weight:500;transition:color 0.15s ease;"
-    _g = "font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.16em;color:#CFB991;margin:0 0 14px 0;padding-bottom:8px;border-bottom:1px solid rgba(207,185,145,0.15);"
+    _w = "color:rgba(255,255,255,0.75);text-decoration:none;font-size:var(--fs-base);font-weight:500;transition:color 0.15s ease;"
+    _g = "font-size:var(--fs-xs);font-weight:700;text-transform:uppercase;letter-spacing:var(--ls-widest);color:#CFB991;margin:0 0 14px 0;padding-bottom:8px;border-bottom:1px solid rgba(207,185,145,0.15);"
     st.markdown(
         "<style>"
         ".main .block-container { padding-bottom: 0 !important; margin-bottom: 0 !important; }"
@@ -732,7 +759,7 @@ def _page_footer():
         "[data-testid='stAppViewContainer'] { padding-bottom: 0 !important; }"
         "[data-testid='stBottom'] { display: none !important; }"
         "</style>"
-        "<div style='margin-top:4rem;font-family:DM Sans,sans-serif;"
+        "<div style='margin-top:4rem;font-family:var(--font-sans);"
         "position:relative;width:100vw;left:50%;right:50%;margin-left:-50vw;margin-right:-50vw;"
         "margin-bottom:-10rem;padding-bottom:0;'>"
         # ── main black section ──
@@ -744,12 +771,12 @@ def _page_footer():
         "<img src='https://business.purdue.edu/includes/img/medsb_h-full-reverse-rgb_1.png' "
         "alt='Purdue Daniels School of Business' "
         "style='height:40px;margin-bottom:16px;display:block;' /></a>"
-        "<p style='font-size:0.68rem;color:rgba(255,255,255,0.7);line-height:1.65;margin:0 0 16px 0;max-width:260px;'>"
+        "<p style='font-size:var(--fs-base);color:rgba(255,255,255,0.7);line-height:1.65;margin:0 0 16px 0;max-width:260px;'>"
         "MGMT 69000 &middot; Mastering AI for Finance<br/>"
         "West Lafayette, Indiana</p>"
         # timestamp placed formally under the branding block
-        f"<p style='font-size:0.6rem;color:rgba(207,185,145,0.6);margin:0;"
-        f"font-weight:600;letter-spacing:0.04em;'>"
+        f"<p style='font-size:var(--fs-xs);color:rgba(207,185,145,0.6);margin:0;"
+        f"font-weight:600;letter-spacing:var(--ls-wide);'>"
         f"Last updated {ts}</p>"
         "</div>"
         # col 2: navigate
@@ -785,8 +812,8 @@ def _page_footer():
         "</div></div>"
         # ── gold accent bar: copyright only ──
         "<div style='background:#CFB991;padding:10px 48px;text-align:center;'>"
-        f"<p style='font-size:0.58rem;color:#000000;margin:0;font-weight:600;letter-spacing:0.04em;"
-        f"font-family:DM Sans,sans-serif;'>"
+        f"<p style='font-size:var(--fs-tiny);color:#000000;margin:0;font-weight:600;letter-spacing:var(--ls-wide);"
+        f"font-family:var(--font-sans);'>"
         f"&copy; {yr} Purdue University &middot; For educational purposes only &middot; Not investment advice</p>"
         "</div></div>",
         unsafe_allow_html=True,
@@ -2474,9 +2501,9 @@ def page_trade_ideas():
     # --- Sidebar filters ---
     st.sidebar.markdown("---")
     st.sidebar.markdown(
-        "<p style='font-size:0.55rem;font-weight:600;text-transform:uppercase;"
-        "letter-spacing:0.14em;color:rgba(255,255,255,0.3);margin:0 0 0.5rem 0;"
-        "font-family:DM Sans,sans-serif;'>Trade Filters</p>",
+        "<p style='font-size:var(--fs-tiny);font-weight:600;text-transform:uppercase;"
+        "letter-spacing:var(--ls-widest);color:rgba(255,255,255,0.3);margin:0 0 0.5rem 0;"
+        "font-family:var(--font-sans);'>Trade Filters</p>",
         unsafe_allow_html=True,
     )
     all_cats = sorted(set(c.category for c in cards))
@@ -2538,22 +2565,22 @@ def page_trade_ideas():
             st.markdown(
                 f"<div style='display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;'>"
                 f"<span style='background:{dir_color};color:#fff;padding:3px 10px;"
-                f"border-radius:20px;font-weight:600;font-size:0.68rem;letter-spacing:0.06em;"
-                f"font-family:DM Sans,sans-serif;'>{direction_tag}</span>"
+                f"border-radius:20px;font-weight:600;font-size:var(--fs-base);letter-spacing:var(--ls-wide);"
+                f"font-family:var(--font-sans);'>{direction_tag}</span>"
                 f"<span style='background:{conv_color};color:#fff;padding:3px 10px;"
-                f"border-radius:20px;font-weight:600;font-size:0.68rem;"
-                f"font-family:JetBrains Mono,monospace;'>{card.conviction:.0%}</span>"
+                f"border-radius:20px;font-weight:600;font-size:var(--fs-base);"
+                f"font-family:var(--font-mono);'>{card.conviction:.0%}</span>"
                 f"<span style='background:#f7f8fb;color:#3b4259;padding:3px 12px;"
-                f"border-radius:20px;font-size:0.7rem;font-weight:500;"
-                f"border:1px solid #dfe2ec;font-family:DM Sans,sans-serif;'>{card.category}</span>"
+                f"border-radius:20px;font-size:var(--fs-base);font-weight:500;"
+                f"border:1px solid #dfe2ec;font-family:var(--font-sans);'>{card.category}</span>"
                 f"</div>",
                 unsafe_allow_html=True,
             )
             col_l, col_r = st.columns(2)
             with col_l:
                 st.markdown(
-                    f"<div style='font-size:0.8rem;line-height:1.85;color:#3b4259;"
-                    f"font-family:DM Sans,sans-serif;'>"
+                    f"<div style='font-size:var(--fs-lg);line-height:1.85;color:#3b4259;"
+                    f"font-family:var(--font-sans);'>"
                     f"<b style='color:#0b0f19;'>Instruments:</b> {', '.join(card.instruments)}<br>"
                     f"<b style='color:#0b0f19;'>Regime Condition:</b> {card.regime_condition}<br>"
                     f"<b style='color:#0b0f19;'>Edge Source:</b> {card.edge_source}<br>"
@@ -2562,8 +2589,8 @@ def page_trade_ideas():
                 )
             with col_r:
                 st.markdown(
-                    f"<div style='font-size:0.8rem;line-height:1.85;color:#3b4259;"
-                    f"font-family:DM Sans,sans-serif;'>"
+                    f"<div style='font-size:var(--fs-lg);line-height:1.85;color:#3b4259;"
+                    f"font-family:var(--font-sans);'>"
                     f"<b style='color:#0b0f19;'>Exit Signal:</b> {card.exit_signal}<br>"
                     f"<b style='color:#0b0f19;'>Sizing:</b> {card.sizing_method}<br>"
                     f"<b style='color:#dc2626;font-weight:600;'>Failure Scenario:</b> "
@@ -2734,9 +2761,9 @@ def page_ai_qa():
         st.markdown(
             "<div style='text-align:center;padding:3rem 2rem;'>"
             "<div style='font-size:2.5rem;margin-bottom:0.8rem;opacity:0.15;'>&#x1F4AC;</div>"
-            "<p style='font-family:DM Sans,sans-serif;font-size:0.88rem;font-weight:600;"
+            "<p style='font-family:var(--font-sans);font-size:var(--fs-2xl);font-weight:600;"
             "color:#000;margin:0 0 6px 0;'>AI Research Assistant</p>"
-            "<p style='font-family:DM Sans,sans-serif;font-size:0.76rem;color:#6b7394;"
+            "<p style='font-family:var(--font-sans);font-size:var(--fs-md);color:#6b7394;"
             "max-width:480px;margin:0 auto 1.5rem auto;line-height:1.65;'>"
             "Enter your API key in the sidebar to activate the conversational AI assistant. "
             "It has access to live regime state, PCA decomposition, spillover metrics, "
@@ -2748,16 +2775,16 @@ def page_ai_qa():
         st.markdown(
             "<div style='display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:2rem;'>"
             "<span style='background:#fafaf8;border:1px solid #eceae6;border-radius:8px;"
-            "padding:8px 16px;font-size:0.72rem;color:#555960;font-family:DM Sans,sans-serif;'>"
+            "padding:8px 16px;font-size:var(--fs-base);color:#555960;font-family:var(--font-sans);'>"
             "What is the current regime state?</span>"
             "<span style='background:#fafaf8;border:1px solid #eceae6;border-radius:8px;"
-            "padding:8px 16px;font-size:0.72rem;color:#555960;font-family:DM Sans,sans-serif;'>"
+            "padding:8px 16px;font-size:var(--fs-base);color:#555960;font-family:var(--font-sans);'>"
             "Explain the PCA decomposition</span>"
             "<span style='background:#fafaf8;border:1px solid #eceae6;border-radius:8px;"
-            "padding:8px 16px;font-size:0.72rem;color:#555960;font-family:DM Sans,sans-serif;'>"
+            "padding:8px 16px;font-size:var(--fs-base);color:#555960;font-family:var(--font-sans);'>"
             "Best trade ideas right now?</span>"
             "<span style='background:#fafaf8;border:1px solid #eceae6;border-radius:8px;"
-            "padding:8px 16px;font-size:0.72rem;color:#555960;font-family:DM Sans,sans-serif;'>"
+            "padding:8px 16px;font-size:var(--fs-base);color:#555960;font-family:var(--font-sans);'>"
             "BOJ policy outlook</span>"
             "</div>",
             unsafe_allow_html=True,
@@ -2777,9 +2804,9 @@ def page_ai_qa():
     if not st.session_state.qa_messages:
         st.markdown(
             "<div style='text-align:center;padding:2rem 2rem 1rem 2rem;'>"
-            "<p style='font-family:DM Sans,sans-serif;font-size:0.84rem;font-weight:600;"
+            "<p style='font-family:var(--font-sans);font-size:var(--fs-2xl);font-weight:600;"
             "color:#000;margin:0 0 4px 0;'>Ready to assist</p>"
-            "<p style='font-family:DM Sans,sans-serif;font-size:0.74rem;color:#6b7394;"
+            "<p style='font-family:var(--font-sans);font-size:var(--fs-md);color:#6b7394;"
             "margin:0 0 1.2rem 0;'>Ask about JGBs, rates, macro, BOJ policy, "
             "trading strategies, or yield curves.</p>"
             "</div>",
@@ -2885,20 +2912,20 @@ def _about_page_styles():
         "padding:64px 0 56px 0;margin-top:-1rem;margin-bottom:2.5rem;"
         "border-bottom:3px solid #CFB991;}"
         ".about-hero-inner{max-width:1040px;margin:0 auto;padding:0 52px;}"
-        ".about-hero .overline{font-size:0.58rem;font-weight:700;text-transform:uppercase;"
-        "letter-spacing:0.22em;color:#CFB991;margin:0 0 12px 0;"
+        ".about-hero .overline{font-size:var(--fs-tiny);font-weight:700;text-transform:uppercase;"
+        "letter-spacing:var(--ls-widest);color:#CFB991;margin:0 0 12px 0;"
         "display:inline-block;padding:4px 14px;border:1px solid rgba(207,185,145,0.25);"
         "border-radius:4px;background:rgba(207,185,145,0.06);}"
-        ".about-hero h1{font-size:2rem;font-weight:800;color:#fff;margin:0 0 10px 0;"
-        "letter-spacing:-0.03em;line-height:1.12;}"
-        ".about-hero .subtitle{font-size:0.78rem;color:#CFB991;font-weight:600;"
+        ".about-hero h1{font-size:var(--fs-hero);font-weight:800;color:#fff;margin:0 0 10px 0;"
+        "letter-spacing:var(--ls-tight);line-height:1.12;}"
+        ".about-hero .subtitle{font-size:var(--fs-lg);color:#CFB991;font-weight:600;"
         "margin:0 0 12px 0;letter-spacing:0.01em;}"
-        ".about-hero .tagline{font-size:0.78rem;color:rgba(255,255,255,0.6);font-weight:400;"
+        ".about-hero .tagline{font-size:var(--fs-lg);color:rgba(255,255,255,0.6);font-weight:400;"
         "margin:0 0 24px 0;line-height:1.6;max-width:640px;}"
         ".about-hero .links{display:flex;gap:10px;flex-wrap:wrap;}"
         ".about-hero .links a{display:inline-flex;align-items:center;gap:6px;"
         "padding:8px 20px;border:1px solid rgba(207,185,145,0.4);"
-        "border-radius:6px;color:#CFB991;font-size:0.68rem;font-weight:600;text-decoration:none;"
+        "border-radius:6px;color:#CFB991;font-size:var(--fs-base);font-weight:600;text-decoration:none;"
         "transition:all 0.2s ease;letter-spacing:0.02em;}"
         ".about-hero .links a:hover{background:#CFB991;color:#000;border-color:#CFB991;"
         "transform:translateY(-1px);box-shadow:0 4px 16px rgba(207,185,145,0.25);}"
@@ -2907,8 +2934,8 @@ def _about_page_styles():
         "padding:28px 28px 24px 28px;margin-bottom:18px;"
         "box-shadow:0 1px 3px rgba(0,0,0,0.04);transition:box-shadow 0.2s ease;}"
         ".about-card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.06);}"
-        ".about-card-title{font-size:0.6rem;font-weight:700;text-transform:uppercase;"
-        "letter-spacing:0.15em;color:#8E6F3E;margin:0 0 18px 0;padding-bottom:12px;"
+        ".about-card-title{font-size:var(--fs-xs);font-weight:700;text-transform:uppercase;"
+        "letter-spacing:var(--ls-widest);color:#8E6F3E;margin:0 0 18px 0;padding-bottom:12px;"
         "border-bottom:2px solid #f0eeeb;display:flex;align-items:center;gap:8px;}"
         ".about-card-title::before{content:'';display:inline-block;width:3px;height:14px;"
         "background:#CFB991;border-radius:2px;}"
@@ -2918,39 +2945,39 @@ def _about_page_styles():
         ".exp-item:last-child{margin-bottom:0;padding-bottom:0;}"
         ".exp-item::before{content:'';position:absolute;left:-5px;top:4px;width:8px;height:8px;"
         "border-radius:50%;background:#CFB991;border:2px solid #fff;}"
-        ".exp-role{font-size:0.76rem;font-weight:700;color:#000;margin:0 0 2px 0;line-height:1.35;}"
-        ".exp-org{font-size:0.7rem;font-weight:600;color:#8E6F3E;margin:0 0 4px 0;}"
-        ".exp-meta{font-size:0.6rem;color:#9D9795;margin:0 0 8px 0;font-weight:500;"
+        ".exp-role{font-size:var(--fs-md);font-weight:700;color:#000;margin:0 0 2px 0;line-height:1.35;}"
+        ".exp-org{font-size:var(--fs-base);font-weight:600;color:#8E6F3E;margin:0 0 4px 0;}"
+        ".exp-meta{font-size:var(--fs-xs);color:#9D9795;margin:0 0 8px 0;font-weight:500;"
         "letter-spacing:0.01em;}"
-        ".exp-desc{font-size:0.68rem;color:#555960;line-height:1.7;margin:0;}"
+        ".exp-desc{font-size:var(--fs-base);color:#555960;line-height:1.7;margin:0;}"
         # ── education ──
         ".edu-item{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #f5f3f0;}"
         ".edu-item:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none;}"
-        ".edu-school{font-size:0.74rem;font-weight:700;color:#000;margin:0 0 2px 0;}"
-        ".edu-dept{font-size:0.66rem;color:#8E6F3E;margin:0 0 2px 0;font-weight:600;}"
-        ".edu-degree{font-size:0.66rem;color:#555960;margin:0 0 2px 0;font-weight:500;}"
-        ".edu-year{font-size:0.58rem;color:#9D9795;margin:0;font-weight:500;}"
+        ".edu-school{font-size:var(--fs-md);font-weight:700;color:#000;margin:0 0 2px 0;}"
+        ".edu-dept{font-size:var(--fs-sm);color:#8E6F3E;margin:0 0 2px 0;font-weight:600;}"
+        ".edu-degree{font-size:var(--fs-sm);color:#555960;margin:0 0 2px 0;font-weight:500;}"
+        ".edu-year{font-size:var(--fs-tiny);color:#9D9795;margin:0;font-weight:500;}"
         # ── certifications ──
         ".cert-item{margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #f5f3f0;}"
         ".cert-item:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none;}"
-        ".cert-name{font-size:0.7rem;font-weight:600;color:#000;margin:0 0 2px 0;}"
-        ".cert-issuer{font-size:0.6rem;color:#9D9795;margin:0;font-weight:500;}"
+        ".cert-name{font-size:var(--fs-base);font-weight:600;color:#000;margin:0 0 2px 0;}"
+        ".cert-issuer{font-size:var(--fs-xs);color:#9D9795;margin:0;font-weight:500;}"
         # ── publication ──
         ".pub-item{margin-bottom:16px;padding:16px 18px;background:#fafaf8;"
         "border-left:3px solid #CFB991;border-radius:0 8px 8px 0;}"
         ".pub-item:last-child{margin-bottom:0;}"
-        ".pub-title{font-size:0.74rem;font-weight:700;color:#000;margin:0 0 6px 0;line-height:1.4;}"
-        ".pub-authors{font-size:0.64rem;color:#555960;margin:0 0 6px 0;line-height:1.5;}"
+        ".pub-title{font-size:var(--fs-md);font-weight:700;color:#000;margin:0 0 6px 0;line-height:1.4;}"
+        ".pub-authors{font-size:var(--fs-sm);color:#555960;margin:0 0 6px 0;line-height:1.5;}"
         ".pub-authors strong{color:#000;font-weight:700;}"
-        ".pub-journal{font-size:0.62rem;color:#8E6F3E;font-weight:600;margin:0 0 4px 0;"
+        ".pub-journal{font-size:var(--fs-sm);color:#8E6F3E;font-weight:600;margin:0 0 4px 0;"
         "font-style:italic;}"
-        ".pub-detail{font-size:0.6rem;color:#9D9795;margin:0 0 8px 0;line-height:1.5;}"
+        ".pub-detail{font-size:var(--fs-xs);color:#9D9795;margin:0 0 8px 0;line-height:1.5;}"
         ".pub-link{display:inline-block;padding:4px 12px;border:1px solid rgba(207,185,145,0.4);"
-        "border-radius:4px;color:#8E6F3E;font-size:0.6rem;font-weight:600;text-decoration:none;"
+        "border-radius:4px;color:#8E6F3E;font-size:var(--fs-xs);font-weight:600;text-decoration:none;"
         "transition:all 0.2s;}"
         ".pub-link:hover{background:#CFB991;color:#000;border-color:#CFB991;}"
         # ── tags / pills ──
-        ".interest-tag{display:inline-block;padding:6px 16px;border-radius:20px;font-size:0.62rem;"
+        ".interest-tag{display:inline-block;padding:6px 16px;border-radius:20px;font-size:var(--fs-sm);"
         "font-weight:600;margin:4px 5px 4px 0;transition:transform 0.15s ease;}"
         ".interest-tag:hover{transform:translateY(-1px);}"
         ".interest-gold{background:rgba(207,185,145,0.12);color:#8E6F3E;"
@@ -2958,15 +2985,15 @@ def _about_page_styles():
         ".interest-neutral{background:rgba(0,0,0,0.03);color:#555960;"
         "border:1px solid rgba(0,0,0,0.06);}"
         # ── acknowledgment ──
-        ".ack-text{font-size:0.68rem;color:#555960;line-height:1.75;margin:0;}"
+        ".ack-text{font-size:var(--fs-base);color:#555960;line-height:1.75;margin:0;}"
         ".ack-text strong{color:#000;}"
         # ── stat row ──
         ".stat-row{display:flex;gap:16px;margin:16px 0 4px 0;}"
         ".stat-item{flex:1;text-align:center;padding:12px 8px;background:#fafaf8;"
         "border-radius:8px;border:1px solid #f0eeeb;}"
-        ".stat-num{font-size:1.1rem;font-weight:800;color:#000;margin:0;line-height:1.2;}"
-        ".stat-label{font-size:0.54rem;font-weight:600;color:#9D9795;margin:2px 0 0 0;"
-        "text-transform:uppercase;letter-spacing:0.08em;}"
+        ".stat-num{font-size:var(--fs-metric);font-weight:800;color:#000;margin:0;line-height:1.2;}"
+        ".stat-label{font-size:var(--fs-tiny);font-weight:600;color:#9D9795;margin:2px 0 0 0;"
+        "text-transform:uppercase;letter-spacing:var(--ls-wider);}"
         "</style>",
         unsafe_allow_html=True,
     )
@@ -2974,7 +3001,7 @@ def _about_page_styles():
 
 def page_about_heramb():
     _about_page_styles()
-    _f = "font-family:'DM Sans',sans-serif;"
+    _f = "font-family:var(--font-sans);"
 
     # ── load profile image as base64 ──
     _img_path = Path(__file__).parent / "FinDis.jpeg"
@@ -3022,13 +3049,13 @@ def page_about_heramb():
         st.markdown(
             "<div class='about-card'>"
             "<p class='about-card-title'>Profile</p>"
-            f"<p style='{_f}color:#555960;font-size:0.76rem;line-height:1.75;margin:0 0 10px 0;'>"
+            f"<p style='{_f}color:#555960;font-size:var(--fs-md);line-height:1.75;margin:0 0 10px 0;'>"
             "Driven by curiosity about how businesses create impact and grow stronger. "
             "With a background in engineering and experience in global equity research, "
             "I enjoy analysing industries, building financial models, and uncovering insights "
             "that drive smarter decisions. Excited by opportunities where analytical thinking "
             "and creativity intersect to solve complex problems and deliver meaningful value.</p>"
-            f"<p style='{_f}color:#555960;font-size:0.76rem;line-height:1.75;margin:0;'>"
+            f"<p style='{_f}color:#555960;font-size:var(--fs-md);line-height:1.75;margin:0;'>"
             "Beyond work, I enjoy exploring new places, listening to Carnatic music, "
             "and learning from different cultures and perspectives. Always open to connecting"
             ", feel free to reach out.</p>"
@@ -3040,7 +3067,7 @@ def page_about_heramb():
         st.markdown(
             "<div class='about-card'>"
             "<p class='about-card-title'>This Project</p>"
-            f"<p style='{_f}color:#555960;font-size:0.76rem;line-height:1.75;margin:0 0 12px 0;'>"
+            f"<p style='{_f}color:#555960;font-size:var(--fs-md);line-height:1.75;margin:0 0 12px 0;'>"
             "Built this JGB Repricing Framework as Course Project 1 for Prof. Xinde Zhang's "
             "MGMT 69000-119: a quantitative dashboard that detects regime shifts in Japanese "
             "Government Bond markets and generates institutional-grade trade ideas.</p>"
@@ -3195,7 +3222,7 @@ def page_about_heramb():
 # ===================================================================
 def page_about_zhang():
     _about_page_styles()
-    _f = "font-family:'DM Sans',sans-serif;"
+    _f = "font-family:var(--font-sans);"
 
     # ── hero banner ──
     st.markdown(
@@ -3221,14 +3248,14 @@ def page_about_zhang():
         st.markdown(
             "<div class='about-card'>"
             "<p class='about-card-title'>Profile</p>"
-            f"<p style='{_f}color:#555960;font-size:0.76rem;line-height:1.75;margin:0 0 10px 0;'>"
+            f"<p style='{_f}color:#555960;font-size:var(--fs-md);line-height:1.75;margin:0 0 10px 0;'>"
             "Dr. Cinder Zhang is an award-winning finance professor and pioneer in AI-integrated "
             "finance education at Purdue University. He is the creator of the "
             "<strong>DRIVER Framework</strong> (Define &amp; Discover, Represent, Implement, "
             "Validate, Evolve, Reflect), a comprehensive methodology that transforms how financial "
             "management is taught by integrating AI as a cognitive amplifier rather than a "
             "replacement tool.</p>"
-            f"<p style='{_f}color:#555960;font-size:0.76rem;line-height:1.75;margin:0;'>"
+            f"<p style='{_f}color:#555960;font-size:var(--fs-md);line-height:1.75;margin:0;'>"
             "Dr. Zhang advocates shifting finance education from traditional analysis toward "
             "practical implementation, teaching students to <em>build financial tools and "
             "solutions</em> rather than compete with AI in analytical tasks. His approach "
@@ -3242,7 +3269,7 @@ def page_about_zhang():
         st.markdown(
             "<div class='about-card'>"
             "<p class='about-card-title'>Impact</p>"
-            f"<p style='{_f}color:#555960;font-size:0.76rem;line-height:1.75;margin:0 0 12px 0;'>"
+            f"<p style='{_f}color:#555960;font-size:var(--fs-md);line-height:1.75;margin:0 0 12px 0;'>"
             "As founder of the Financial Analytics program, Dr. Zhang has mentored "
             "graduates into roles at Goldman Sachs, JPMorgan, State Street, Mastercard, EY, "
             "Walmart Global Tech, and FinTech startups.</p>"
@@ -3304,39 +3331,39 @@ def page_about_zhang():
         st.markdown(
             "<div class='about-card'>"
             "<p class='about-card-title'>The DRIVER Framework</p>"
-            f"<p style='{_f}color:#555960;font-size:0.68rem;line-height:1.7;margin:0 0 12px 0;'>"
+            f"<p style='{_f}color:#555960;font-size:var(--fs-base);line-height:1.7;margin:0 0 12px 0;'>"
             "A six-phase methodology for AI-integrated finance education:</p>"
             "<div style='display:flex;flex-direction:column;gap:6px;'>"
             "<div style='display:flex;align-items:center;gap:8px;'>"
             "<span style='width:22px;height:22px;border-radius:50%;background:#000;color:#CFB991;"
-            "font-size:0.52rem;font-weight:800;display:flex;align-items:center;justify-content:center;"
+            "font-size:var(--fs-micro);font-weight:800;display:flex;align-items:center;justify-content:center;"
             "flex-shrink:0;'>D</span>"
-            f"<span style='{_f}font-size:0.66rem;color:#555960;'>Define &amp; Discover</span></div>"
+            f"<span style='{_f}font-size:var(--fs-sm);color:#555960;'>Define &amp; Discover</span></div>"
             "<div style='display:flex;align-items:center;gap:8px;'>"
             "<span style='width:22px;height:22px;border-radius:50%;background:#000;color:#CFB991;"
-            "font-size:0.52rem;font-weight:800;display:flex;align-items:center;justify-content:center;"
+            "font-size:var(--fs-micro);font-weight:800;display:flex;align-items:center;justify-content:center;"
             "flex-shrink:0;'>R</span>"
-            f"<span style='{_f}font-size:0.66rem;color:#555960;'>Represent</span></div>"
+            f"<span style='{_f}font-size:var(--fs-sm);color:#555960;'>Represent</span></div>"
             "<div style='display:flex;align-items:center;gap:8px;'>"
             "<span style='width:22px;height:22px;border-radius:50%;background:#000;color:#CFB991;"
-            "font-size:0.52rem;font-weight:800;display:flex;align-items:center;justify-content:center;"
+            "font-size:var(--fs-micro);font-weight:800;display:flex;align-items:center;justify-content:center;"
             "flex-shrink:0;'>I</span>"
-            f"<span style='{_f}font-size:0.66rem;color:#555960;'>Implement</span></div>"
+            f"<span style='{_f}font-size:var(--fs-sm);color:#555960;'>Implement</span></div>"
             "<div style='display:flex;align-items:center;gap:8px;'>"
             "<span style='width:22px;height:22px;border-radius:50%;background:#000;color:#CFB991;"
-            "font-size:0.52rem;font-weight:800;display:flex;align-items:center;justify-content:center;"
+            "font-size:var(--fs-micro);font-weight:800;display:flex;align-items:center;justify-content:center;"
             "flex-shrink:0;'>V</span>"
-            f"<span style='{_f}font-size:0.66rem;color:#555960;'>Validate</span></div>"
+            f"<span style='{_f}font-size:var(--fs-sm);color:#555960;'>Validate</span></div>"
             "<div style='display:flex;align-items:center;gap:8px;'>"
             "<span style='width:22px;height:22px;border-radius:50%;background:#000;color:#CFB991;"
-            "font-size:0.52rem;font-weight:800;display:flex;align-items:center;justify-content:center;"
+            "font-size:var(--fs-micro);font-weight:800;display:flex;align-items:center;justify-content:center;"
             "flex-shrink:0;'>E</span>"
-            f"<span style='{_f}font-size:0.66rem;color:#555960;'>Evolve</span></div>"
+            f"<span style='{_f}font-size:var(--fs-sm);color:#555960;'>Evolve</span></div>"
             "<div style='display:flex;align-items:center;gap:8px;'>"
             "<span style='width:22px;height:22px;border-radius:50%;background:#000;color:#CFB991;"
-            "font-size:0.52rem;font-weight:800;display:flex;align-items:center;justify-content:center;"
+            "font-size:var(--fs-micro);font-weight:800;display:flex;align-items:center;justify-content:center;"
             "flex-shrink:0;'>R</span>"
-            f"<span style='{_f}font-size:0.66rem;color:#555960;'>Reflect</span></div>"
+            f"<span style='{_f}font-size:var(--fs-sm);color:#555960;'>Reflect</span></div>"
             "</div></div>",
             unsafe_allow_html=True,
         )
