@@ -989,6 +989,50 @@ def page_overview():
     else:
         st.info("No market columns found in data.")
 
+    # --- Asian Equity Returns Comparison ---
+    st.subheader("Asian Equity Returns — Nikkei vs Sensex vs Hang Seng")
+    _definition_block(
+        "Why Cross-Asian Equity Comparison Matters for JGBs",
+        "Comparing cumulative returns across major Asian equity indices reveals capital flow "
+        "patterns and risk appetite shifts across the region. When the Nikkei diverges from peers "
+        "like the Sensex or Hang Seng, it often reflects Japan-specific drivers (BOJ policy, yen moves) "
+        "rather than broad Asian sentiment. Persistent Nikkei outperformance can indicate foreign inflows "
+        "into Japanese equities — flows that often hedge JPY exposure, creating indirect pressure on JGB yields. "
+        "Conversely, synchronized Asian equity weakness suggests global risk-off dynamics that typically "
+        "benefit JGBs as a safe haven."
+    )
+    asian_eq_cols = [c for c in ["NIKKEI", "SENSEX", "HANGSENG"] if c in df.columns]
+    if len(asian_eq_cols) >= 2:
+        asian_eq = df[asian_eq_cols].dropna()
+        if len(asian_eq) > 1:
+            cum_returns = (asian_eq / asian_eq.iloc[0] - 1) * 100
+            _section_note(
+                "Cumulative returns (%) from first available date, normalized to 0%. "
+                "Divergence between Nikkei and regional peers highlights Japan-specific risk premia."
+            )
+            fig_asian = go.Figure()
+            color_map = {"NIKKEI": "#E8413C", "SENSEX": "#2196F3", "HANGSENG": "#4CAF50"}
+            for col in asian_eq_cols:
+                fig_asian.add_trace(go.Scatter(
+                    x=cum_returns.index, y=cum_returns[col],
+                    mode="lines", name=col,
+                    line=dict(color=color_map.get(col)),
+                ))
+            fig_asian.update_layout(yaxis_title="Cumulative Return (%)")
+            _add_boj_events(fig_asian)
+            st.plotly_chart(_style_fig(fig_asian, 420), use_container_width=True)
+            # Takeaway
+            latest = cum_returns.iloc[-1]
+            best = latest.idxmax()
+            worst = latest.idxmin()
+            _takeaway_block(
+                f"<b>{best}</b> leads with <b>{latest[best]:+.1f}%</b> cumulative return; "
+                f"<b>{worst}</b> trails at <b>{latest[worst]:+.1f}%</b>. "
+                f"{'Nikkei outperformance vs Asian peers suggests Japan-specific inflows — watch for hedging pressure on JGBs.' if best == 'NIKKEI' else 'Nikkei underperformance relative to Asian peers may reflect BOJ tightening fears or yen-driven headwinds.'}"
+            )
+    else:
+        st.info("Insufficient Asian equity data for cross-market comparison.")
+
     # --- Raw data expander ---
     with st.expander("Raw data (last 20 rows)"):
         st.dataframe(df.tail(20), use_container_width=True)

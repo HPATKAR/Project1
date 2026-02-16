@@ -73,6 +73,14 @@ def generate_simulated_market(
     tlt_returns = np.random.normal(-0.0001, 0.008, n)
     tlt = 120 * np.exp(np.cumsum(tlt_returns))
 
+    # Sensex
+    sensex_returns = np.random.normal(0.0003, 0.011, n)
+    sensex = 30000 * np.exp(np.cumsum(sensex_returns))
+
+    # Hang Seng
+    hsi_returns = np.random.normal(0.0001, 0.013, n)
+    hangseng = 22000 * np.exp(np.cumsum(hsi_returns))
+
     data = {
         "USDJPY": usdjpy,
         "EURJPY": usdjpy * 1.1 + np.random.randn(n) * 0.5,
@@ -82,6 +90,8 @@ def generate_simulated_market(
         "TLT": tlt,
         "IEF": tlt * 0.85 + np.random.randn(n) * 0.3,
         "SHY": 82 + np.random.randn(n) * 0.2,
+        "SENSEX": sensex,
+        "HANGSENG": hangseng,
     }
 
     df = pd.DataFrame(data, index=dates)

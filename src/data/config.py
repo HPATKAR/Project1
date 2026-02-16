@@ -44,6 +44,8 @@ YF_TICKERS = {
     "EUROSTOXX": "^STOXX50E",
     "FTSE": "^FTSE",            # FTSE 100 (UK equity benchmark)
     "ASX200": "^AXJO",          # ASX 200 (Australia equity benchmark)
+    "SENSEX": "^BSESN",         # BSE Sensex (India)
+    "HANGSENG": "^HSI",         # Hang Seng (Hong Kong)
     # Bond ETFs (for flow proxy)
     "TLT": "TLT",       # iShares 20+ Year Treasury
     "IEF": "IEF",       # iShares 7-10 Year Treasury
