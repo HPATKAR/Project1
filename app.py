@@ -907,11 +907,18 @@ def page_overview():
     st.subheader("Sovereign Yields & VIX")
     _definition_block(
         "What are Sovereign Yields?",
-        "A sovereign yield is the annualised return a government pays to borrow money for a specific term "
-        "(e.g. 10 years). The <b>JP_10Y</b> is the Japanese Government Bond 10-year yield, the benchmark "
-        "for pricing all Japanese fixed-income assets. <b>VIX</b> (CBOE Volatility Index) measures implied "
-        "volatility of S&P 500 options and serves as a global fear gauge. When VIX spikes, risk-off flows "
-        "typically compress JGB yields as investors seek safe havens."
+        "When a government needs money, it borrows by issuing bonds. The <b>yield</b> is the annual interest "
+        "rate investors earn for lending to that government. Think of it like the interest rate on a loan, "
+        "but in reverse: you are the lender, and the government is the borrower. "
+        "A <b>10-year yield</b> (like JP_10Y) tells you the annual return for lending to Japan for 10 years. "
+        "This chart shows yields from five countries: Japan (JP), the US, Germany (DE), the UK, and Australia (AU). "
+        "Normally, countries with stronger growth and higher inflation have higher yields. Japan's yields have been "
+        "near zero for years because the Bank of Japan (BOJ) artificially held them down through massive bond buying. "
+        "Now that the BOJ is stepping back, the key question is: how fast will Japanese yields rise to match global peers? "
+        "The <b>VIX</b> (orange line) is the 'fear index' for US stock markets. When VIX spikes above 25, "
+        "it means investors are panicking. During panics, money flows into safe assets like government bonds, "
+        "temporarily pushing yields down. The red dotted vertical lines on this chart mark BOJ policy announcements "
+        "so you can see exactly how yields reacted to each decision."
     )
     rate_cols = [c for c in ["JP_10Y", "US_10Y", "DE_10Y", "UK_10Y", "AU_10Y", "VIX"] if c in df.columns]
     if rate_cols:
@@ -954,13 +961,17 @@ def page_overview():
     st.subheader("Asian Equity Returns")
     _definition_block(
         "Why Cross-Asian Equity Comparison Matters for JGBs",
-        "Comparing cumulative returns across major Asian equity indices reveals capital flow "
-        "patterns and risk appetite shifts across the region. When the Nikkei diverges from peers "
-        "like the Sensex or Hang Seng, it often reflects Japan-specific drivers (BOJ policy, yen moves) "
-        "rather than broad Asian sentiment. Persistent Nikkei outperformance can indicate foreign inflows "
-        "into Japanese equities, flows that often hedge JPY exposure, creating indirect pressure on JGB yields. "
-        "Conversely, synchronized Asian equity weakness suggests global risk-off dynamics that typically "
-        "benefit JGBs as a safe haven."
+        "Stock markets in Asia are connected. When one country's market falls, others often follow because "
+        "global investors tend to move money in and out of Asia as a region. This chart shows <b>cumulative returns</b> "
+        "(total gain or loss since the start date, measured in %) for five major Asian stock indices. "
+        "All lines start at 0% so you can directly compare performance. "
+        "If the Nikkei (Japan) rises while others fall, it means something Japan-specific is attracting money, "
+        "like foreign investors buying Japanese stocks. Those foreign investors usually also sell yen (hedging), "
+        "which weakens the currency and indirectly pressures the BOJ to raise rates, pushing JGB yields higher. "
+        "If all Asian markets fall together, it signals a global risk-off event where investors worldwide are "
+        "selling risky assets. In that scenario, money flows into safe-haven bonds like JGBs, pushing yields down. "
+        "<b>How to read this chart:</b> Lines going up = positive returns. Lines going down = losses. "
+        "The gap between lines shows relative performance."
     )
     asian_eq_cols = [c for c in ["NIKKEI", "SENSEX", "HANGSENG", "SHANGHAI", "KOSPI"] if c in df.columns]
     if len(asian_eq_cols) >= 2:
@@ -999,10 +1010,17 @@ def page_overview():
     st.subheader("FX & Equity")
     _definition_block(
         "Why FX & Equity Matter for JGBs",
-        "<b>USDJPY</b> is the dollar-yen exchange rate: rising USDJPY means a weaker yen. A weaker yen "
-        "increases import costs and inflation, pressuring the BOJ to tighten policy (bearish for JGBs). "
-        "<b>NIKKEI 225</b> is Japan's benchmark equity index. Simultaneous yen weakness and equity decline "
-        "signals foreign capital outflows, a risk-off dynamic that can amplify JGB repricing."
+        "<b>USDJPY</b> is how many Japanese yen it costs to buy one US dollar. When this number goes up "
+        "(e.g. from 140 to 155), the yen is getting <em>weaker</em>. A weak yen makes imports more expensive "
+        "for Japan, which pushes up inflation. Higher inflation forces the BOJ to consider raising interest rates, "
+        "which means JGB yields go up (and JGB prices go down, hurting bondholders). "
+        "<b>EURJPY</b> is the same concept but for the euro. "
+        "<b>NIKKEI 225</b> is Japan's main stock market index (similar to the S&P 500 in the US). "
+        "When stocks fall AND the yen weakens at the same time, it is a danger signal: it means foreign investors "
+        "are pulling money out of Japan entirely (selling both stocks and yen). This 'capital flight' scenario is "
+        "the worst case for JGB holders because it can force rapid yield increases. "
+        "<b>How to read this chart:</b> USDJPY rising = yen weakening = bearish for JGBs. "
+        "Nikkei falling while USDJPY rises = maximum stress. Red verticals mark BOJ policy dates."
     )
     mkt_cols = [c for c in ["USDJPY", "EURJPY", "NIKKEI"] if c in df.columns]
     if mkt_cols:
@@ -1038,11 +1056,18 @@ def page_overview():
     st.subheader("Bond ETF Flow Proxy")
     _definition_block(
         "Why Bond ETF Flows Matter for JGBs",
-        "Bond ETFs like TLT (20+ Year Treasury), IEF (7-10Y Treasury), SHY (1-3Y Treasury), "
-        "and BNDX (International Bond) serve as proxies for institutional fixed-income flows. "
-        "When TLT sells off while SHY holds steady, it signals duration reduction by asset managers, "
-        "a pattern that often precedes JGB repricing as global duration risk gets re-assessed. "
-        "TLT/IEF divergence also reveals curve positioning preferences in the US that spill over to JGBs."
+        "An <b>ETF</b> (Exchange-Traded Fund) is a fund you can buy on the stock exchange that holds a basket "
+        "of assets. Bond ETFs hold government or corporate bonds, and their price movements tell us what big "
+        "institutional investors are doing with their fixed-income portfolios. "
+        "<b>TLT</b> holds US Treasury bonds maturing in 20+ years (long-duration, very sensitive to rate changes). "
+        "<b>IEF</b> holds 7-10 year Treasuries (medium duration). <b>SHY</b> holds 1-3 year Treasuries (short "
+        "duration, barely moves when rates change). <b>BNDX</b> holds international bonds outside the US. "
+        "When TLT drops sharply while SHY stays flat, it means investors are selling long-dated bonds and hiding "
+        "in short-dated ones. This is called <em>reducing duration</em>, and it signals that the market expects "
+        "interest rates to keep rising. Since Japan has the longest-duration government bond market in the world, "
+        "global duration reduction directly threatens JGB prices. "
+        "<b>How to read this chart:</b> Lines going down = bond prices falling = yields rising. "
+        "TLT dropping much more than SHY = the market is bracing for higher rates."
     )
     etf_cols = [c for c in ["TLT", "IEF", "SHY", "BNDX"] if c in df.columns]
     if len(etf_cols) >= 2:
@@ -1079,10 +1104,17 @@ def page_overview():
     st.subheader("Global Equity Benchmarks")
     _definition_block(
         "Why Global Equities Matter for JGBs",
-        "Comparing Nikkei against the S&P 500, Euro Stoxx 50, FTSE 100, and ASX 200 reveals whether "
-        "Japanese equity moves are Japan-specific or part of global risk appetite shifts. Global equity "
-        "weakness tends to drive safe-haven flows into JGBs (bullish), while Japan-only weakness suggests "
-        "domestic capital outflows that pressure both equities and bonds simultaneously."
+        "Stock markets around the world tend to move together because global investors allocate money "
+        "across regions based on risk appetite. This chart compares the Nikkei (Japan) against four "
+        "other major benchmarks: S&P 500 (US), Euro Stoxx 50 (Europe), FTSE 100 (UK), and ASX 200 (Australia). "
+        "If ALL markets fall together, it is a <em>global risk-off event</em> where investors sell stocks "
+        "everywhere and buy safe-haven bonds, which is actually GOOD for JGB prices (yields fall). "
+        "But if ONLY Japan's stock market falls while others hold up, it signals Japan-specific problems "
+        "like policy uncertainty or capital outflows, which is BAD for JGBs because it means investors are "
+        "leaving Japan entirely. Conversely, if Japan outperforms the world, foreign money is flowing IN, "
+        "but those investors often hedge their yen exposure, which can indirectly push JGB yields higher. "
+        "<b>How to read this chart:</b> All lines start at 0%. Compare the Nikkei (red) against others. "
+        "If it moves differently from the pack, something Japan-specific is driving it."
     )
     global_eq_cols = [c for c in ["NIKKEI", "SPX", "EUROSTOXX", "FTSE", "ASX200"] if c in df.columns]
     if len(global_eq_cols) >= 2:
@@ -1119,9 +1151,20 @@ def page_overview():
     st.subheader("Rolling JP-US Yield Correlation")
     _definition_block(
         "Why JP-US Yield Correlation Matters",
-        "When Japanese and US 10Y yields move in lockstep (high correlation), JGBs are driven by global "
-        "rate dynamics. When correlation breaks down, Japan-specific forces (BOJ policy, domestic inflation) "
-        "are dominant. A sudden decorrelation often precedes major policy shifts or regime changes."
+        "<b>Correlation</b> measures whether two things move together. A correlation of +1.0 means they move "
+        "in perfect lockstep. A correlation of 0 means they move independently. A correlation of -1.0 means they "
+        "move in opposite directions. This chart shows the <em>rolling 60-day correlation</em> between Japanese "
+        "and US 10-year government bond yields. "
+        "When correlation is high (above 0.6), it means Japan's bond market is just following the US. "
+        "If US yields rise, Japanese yields rise too. In this regime, you mainly need to watch the US Federal "
+        "Reserve to predict JGB movements. "
+        "When correlation drops (below 0.2 or goes negative), it means Japan is marching to its own drum. "
+        "This usually happens when the BOJ makes a surprise policy move or domestic Japanese inflation data "
+        "diverges from the US. These decorrelation episodes are critical for traders because models that assume "
+        "JP and US rates move together will suddenly stop working. "
+        "<b>How to read this chart:</b> Line near +1 = markets are connected. Line near 0 or negative = "
+        "Japan-specific forces are in control. Sudden drops from high to low often coincide with BOJ surprises "
+        "(marked by red verticals)."
     )
     _jp10 = df["JP_10Y"].dropna() if "JP_10Y" in df.columns else pd.Series(dtype=float)
     _us10 = df["US_10Y"].dropna() if "US_10Y" in df.columns else pd.Series(dtype=float)
@@ -1159,12 +1202,18 @@ def page_overview():
     st.subheader("Japan Sovereign Credit Context")
     _definition_block(
         "What are Sovereign Credit Ratings?",
-        "Credit rating agencies (Moody's, S&P, Fitch, R&I) assess a government's ability and willingness "
-        "to repay debt. Japan's ratings reflect a tension: the world's highest debt-to-GDP ratio (~260%) "
-        "offset by its massive domestic savings base, net external creditor status, and yen-denominated debt. "
-        "A downgrade or negative outlook revision can trigger forced selling by institutional mandates, "
-        "accelerating yield repricing. <b>BOJ credibility events</b> are policy surprises that exceeded "
-        "market expectations by more than 2 standard deviations, eroding forward guidance credibility."
+        "Just like individuals have credit scores, countries have <b>credit ratings</b>. Agencies like Moody's, "
+        "S&P, and Fitch grade each country's ability to repay its debts. Ratings range from AAA (best, like "
+        "Germany or Singapore) down to D (default). Japan is rated around A/A+ which is 'good but not great'. "
+        "Why not higher? Japan has the world's highest <b>debt-to-GDP ratio</b> at ~260%, meaning the government "
+        "owes 2.6x its entire annual economic output. However, Japan has a unique advantage: over 90% of JGBs are "
+        "held by domestic investors (Japanese banks, pension funds, the BOJ itself), and Japan is a net creditor "
+        "to the rest of the world. This means Japan is unlikely to face a sudden foreign exodus like emerging markets. "
+        "A <b>downgrade</b> (rating cut) or <b>negative outlook</b> change matters because many large institutional "
+        "investors have rules that force them to sell bonds below a certain rating. Even a one-notch downgrade can "
+        "trigger billions in forced selling, spiking yields overnight. "
+        "<b>BOJ credibility events</b> (table below) are policy decisions that shocked the market. When the central "
+        "bank repeatedly surprises investors, it erodes trust in its forward guidance, making yields more volatile."
     )
     from src.data.config import JAPAN_CREDIT_RATINGS, BOJ_CREDIBILITY_EVENTS
     _section_note(
@@ -1288,13 +1337,21 @@ def page_yield_curve():
     st.subheader("PCA of Yield Changes")
     _definition_block(
         "What is PCA?",
-        "<b>Principal Component Analysis</b> reduces a correlated set of yield series into a small number "
-        "of uncorrelated factors. In fixed income (Litterman-Scheinkman, 1991), these typically map to: "
-        "<b>PC1 (Level)</b>, a parallel shift of the entire curve (60-80% of variance); "
-        "<b>PC2 (Slope)</b>, a twist where short and long ends move in opposite directions (10-20%); "
-        "<b>PC3 (Curvature)</b>, a butterfly where the belly moves against the wings (5-10%). "
-        "We use covariance-based PCA on daily yield <em>changes</em> (not levels) to preserve "
-        "bps-scale economic meaning and ensure stationarity."
+        "Imagine you have yields for 2-year, 5-year, 10-year, 20-year, and 30-year bonds, all moving every day. "
+        "That is a lot of data. <b>Principal Component Analysis (PCA)</b> is a statistical technique that finds "
+        "the <em>main patterns</em> hidden in all that movement. It answers: 'What are the 2-3 most important "
+        "forces driving the entire yield curve?' "
+        "In bond markets worldwide, PCA almost always finds three patterns: "
+        "<b>PC1 (Level)</b>: All yields move up or down together. This explains 60-80% of all movement. "
+        "Think of it as 'the market collectively decides rates should be higher or lower.' "
+        "<b>PC2 (Slope)</b>: Short-term yields move one way while long-term yields move the opposite way. "
+        "This is the curve 'twisting'. It explains 10-20% of movement and reflects expectations about "
+        "future rate changes (e.g. markets expect rate cuts soon, so short rates fall but long rates hold). "
+        "<b>PC3 (Curvature)</b>: The middle of the curve (5-7 year) moves differently from both ends. "
+        "This 'butterfly' pattern explains 5-10% and often reflects specific supply/demand at certain maturities. "
+        "<b>How to read the charts below:</b> The bar chart shows how much each factor explains (PC1 should "
+        "dominate). The heatmap shows which bonds each factor affects most (red = positive, blue = negative). "
+        "The line chart over time shows when each factor was active."
     )
     if pca_result is None:
         st.warning("Insufficient yield data for PCA.")
@@ -1437,12 +1494,20 @@ def page_yield_curve():
     st.subheader("Liquidity Metrics")
     _definition_block(
         "What is the Roll Measure?",
-        "The <b>Roll measure</b> (Roll, 1984) estimates the effective bid-ask spread from the serial "
-        "covariance of price changes. Negative serial covariance implies market-maker inventory costs are "
-        "widening the spread. Higher values = worse liquidity. The <b>composite liquidity index</b> "
-        "standardises the Roll measure into a z-score: below -1 signals deteriorating liquidity (expect "
-        "wider execution costs and larger price gaps on any repricing shock); above +1 signals healthy "
-        "market depth."
+        "<b>Liquidity</b> in bond markets means how easily you can buy or sell without moving the price. "
+        "In a liquid market, you can trade large amounts and the price barely budges. In an illiquid market, "
+        "even a small trade can cause a big price swing. "
+        "The <b>bid-ask spread</b> is the gap between the price buyers are willing to pay (bid) and the price "
+        "sellers are asking (ask). A wide spread means poor liquidity, because you lose money just entering and "
+        "exiting a position. The problem is: JGB bid-ask spreads are not publicly available in real-time. "
+        "The <b>Roll measure</b> (Roll, 1984) cleverly <em>estimates</em> the bid-ask spread from price patterns. "
+        "When prices bounce back and forth (buy at ask, sell at bid), it creates a negative pattern in consecutive "
+        "price changes. The Roll measure detects this pattern and converts it into an estimated spread. "
+        "The <b>composite liquidity index</b> converts this into a z-score (standard deviations from average). "
+        "Below -1 = liquidity is worse than usual (danger zone). Above +1 = liquidity is better than usual. "
+        "<b>Why it matters for JGBs:</b> When the BOJ was buying most JGBs, liquidity was artificially good. "
+        "As BOJ buying slows, liquidity deteriorates, and any repricing shock gets amplified because there are "
+        "fewer buyers to absorb selling pressure."
     )
     if liq is None:
         st.warning("Insufficient data for liquidity metrics.")
@@ -1479,12 +1544,20 @@ def page_yield_curve():
     st.subheader("Nelson-Siegel Factor Evolution")
     _definition_block(
         "What is the Nelson-Siegel Model?",
-        "The <b>Nelson-Siegel (1987)</b> model fits the yield curve with three parameters: "
-        "<b>&beta;0</b> (long-run level, where the curve converges at infinity), "
-        "<b>&beta;1</b> (slope, the spread between short and long ends), and "
-        "<b>&beta;2</b> (curvature, the hump or U-shape in the belly). Unlike PCA, Nelson-Siegel "
-        "is a parametric model with economic interpretations baked in. Tracking &beta;0 over time "
-        "reveals whether the market has structurally repriced its long-run yield expectations."
+        "While PCA (above) finds patterns statistically, the <b>Nelson-Siegel model</b> fits the yield curve "
+        "with a specific mathematical formula that has built-in economic meaning. It describes any yield curve "
+        "using just three numbers: "
+        "<b>&beta;0 (Level)</b>: Where yields converge in the very long run. Think of it as the market's "
+        "answer to 'What should interest rates be 30+ years from now?' If &beta;0 rises over time, it means "
+        "the market is structurally repricing its long-run expectations for Japanese rates upward. "
+        "<b>&beta;1 (Slope)</b>: The difference between short-term and long-term yields. Negative &beta;1 means "
+        "the curve slopes upward (normal: you earn more for lending longer). If &beta;1 becomes more negative, "
+        "the curve is steepening, meaning long-term rates are rising faster than short-term ones. "
+        "<b>&beta;2 (Curvature)</b>: Whether the middle of the curve (around 5-7 years) is higher or lower "
+        "than you would expect from a smooth line between short and long ends. Positive = the belly is 'humped' "
+        "(higher than expected), often reflecting specific demand from institutional investors at those maturities. "
+        "<b>How to read this chart:</b> Watch &beta;0 over time. If it trends upward, the repricing thesis is "
+        "confirmed: the market believes Japanese rates will be permanently higher."
     )
     if ns_result is None:
         st.warning("Insufficient data for Nelson-Siegel fitting.")
@@ -1530,10 +1603,21 @@ def page_yield_curve():
         st.subheader("Real Yield Proxy")
         _definition_block(
             "What is Japan's Real Yield",
-            "Real yield = nominal yield minus inflation expectations (breakeven). Negative real yields mean "
-            "bondholders are losing purchasing power. As real yields rise from deeply negative territory, "
-            "rational investors demand higher nominal yields, accelerating JGB repricing. Real yield turning "
-            "positive is a critical threshold that can trigger portfolio rebalancing by pension funds and insurers."
+            "If a bond pays you 1% per year but inflation is 2%, you are actually <em>losing</em> 1% of "
+            "purchasing power annually. That -1% is your <b>real yield</b>: what you actually earn after "
+            "accounting for inflation. Real yield = nominal yield (what the bond pays) minus expected inflation "
+            "(what the market thinks prices will rise). "
+            "For over a decade, Japanese real yields were deeply negative because the BOJ suppressed nominal "
+            "yields near zero while inflation, though low, was still positive. This meant bondholders were "
+            "quietly losing money in real terms every year. "
+            "Now, as nominal yields rise and inflation expectations shift, real yields are moving toward zero "
+            "or positive territory. This is a critical threshold: when real yields turn positive, pension funds "
+            "and insurance companies (who need real returns to meet obligations) may finally find JGBs attractive "
+            "again, stabilizing prices. But the journey FROM deeply negative TO zero is the most dangerous period "
+            "because it means rapid repricing. "
+            "<b>How to read this chart:</b> Blue = nominal yield (what the bond pays). Orange = breakeven "
+            "inflation (expected inflation). Red = real yield (the difference). When the red line crosses zero "
+            "from below, it is a major structural shift."
         )
         _real_aligned = pd.DataFrame({"JP_10Y": _jp10_yc, "JP_BREAKEVEN": _be_yc}).dropna()
         if len(_real_aligned) > 10:
@@ -1588,11 +1672,21 @@ def page_yield_curve():
         st.subheader("Curve Slopes and Butterfly")
         _definition_block(
             "What are Curve Slopes and Butterfly Spreads",
-            "The <b>2s10s slope</b> (10Y minus 2Y) measures the term premium for holding longer duration. "
-            "Flattening signals tightening expectations; steepening signals growth or inflation repricing. "
-            "The <b>butterfly spread</b> (2x5Y minus 2Y minus 10Y) captures belly richness/cheapness. "
-            "A positive butterfly means the belly is rich (5Y yields are low relative to wings), "
-            "signaling demand for the most liquid point on the JGB curve."
+            "The yield curve is not flat. Normally, longer bonds pay higher yields because you are taking more "
+            "risk by lending for longer. The <b>slope</b> measures this difference: "
+            "<b>2s10s slope</b> = 10-year yield minus 2-year yield. If this is 0.50%, it means you earn 0.50% "
+            "more per year for lending to Japan for 10 years instead of 2. A steep curve (large positive slope) "
+            "means the market expects rates to rise. A flat curve (near zero) means the market thinks rates will "
+            "stay low. An inverted curve (negative slope) historically signals a coming recession. "
+            "<b>10s30s slope</b> = 30-year yield minus 10-year yield. This matters especially in Japan because "
+            "life insurers and pension funds are big buyers of 20-30 year JGBs to match their long-term liabilities. "
+            "The <b>butterfly spread</b> (2 x 5Y minus 2Y minus 10Y) captures whether the middle of the curve "
+            "is expensive or cheap relative to the ends. Positive = the 5-year point is expensive (yields are low), "
+            "often because domestic banks concentrate their buying there. Negative = the belly is cheap, "
+            "potentially a buying opportunity. "
+            "<b>How to read this chart:</b> Lines above zero = upward-sloping curve (normal). "
+            "Lines approaching zero = flattening (market expects slower growth). "
+            "Sharp steepening at BOJ event dates = repricing of long-end yields."
         )
         _section_note(
             "JGB curve slopes (percentage points) and butterfly spread. "
@@ -1623,10 +1717,21 @@ def page_yield_curve():
         st.subheader("Yield Change Correlation Matrix")
         _definition_block(
             "What Yield Change Correlations Reveal",
-            "Correlations between daily yield changes across tenors and countries reveal how repricing "
-            "transmits. High correlation across all JP tenors confirms a parallel shift (PC1-dominated). "
-            "High JP-US correlation suggests global rate transmission; low correlation implies domestic drivers. "
-            "Sudden correlation breakdowns often precede regime shifts."
+            "This heatmap shows how daily yield <em>changes</em> in different bonds relate to each other. "
+            "Each cell shows a correlation from -1 to +1. Dark red (+1) means when one yield goes up, "
+            "the other goes up too, every time. Dark blue (-1) means they move in opposite directions. "
+            "White (0) means they move independently. "
+            "<b>Within Japan:</b> If JP_2Y, JP_5Y, JP_10Y, JP_20Y, JP_30Y all show high correlations "
+            "with each other (lots of red), it confirms that the entire JGB curve moves together (PC1 "
+            "dominance). This is typical during a broad repricing where all maturities sell off simultaneously. "
+            "If some tenors decorrelate (e.g. 2Y stays put while 30Y moves), it suggests targeted repricing "
+            "at specific maturities, creating curve trade opportunities. "
+            "<b>Across countries:</b> High correlation between JP_10Y and US_10Y means Japan is just following "
+            "the US. Low correlation means domestic Japanese factors (BOJ policy, yen, domestic inflation) are "
+            "more important. "
+            "<b>How to read this heatmap:</b> Look at the JP_10Y row. Which bonds move most with it? "
+            "Dark red cells = those bonds move together. The diagonal is always +1 (each bond is perfectly "
+            "correlated with itself)."
         )
         _yc_changes = _df_yc[_yield_cols_corr].diff().dropna()
         if len(_yc_changes) > 30:
@@ -1823,13 +1928,20 @@ def page_regime():
     )
     _definition_block(
         "What is a Market Regime?",
-        "A <b>regime</b> is a persistent market state characterised by distinct statistical properties "
-        "(mean, variance, correlation structure). In the JGB context, the two regimes are: "
-        "<b>Suppressed</b> (BOJ purchases anchor yields near zero, volatility is artificially low, "
-        "correlations with global rates are muted) and <b>Repricing</b> (yields rise toward market-implied "
-        "fair value, volatility spikes, and JGBs re-couple with global rate movements). "
-        "Regime shifts are non-linear: they do not happen gradually but rather in abrupt, "
-        "self-reinforcing transitions."
+        "Think of a <b>regime</b> as the 'mood' of the market. Just as weather has distinct states (sunny vs "
+        "stormy), bond markets operate in distinct regimes with very different characteristics. "
+        "For Japanese government bonds, we identify two key regimes: "
+        "<b>Suppressed Regime:</b> The BOJ is actively buying bonds, keeping yields artificially low and stable. "
+        "Volatility is minimal, prices barely move day-to-day, and Japanese bonds seem disconnected from what is "
+        "happening in the rest of the world. This was the dominant regime from 2013 to ~2022. "
+        "<b>Repricing Regime:</b> The BOJ is stepping back, and market forces take over. Yields start rising "
+        "toward where they 'should' be based on inflation, growth, and what other countries' bonds yield. "
+        "Volatility spikes because there is uncertainty about the new equilibrium level. Japanese bonds suddenly "
+        "start moving in sync with US Treasuries again. "
+        "The critical insight: regime shifts do not happen gradually. They are like a dam breaking. Once selling "
+        "pressure exceeds a threshold, it becomes self-reinforcing (selling pushes yields higher, which triggers "
+        "more selling). This is why we use four different detection models below: each one detects the shift from "
+        "a different angle, and we only trust the signal when most agree."
     )
 
     args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
@@ -1846,11 +1958,19 @@ def page_regime():
     st.subheader("Ensemble Regime Probability")
     _definition_block(
         "How the Ensemble Works",
-        "Each model's output is min-max normalised to [0, 1], then combined via equal-weighted average "
-        "(25% each). The ensemble probability represents the fraction of models that agree a repricing "
-        "regime is active. Thresholds: <b>&gt;0.7 = STRONG repricing</b> (all models agree), "
-        "<b>0.5-0.7 = MODERATE</b> (majority agree), <b>0.3-0.5 = TRANSITION</b> (mixed signals), "
-        "<b>&lt;0.3 = SUPPRESSED</b> (BOJ in control). This drives all trade generation on Page 5."
+        "Instead of relying on a single model (which can give false signals), we combine four completely different "
+        "detection methods into one consensus probability. Each model gives a score from 0 (definitely suppressed) "
+        "to 1 (definitely repricing). We average all four scores with equal weight (25% each). "
+        "The result is a single number: the <b>ensemble probability</b>. "
+        "<b>Above 0.7 = STRONG repricing signal.</b> All four models agree that yields are being driven by market "
+        "forces, not BOJ control. This is the clearest signal to position for higher rates. "
+        "<b>0.5 to 0.7 = MODERATE.</b> A majority of models detect repricing, but not all. Take partial positions. "
+        "<b>0.3 to 0.5 = TRANSITION ZONE.</b> Models disagree. The market is undecided. This is the most dangerous "
+        "zone because a sudden move in either direction is possible. Avoid large directional bets. "
+        "<b>Below 0.3 = SUPPRESSED.</b> Most models agree the BOJ is in control. Yields are likely to stay low. "
+        "<b>How to read this chart:</b> The line shows the ensemble probability over time. Above the 0.5 dashed line "
+        "= repricing. Below = suppressed. Sharp jumps at red BOJ vertical lines confirm that policy surprises "
+        "trigger regime shifts."
     )
     if ensemble is not None and len(ensemble.dropna()) > 0:
         current_prob = float(ensemble.dropna().iloc[-1])
@@ -1900,12 +2020,20 @@ def page_regime():
     st.subheader("Markov-Switching Smoothed Probabilities")
     _definition_block(
         "Markov-Switching Model (Hamilton, 1989)",
-        "A <b>Markov-switching regression</b> assumes the data-generating process alternates between "
-        "two unobserved states (low-vol calm vs. high-vol stress), each with its own mean and variance. "
-        "Transitions between states follow a Markov chain with estimated transition probabilities. "
-        "The model outputs <b>smoothed probabilities</b>: the posterior likelihood of being in each "
-        "state at every point in time, given the full sample. Strength: captures volatility clustering. "
-        "Weakness: slow to detect rapid transitions (it uses the full sample, not just recent data)."
+        "Imagine the bond market has two 'modes' it can be in, like a light switch with two positions: "
+        "<b>Calm</b> (small daily yield changes, low volatility) and <b>Stress</b> (large daily yield changes, "
+        "high volatility). The <b>Markov-switching model</b> assumes the market randomly flips between these "
+        "modes, and it figures out which mode the market was in on each day. "
+        "The key insight is that each mode has its own average yield change and volatility. In calm mode, "
+        "yields might drift by 0.5 basis points per day. In stress mode, they might jump 5+ basis points. "
+        "The model also estimates <b>transition probabilities</b>: how likely is it to switch from calm to "
+        "stress tomorrow? If the probability of staying in stress is high (say 95%), it means stress episodes "
+        "tend to last a long time once they start. "
+        "The stacked area chart shows the probability of being in each regime over time. When the stress "
+        "regime (orange/red) dominates, yields are moving in large, unpredictable swings, consistent with "
+        "repricing. <b>Strength:</b> Very good at detecting when volatility clusters (bad days follow bad days). "
+        "<b>Weakness:</b> It uses the entire history, so it is slow to react to sudden changes. "
+        "It may take several days of high volatility before the model 'believes' a regime shift has occurred."
     )
     if markov is not None:
         rp = markov["regime_probabilities"]
@@ -1948,11 +2076,18 @@ def page_regime():
     st.subheader("Structural Breakpoints on JP 10Y Changes")
     _definition_block(
         "PELT Structural Break Detection",
-        "<b>PELT</b> (Pruned Exact Linear Time) is a changepoint detection algorithm that identifies "
-        "points where the statistical properties (mean, variance) of a time series change abruptly. "
-        "Unlike Markov-switching (which models regime persistence), PELT finds the <em>exact dates</em> "
-        "of structural breaks. In the JGB context, breakpoints that coincide with BOJ policy dates "
-        "confirm that the yield-change distribution has genuinely shifted, not just temporarily spiked."
+        "Imagine drawing a line through yield changes over time. A <b>structural break</b> is a date where "
+        "the line needs to jump to a new level because the old pattern no longer fits. Before the break, "
+        "yields might change by 0.5 bps/day on average. After the break, maybe 3 bps/day. "
+        "The <b>PELT algorithm</b> (Pruned Exact Linear Time) automatically finds these break dates by scanning "
+        "through the entire history and identifying where the average and volatility of yield changes shift. "
+        "Unlike the Markov model (which assumes the market bounces between states), PELT identifies <em>permanent</em> "
+        "shifts. Each orange dashed vertical line on the chart marks a detected breakpoint. "
+        "The red dotted lines mark BOJ policy dates. When an orange break coincides with a red BOJ line, it is "
+        "powerful evidence that the policy decision genuinely changed the market's behavior, not just caused a "
+        "one-day spike. <b>How to read this chart:</b> The scatter plot shows daily yield changes. "
+        "Orange verticals = structural breaks. If breaks cluster near BOJ dates, it confirms policy-driven "
+        "regime shifts. A recent break (within 3 months) means old patterns are invalid."
     )
     if changes is not None and bkps is not None:
         n_bkps = len(bkps) if bkps else 0
@@ -1979,12 +2114,21 @@ def page_regime():
     st.subheader("Rolling Permutation Entropy & Regime Signal")
     _definition_block(
         "What is Permutation Entropy?",
-        "<b>Permutation entropy</b> (Bandt &amp; Pompe, 2002) measures the complexity of a time series "
-        "by analysing the distribution of ordinal patterns (rank sequences) in a sliding window. "
-        "High entropy = complex, unpredictable movements (market-driven pricing). Low entropy = orderly, "
-        "repetitive patterns (BOJ-suppressed range). The <b>regime signal</b> fires when entropy exceeds "
-        "1.5 standard deviations above its rolling mean. Strength: fires 1-2 weeks <em>before</em> "
-        "Markov and GARCH detect the shift, making it the earliest warning indicator in the ensemble."
+        "<b>Entropy</b> is a measure of disorder or unpredictability. High entropy = chaotic, hard to predict. "
+        "Low entropy = orderly, repetitive, easy to predict. "
+        "<b>Permutation entropy</b> specifically looks at the <em>patterns</em> in how prices move over consecutive "
+        "days. For example, in a 3-day window, prices could go up-up-up, up-down-up, down-up-down, etc. There are "
+        "6 possible patterns. If prices just drift slowly (like when the BOJ is in control), the same patterns repeat "
+        "often (low entropy). If prices are jumping around unpredictably (like during repricing), all patterns appear "
+        "roughly equally (high entropy). "
+        "We compute this in a rolling 120-day window and track it over time. The <b>regime signal</b> (binary: 0 or 1) "
+        "fires when entropy jumps to 1.5 standard deviations above its own average, meaning price movements have "
+        "become unusually complex. "
+        "<b>Why this matters:</b> Entropy is the earliest warning signal in our ensemble. It typically fires "
+        "1-2 weeks BEFORE the Markov and GARCH models detect a shift, because it picks up on subtle changes in "
+        "price patterns before volatility visibly spikes. "
+        "<b>How to read this chart:</b> Left axis (blue line) = entropy level. Right axis (orange) = binary "
+        "signal (0 = normal, 1 = early warning). When the signal flips to 1, start preparing for a regime shift."
     )
     if ent is not None:
         ent_latest = float(ent.dropna().iloc[-1]) if len(ent.dropna()) > 0 else 0.0
@@ -2023,12 +2167,20 @@ def page_regime():
     st.subheader("GARCH Conditional Volatility & Vol-Regime Breaks")
     _definition_block(
         "GARCH(1,1) Conditional Volatility",
-        "<b>GARCH</b> (Generalised Autoregressive Conditional Heteroskedasticity, Bollerslev 1986) "
-        "models time-varying volatility by allowing today's variance to depend on yesterday's squared "
-        "return and yesterday's variance. The <b>conditional volatility</b> series shows the model's "
-        "real-time estimate of daily yield volatility in basis points. Vol-regime breakpoints (purple lines) "
-        "are detected via PELT on the conditional volatility series itself, identifying dates when the "
-        "volatility regime structurally shifted."
+        "<b>Volatility</b> measures how much yields jump around from day to day. Low volatility = calm markets, "
+        "small moves. High volatility = turbulent markets, large moves. But volatility is not constant: "
+        "turbulent days tend to follow other turbulent days (this is called 'volatility clustering'). "
+        "The <b>GARCH model</b> captures this clustering. It says: 'Today's expected volatility depends on "
+        "yesterday's actual move AND yesterday's expected volatility.' This creates a smooth volatility estimate "
+        "that rises during stress episodes and slowly decays back to normal afterward. "
+        "The chart shows this estimated volatility in <b>basis points (bps) per day</b>. 1 bps = 0.01%. "
+        "So if the chart reads 5 bps, it means yields are expected to move about 5 bps (0.05%) per day. "
+        "For JGBs, which historically moved less than 1 bps/day under BOJ control, a reading above 3-4 bps "
+        "signals the market has entered a fundamentally different volatility regime. "
+        "The <b>purple vertical lines</b> are structural breaks detected on the volatility series itself, "
+        "showing exactly when the volatility regime permanently shifted. "
+        "<b>How to read this chart:</b> Rising line = volatility increasing (more risk). "
+        "Purple verticals = permanent shifts in the vol regime. Spikes near red BOJ lines = policy-triggered."
     )
     breaks = garch_breaks
     if vol is not None:
@@ -2063,12 +2215,22 @@ def page_regime():
     st.subheader("Regime Comparison by BOJ Policy Era")
     _definition_block(
         "BOJ Policy Eras",
-        "Japan's monetary policy since 2013 has passed through distinct phases: <b>QQE</b> (2013-16, "
-        "massive asset purchases), <b>NIRP</b> (2016, negative short rates), <b>YCC</b> (2016-22, "
-        "explicit yield cap at 0.25% then 0.50%), <b>YCC Exit</b> (2022-24, gradual widening of the band), "
-        "and <b>Post-YCC</b> (2024+, formal exit from yield curve control). Each era has distinct "
-        "yield levels, volatility profiles, and FX dynamics. Comparing current metrics against each "
-        "era's benchmarks reveals where we are in the normalisation cycle."
+        "Japan's central bank (BOJ) has gone through several dramatic policy phases. Understanding each one "
+        "is essential context: "
+        "<b>QQE (2013-16):</b> 'Quantitative and Qualitative Easing.' Governor Kuroda launched unprecedented "
+        "bond buying to fight deflation. The BOJ bought so many JGBs it eventually owned nearly half of all "
+        "outstanding government debt. Yields plunged. "
+        "<b>NIRP (2016):</b> 'Negative Interest Rate Policy.' The BOJ charged banks for holding reserves, "
+        "pushing short-term rates below zero. Depositors effectively paid the bank to hold their money. "
+        "<b>YCC (2016-22):</b> 'Yield Curve Control.' The BOJ explicitly capped 10-year JGB yields at first "
+        "0.25%, then 0.50%. Whenever yields tried to rise above the cap, the BOJ bought unlimited bonds to "
+        "push them back down. This was the most extreme form of yield suppression. "
+        "<b>YCC Exit (2022-24):</b> The BOJ gradually loosened the cap, first widening it, then making it a "
+        "'reference' rather than a hard cap. This was the beginning of the end of suppression. "
+        "<b>Post-YCC (2024+):</b> Full exit from both YCC and negative rates. The market is now pricing JGBs "
+        "based on fundamentals for the first time in a decade. "
+        "The table below compares key statistics across each era, letting you see exactly how yields, volatility, "
+        "and the yen behaved in each policy environment."
     )
     try:
         df_full = load_unified(use_simulated, str(start_date), str(end_date), fred_api_key or None)
@@ -2116,10 +2278,19 @@ def page_regime():
         st.subheader("Regime Duration and Transitions")
         _definition_block(
             "What Regime Duration Reveals",
-            "Regime duration measures how long the market stays in a suppressed or repricing state. "
-            "Short-lived repricing episodes suggest the BOJ can still regain control. Prolonged repricing "
-            "(>60 trading days) signals a structural shift. Transition frequency reveals market indecision: "
-            "frequent switching = unstable equilibrium, which is the most dangerous period for positioning."
+            "How long does each regime last? This question is critical for traders. If repricing episodes "
+            "only last a few days before the BOJ reasserts control, then you should fade (trade against) the move. "
+            "But if repricing persists for months, it is a structural shift and you should follow the trend. "
+            "The <b>current streak</b> shows how many consecutive trading days the market has been in its "
+            "current regime. A repricing streak above 60 trading days (~3 months) has historically been very "
+            "difficult for the BOJ to reverse. "
+            "The <b>histogram</b> shows the distribution of past regime durations. If most repricing episodes "
+            "are short (under 20 days), the BOJ has been successful at regaining control. If some are very long, "
+            "it means once repricing starts, it can be persistent. "
+            "The <b>number of transitions</b> reveals how unstable the market is. Many transitions = "
+            "frequent regime switching = maximum uncertainty. Few transitions = stable regimes with clear "
+            "signals. <b>How to read:</b> Metrics at top summarize the current state. Histogram below shows "
+            "whether current streak duration is typical or unusual compared to history."
         )
         _ens_clean = ensemble.dropna()
         _regime_binary = (_ens_clean > 0.5).astype(int)
@@ -2327,12 +2498,19 @@ def page_spillover():
     st.subheader("Granger Causality (significant pairs)")
     _definition_block(
         "What is Granger Causality?",
-        "<b>Granger causality</b> (Granger, 1969) tests whether lagged values of variable X improve "
-        "the forecast of variable Y beyond Y's own history. It does <em>not</em> prove true causation, "
-        "only statistical predictive power. If US_10Y Granger-causes JP_10Y, it means past U.S. yield "
-        "moves contain information about future JGB moves. The <b>F-statistic</b> measures the strength "
-        "of this predictive relationship; the <b>optimal lag</b> tells you how many days in advance "
-        "the leading variable provides signal."
+        "If knowing what happened to US Treasury yields yesterday helps you predict what will happen to "
+        "JGB yields today, then US yields 'Granger-cause' JGB yields. This is not about true cause and effect "
+        "(it is a statistical test), but it reveals <em>which markets lead and which follow</em>. "
+        "The test works by comparing two forecasting models: one that only uses JGB history, and another that "
+        "also includes past US yield data. If the second model is significantly better, the F-statistic will "
+        "be large and the p-value will be small (below 0.05). "
+        "The <b>optimal lag</b> tells you how many days of lead time you get. If US_10Y Granger-causes JP_10Y "
+        "at lag 3, it means US yield moves from 3 days ago still predict JGB moves today. This creates a "
+        "tradeable window: you can observe the US move and position in JGBs before the Japanese market reacts. "
+        "<b>How to read this table:</b> Each row is a significant (p < 0.05) predictive link. "
+        "'Cause' column = the leading variable. 'Effect' column = the following variable. "
+        "Higher F-stat = stronger prediction. Lower p-value = more statistically reliable. "
+        "The full table (in the expander) includes all pairs tested, including non-significant ones."
     )
     if granger_df is not None and not granger_df.empty:
         sig_df = granger_df[granger_df["significant"] == True].reset_index(drop=True)
@@ -2365,12 +2543,20 @@ def page_spillover():
     st.subheader("Transfer Entropy Heatmap")
     _definition_block(
         "What is Transfer Entropy?",
-        "<b>Transfer entropy</b> (Schreiber, 2000) measures the reduction in uncertainty about "
-        "variable Y's future when you know variable X's past, beyond what Y's own past already tells you. "
-        "Unlike Granger causality (which assumes linear relationships), transfer entropy captures "
-        "<em>nonlinear</em> directional information flow. Higher TE = more information transmitted. "
-        "Asymmetric TE (A&rarr;B &ne; B&rarr;A) reveals leader-follower dynamics. "
-        "We discretise returns into terciles (down/flat/up) for robust histogram-based estimation."
+        "Granger causality (above) only detects <em>linear</em> relationships. But markets often transmit "
+        "information in non-linear ways: a large US move might cause a JGB reaction while a small US move does "
+        "not. <b>Transfer entropy</b> captures ALL types of information flow, including non-linear ones. "
+        "Technically, it asks: 'How much does knowing X's past reduce my uncertainty about Y's future, "
+        "beyond what Y's own past tells me?' "
+        "The result is a <b>heatmap</b> where each cell (row=source, column=target) shows how much information "
+        "flows from the source to the target. Larger values (brighter colors) = stronger information flow. "
+        "Critically, transfer entropy is <b>directional</b>: the flow from US_10Y to JP_10Y can be completely "
+        "different from JP_10Y to US_10Y. When one direction is much larger, it reveals a clear leader-follower "
+        "relationship. The leader moves first, and the follower reacts. "
+        "<b>How to read this heatmap:</b> Read across a ROW to see how much information that variable sends "
+        "to others. Read down a COLUMN to see how much information that variable receives. "
+        "The variable with the brightest row is the biggest 'transmitter' (information source). "
+        "The variable with the brightest column is the biggest 'receiver' (most influenced by others)."
     )
     if te_df is not None and not te_df.empty:
         sources = te_df["source"].unique()
@@ -2510,12 +2696,19 @@ def page_spillover():
     st.subheader("Diebold-Yilmaz Spillover")
     _definition_block(
         "Diebold-Yilmaz Spillover Index (2012)",
-        "The <b>DY spillover index</b> measures the share of forecast error variance in each variable "
-        "that is attributable to shocks from <em>other</em> variables, estimated via a VAR(4) model with "
-        "generalised forecast error variance decomposition (10-step horizon). The <b>total spillover</b> "
-        "is the average off-diagonal share: >30% means markets are tightly coupled and diversification "
-        "benefits erode. <b>Net directional spillover</b> (green/red bars) shows who transmits vs. "
-        "absorbs shocks: net transmitters drive contagion; net receivers are vulnerable."
+        "Imagine a shock hits the US Treasury market. How much of that shock eventually shows up in JGB yields, "
+        "the yen, and the Nikkei? The <b>Diebold-Yilmaz spillover index</b> answers this precisely. "
+        "It works by building a model (VAR) of how all markets interact, then asking: 'If I shock one variable, "
+        "what fraction of the resulting movement in another variable is due to that external shock vs its own history?' "
+        "The <b>total spillover index</b> (shown as a single %) is the average cross-market influence. Above 30% means "
+        "markets are tightly coupled: a shock anywhere quickly spreads everywhere. Below 20% means markets are "
+        "relatively independent, and diversification across them works well. "
+        "The <b>bar chart</b> shows <em>net directional spillover</em>: green bars are net TRANSMITTERS (they send "
+        "more shocks than they receive) and red bars are net RECEIVERS (they absorb shocks from others). "
+        "If JP_10Y is a net receiver, it means JGBs are being pushed around by other markets. If it is a net "
+        "transmitter, JGB moves are spilling into other assets. "
+        "<b>How to read:</b> Big green bar = that market drives others. Big red bar = that market is most "
+        "vulnerable to outside shocks. Total % below the chart = overall market interconnectedness."
     )
     if spill is not None:
         total_spill = spill["total_spillover"]
@@ -2551,12 +2744,20 @@ def page_spillover():
     st.subheader("DCC Time-Varying Correlations")
     _definition_block(
         "DCC-GARCH Correlations",
-        "<b>Dynamic Conditional Correlation</b> (Engle, 2002) extends GARCH to model time-varying "
-        "correlations between asset pairs. Unlike simple rolling-window correlation, DCC weights "
-        "recent observations more heavily and captures <em>crisis-driven correlation spikes</em> "
-        "when markets that are normally independent suddenly move in lockstep. We use an EWMA proxy "
-        "(&lambda;=0.94, RiskMetrics standard) for numerical stability. Correlation above 0.6 between "
-        "JGBs and another asset means hedging one with the other is ineffective."
+        "Markets are not always equally connected. During calm periods, JGBs might move independently of US "
+        "Treasuries. But during a crisis, they suddenly start moving in lockstep. "
+        "<b>Dynamic Conditional Correlation (DCC)</b> tracks this changing relationship over time. "
+        "Unlike a simple rolling average (which treats all past data equally), DCC puts more weight on "
+        "recent observations, so it reacts faster when correlations suddenly spike during crises. "
+        "Each line on the chart shows the correlation between a pair of assets over time. "
+        "A correlation near +1 means they move together. Near 0 means independent. Near -1 means they move "
+        "in opposite directions. "
+        "<b>Why this matters:</b> If you hold JGBs and want to hedge with US Treasuries, you need the "
+        "correlation between them to be stable and positive. If correlation suddenly drops to zero, your "
+        "hedge stops working. If correlation spikes to near +1 during stress, it means both are selling off "
+        "simultaneously (no diversification benefit). "
+        "The critical threshold is 0.6: above this, two assets are so correlated that holding both provides "
+        "minimal diversification. Correlation spikes at BOJ event dates reveal policy-driven contagion."
     )
     if dcc is not None:
         cond_corr = dcc["conditional_correlations"]
@@ -2599,13 +2800,22 @@ def page_spillover():
     st.subheader("FX Carry Metrics (USD/JPY)")
     _definition_block(
         "What is the Carry Trade?",
-        "The <b>carry trade</b> borrows in a low-interest-rate currency (JPY) and invests in a "
-        "higher-yielding currency (USD). Profit = interest rate differential minus FX losses. "
-        "The <b>carry-to-vol ratio</b> divides the annualised rate gap by realised FX volatility: "
-        ">1.0 means the carry more than compensates for FX risk (trade is attractive); "
-        "<0.5 means FX volatility is eating into returns (crowded positions are vulnerable to "
-        "violent unwind). When the BOJ tightens, the carry differential shrinks and unwinding "
-        "carry trades strengthens the yen, creating a self-reinforcing feedback loop."
+        "The <b>carry trade</b> is one of the most popular strategies in foreign exchange markets. "
+        "It works like this: borrow money in a country with low interest rates (Japan, where rates were "
+        "near zero for decades) and invest it in a country with higher rates (the US, where rates are "
+        "around 4-5%). You earn the difference in interest rates as profit. "
+        "The catch: you are exposed to <b>currency risk</b>. If the yen strengthens against the dollar, "
+        "your FX losses can wipe out the interest income. The <b>carry</b> (blue line) shows the rate "
+        "differential in percent. The <b>realized volatility</b> (green line) shows how much the USD/JPY "
+        "exchange rate actually bounces around. "
+        "The <b>carry-to-vol ratio</b> (orange, right axis) is the key metric: it divides the interest "
+        "earned by the FX risk taken. Above 1.0 = the interest you earn exceeds the risk of FX losses "
+        "(trade is attractive). Below 0.5 = the yen is so volatile that carry profits are being destroyed "
+        "(positions are vulnerable to violent unwinds). "
+        "<b>Why this matters for JGBs:</b> Trillions of dollars are in yen carry trades globally. If the BOJ "
+        "raises rates, the carry shrinks and investors start closing these positions, which means selling dollars "
+        "and buying yen. This yen strengthening creates a feedback loop: it makes JGB prices go up temporarily "
+        "(haven flows) but signals a fundamental shift in the rate environment."
     )
     if carry is not None:
         latest_ctv = carry["carry_to_vol"].dropna().iloc[-1] if len(carry["carry_to_vol"].dropna()) > 0 else float("nan")
@@ -2651,10 +2861,16 @@ def page_spillover():
     st.subheader("Rolling Spillover Index")
     _definition_block(
         "Why Time-Varying Spillover Matters",
-        "A single spillover number conceals how contagion evolves. Computing the DY spillover index on "
-        "rolling windows (120 trading days) reveals episodes when markets become suddenly interconnected, "
-        "often coinciding with BOJ policy surprises, global risk events, or liquidity crises. "
-        "Rising rolling spillover into a BOJ meeting is an early warning of amplified market reaction."
+        "The spillover index above gives you a single number for the entire sample. But market connectedness "
+        "is not constant: markets can be independent for months, then suddenly become tightly coupled during "
+        "a crisis. This chart shows the spillover index computed on a <b>rolling 120-day window</b>, so you "
+        "can see exactly when and how market interconnectedness changes over time. "
+        "Rising spillover heading into a BOJ meeting date is a warning sign: it means any surprise decision "
+        "will ripple across all markets more than usual. Falling spillover after a crisis means markets are "
+        "decoupling and returning to normal. "
+        "The shaded area under the line helps you visually compare spillover levels across different periods. "
+        "Compare the current reading to the sample average: above average means heightened contagion risk, "
+        "below average means markets are relatively insulated from each other."
     )
     try:
         _df_spill = load_unified(use_simulated, str(start_date), str(end_date), fred_api_key or None)
@@ -2864,13 +3080,38 @@ def page_trade_ideas():
     )
     _definition_block(
         "How Trades are Generated",
-        "The trade generator maps the current regime state (ensemble probability, PCA scores, GARCH vol, "
-        "carry-to-vol, spillover index, entropy signal) to a rule-based library of trades across four "
-        "categories: <b>Rates</b> (JGB futures, curve steepeners, butterflies, liquidity premium), "
-        "<b>FX</b> (carry, trend), <b>Volatility</b> (straddles, skew), and <b>Cross-Asset</b> "
-        "(relative value, diversification). <b>Conviction</b> = base score + regime_probability &times; "
-        "weight + model-specific signal &times; weight, capped at 1.0. Every trade must answer: "
-        "\"What would kill this thesis?\""
+        "A trade idea is a specific, actionable suggestion: buy or sell a particular instrument "
+        "because your analysis says the price is likely to move in a certain direction. This page "
+        "takes all the quantitative models from earlier pages and converts their outputs into concrete "
+        "trade recommendations."
+        "<br><br>"
+        "<b>Where do these ideas come from?</b> The system reads the current 'regime state' - a snapshot "
+        "of every model's output: Is the market repricing JGBs or staying calm? Is volatility rising? "
+        "Are foreign markets spilling over into Japan? Is the yen carry trade attractive? Each answer "
+        "points toward a different set of trades."
+        "<br><br>"
+        "<b>Four trade categories:</b>"
+        "<br>- <b>Rates:</b> Trades on JGB yields directly - buying/selling JGB futures, betting on the "
+        "yield curve steepening or flattening, or exploiting liquidity premiums in less-traded tenors."
+        "<br>- <b>FX:</b> Currency trades, especially yen carry (borrowing in low-rate yen to invest in "
+        "higher-rate currencies) and momentum-based yen bets."
+        "<br>- <b>Volatility:</b> Trades that profit from how much prices swing, not which direction. "
+        "Straddles (buying both a call and put option) profit when volatility is higher than expected."
+        "<br>- <b>Cross-Asset:</b> Relative value trades across different markets, like going long "
+        "Nikkei vs short JGBs when equity-bond correlation breaks down."
+        "<br><br>"
+        "<b>Conviction score:</b> Each trade gets a score from 0% to 100% measuring how strongly the "
+        "models agree. Higher conviction means more signals point the same way. It is calculated as: "
+        "base score + (regime probability x weight) + (model signal x weight), capped at 100%. "
+        "A trade at 80% conviction has multiple models agreeing; one at 30% has mixed signals."
+        "<br><br>"
+        "<b>Failure scenario:</b> Every trade must answer 'What would kill this thesis?' This is the "
+        "single most important field. Before entering any trade, read the failure scenario first. If "
+        "that scenario is already playing out, skip the trade regardless of conviction score."
+        "<br><br>"
+        "<b>How to read the trade cards:</b> Start with the conviction bar chart to see which ideas "
+        "have the strongest signal alignment. Then expand individual cards. Read Failure Scenario before "
+        "Entry Signal - understanding what can go wrong matters more than what you hope will go right."
     )
 
     args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
