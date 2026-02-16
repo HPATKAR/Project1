@@ -521,6 +521,13 @@ st.markdown(
 st.sidebar.markdown(
     "<div style='padding:1rem 0 1.2rem 0; border-bottom:1px solid rgba(207,185,145,0.15); "
     "margin-bottom:1rem;'>"
+    # Japanese flag (Hinomaru) rendered as inline SVG, sized to sit neatly above the title
+    "<div style='margin-bottom:10px;'>"
+    "<svg width='36' height='24' viewBox='0 0 900 600' xmlns='http://www.w3.org/2000/svg' "
+    "style='border-radius:3px; box-shadow:0 1px 3px rgba(0,0,0,0.25);'>"
+    "<rect width='900' height='600' fill='#fff'/>"
+    "<circle cx='450' cy='300' r='180' fill='#BC002D'/>"
+    "</svg></div>"
     "<div style='font-size:var(--fs-micro); font-weight:700; text-transform:uppercase; "
     "letter-spacing:var(--ls-widest); color:#CFB991; margin-bottom:6px;'>Rates Strategy Desk</div>"
     "<div style='font-size:var(--fs-brand); font-weight:800; color:rgba(255,255,255,0.95); "
