@@ -991,7 +991,7 @@ def page_overview():
             )
             fig_asian = go.Figure()
             color_map = {"NIKKEI": "#E8413C", "SENSEX": "#2196F3", "HANGSENG": "#4CAF50", "SHANGHAI": "#FF9800", "KOSPI": "#9C27B0"}
-            label_map = {"NIKKEI": "Nikkei 225 (Tokyo)", "SENSEX": "Sensex (Mumbai)", "HANGSENG": "Hang Seng (Hong Kong)", "SHANGHAI": "SSE Composite (Shanghai)", "KOSPI": "KOSPI (Seoul)"}
+            label_map = {"NIKKEI": "\U0001F1EF\U0001F1F5 Nikkei 225 (Tokyo)", "SENSEX": "\U0001F1EE\U0001F1F3 Sensex (Mumbai)", "HANGSENG": "\U0001F1ED\U0001F1F0 Hang Seng (Hong Kong)", "SHANGHAI": "\U0001F1E8\U0001F1F3 SSE Composite (Shanghai)", "KOSPI": "\U0001F1F0\U0001F1F7 KOSPI (Seoul)"}
             for col in asian_eq_cols:
                 fig_asian.add_trace(go.Scatter(
                     x=cum_returns.index, y=cum_returns[col],
@@ -1133,7 +1133,7 @@ def page_overview():
             )
             fig_global = go.Figure()
             geq_colors = {"NIKKEI": "#E8413C", "SPX": "#1565C0", "EUROSTOXX": "#4CAF50", "FTSE": "#FF9800", "ASX200": "#9C27B0"}
-            geq_labels = {"NIKKEI": "Nikkei 225 (Tokyo)", "SPX": "S&P 500 (New York)", "EUROSTOXX": "Euro Stoxx 50 (EU)", "FTSE": "FTSE 100 (London)", "ASX200": "ASX 200 (Sydney)"}
+            geq_labels = {"NIKKEI": "\U0001F1EF\U0001F1F5 Nikkei 225 (Tokyo)", "SPX": "\U0001F1FA\U0001F1F8 S&P 500 (New York)", "EUROSTOXX": "\U0001F1EA\U0001F1FA Euro Stoxx 50 (EU)", "FTSE": "\U0001F1EC\U0001F1E7 FTSE 100 (London)", "ASX200": "\U0001F1E6\U0001F1FA ASX 200 (Sydney)"}
             for col in global_eq_cols:
                 fig_global.add_trace(go.Scatter(
                     x=global_returns.index, y=global_returns[col],
