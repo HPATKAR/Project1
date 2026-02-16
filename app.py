@@ -229,21 +229,21 @@ st.markdown(
     section[data-testid="stSidebar"] span,
     section[data-testid="stSidebar"] label,
     section[data-testid="stSidebar"] .stMarkdown {
-        color: rgba(255,255,255,0.7) !important;
+        color: rgba(255,255,255,0.92) !important;
         font-family: var(--font-sans);
     }
     section[data-testid="stSidebar"] label {
         font-size: var(--fs-sm) !important;
-        font-weight: 600 !important;
+        font-weight: 700 !important;
         letter-spacing: var(--ls-wider);
         text-transform: uppercase;
-        color: rgba(255,255,255,0.4) !important;
+        color: rgba(255,255,255,0.75) !important;
         margin-bottom: 2px;
     }
     section[data-testid="stSidebar"] b,
     section[data-testid="stSidebar"] strong {
-        color: rgba(255,255,255,0.85) !important;
-        font-weight: 600;
+        color: #fff !important;
+        font-weight: 700;
     }
     /* Inputs, selects, date pickers */
     section[data-testid="stSidebar"] input,
@@ -284,8 +284,9 @@ st.markdown(
     }
     /* Toggle */
     section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
-        color: rgba(255,255,255,0.6) !important;
+        color: rgba(255,255,255,0.85) !important;
         font-size: var(--fs-md);
+        font-weight: 600;
     }
     /* Nav buttons */
     section[data-testid="stSidebar"] .stButton > button {
@@ -300,13 +301,14 @@ st.markdown(
     }
     section[data-testid="stSidebar"] .stButton > button[kind="secondary"] {
         background: transparent;
-        border: 1px solid rgba(255,255,255,0.08);
-        color: rgba(255,255,255,0.55) !important;
+        border: 1px solid rgba(255,255,255,0.1);
+        color: rgba(255,255,255,0.85) !important;
+        font-weight: 600;
     }
     section[data-testid="stSidebar"] .stButton > button[kind="secondary"]:hover {
-        background: rgba(255,255,255,0.05);
-        border-color: rgba(255,255,255,0.18);
-        color: rgba(255,255,255,0.9) !important;
+        background: rgba(255,255,255,0.07);
+        border-color: rgba(255,255,255,0.22);
+        color: #fff !important;
     }
     section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
         background: rgba(207,185,145,0.12);
@@ -528,15 +530,15 @@ st.sidebar.markdown(
     "<rect width='900' height='600' fill='#fff'/>"
     "<circle cx='450' cy='300' r='180' fill='#BC002D'/>"
     "</svg></div>"
-    "<div style='font-size:var(--fs-micro); font-weight:700; text-transform:uppercase; "
+    "<div style='font-size:0.7rem; font-weight:700; text-transform:uppercase; "
     "letter-spacing:var(--ls-widest); color:#CFB991; margin-bottom:6px;'>Rates Strategy Desk</div>"
-    "<div style='font-size:var(--fs-brand); font-weight:800; color:rgba(255,255,255,0.95); "
+    "<div style='font-size:1.45rem; font-weight:800; color:rgba(255,255,255,0.95); "
     "letter-spacing:var(--ls-tight); line-height:1.15; "
     "font-family:var(--font-sans);'>JGB Repricing</div>"
-    "<div style='font-size:var(--fs-sm); font-weight:400; color:rgba(255,255,255,0.3); "
-    "margin-top:4px; letter-spacing:0.02em;'>Quantitative Framework</div>"
-    "<div style='font-size:var(--fs-tiny); font-weight:500; color:rgba(207,185,145,0.5); "
-    "margin-top:2px; letter-spacing:var(--ls-wide);'>Purdue Daniels School of Business</div></div>",
+    "<div style='font-size:0.75rem; font-weight:600; color:rgba(255,255,255,0.8); "
+    "margin-top:5px; letter-spacing:0.04em;'>Quantitative Framework</div>"
+    "<div style='font-size:0.65rem; font-weight:600; color:rgba(207,185,145,0.8); "
+    "margin-top:4px; letter-spacing:var(--ls-wide);'>Purdue Daniels School of Business</div></div>",
     unsafe_allow_html=True,
 )
 
@@ -584,7 +586,7 @@ page = st.session_state.current_page
 st.sidebar.markdown("---")
 st.sidebar.markdown(
     "<p style='font-size:var(--fs-tiny);font-weight:600;text-transform:uppercase;"
-    "letter-spacing:var(--ls-widest);color:rgba(255,255,255,0.3);margin:0 0 0.5rem 0;"
+    "letter-spacing:var(--ls-widest);color:rgba(255,255,255,0.75);margin:0 0 0.5rem 0;"
     "font-family:var(--font-sans);'>Configuration</p>",
     unsafe_allow_html=True,
 )
@@ -3155,7 +3157,7 @@ def page_trade_ideas():
     st.sidebar.markdown("---")
     st.sidebar.markdown(
         "<p style='font-size:var(--fs-tiny);font-weight:600;text-transform:uppercase;"
-        "letter-spacing:var(--ls-widest);color:rgba(255,255,255,0.3);margin:0 0 0.5rem 0;"
+        "letter-spacing:var(--ls-widest);color:rgba(255,255,255,0.75);margin:0 0 0.5rem 0;"
         "font-family:var(--font-sans);'>Trade Filters</p>",
         unsafe_allow_html=True,
     )
