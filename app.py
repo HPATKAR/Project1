@@ -2642,57 +2642,199 @@ def page_trade_ideas():
 # Page 6: AI Q&A
 # ===================================================================
 def _build_analysis_context(args):
-    """Serialize current analysis outputs into a text context for the LLM."""
+    """Serialize current analysis outputs into a rich text context for the LLM.
+
+    Covers: regime (ensemble + sub-models), PCA (variance + loadings),
+    spillover (total + top edges), DCC correlations, GARCH vol, Granger
+    causality, entropy, structural breaks, Nelson-Siegel, carry, liquidity,
+    latest data snapshot, trade ideas, and BOJ policy timeline.
+    """
     parts = []
 
-    # Regime state
+    # ── 1. Regime state (ensemble + sub-model detail) ──
     try:
         ensemble = _run_ensemble(*args)
         if ensemble is not None and len(ensemble.dropna()) > 0:
-            prob = float(ensemble.dropna().iloc[-1])
+            ens_clean = ensemble.dropna()
+            prob = float(ens_clean.iloc[-1])
             regime = "REPRICING" if prob > 0.5 else "SUPPRESSED"
-            parts.append(f"REGIME: Ensemble probability = {prob:.2%} ({regime}). Avg over sample = {ensemble.mean():.2%}.")
+            # Trend: compare last 20 obs average to prior 20
+            if len(ens_clean) >= 40:
+                recent = float(ens_clean.iloc[-20:].mean())
+                prior = float(ens_clean.iloc[-40:-20].mean())
+                trend = "rising" if recent > prior + 0.03 else "falling" if recent < prior - 0.03 else "stable"
+            else:
+                trend = "n/a"
+            parts.append(
+                f"REGIME STATE:\n"
+                f"  Ensemble probability = {prob:.2%} ({regime})\n"
+                f"  Sample average = {ens_clean.mean():.2%}\n"
+                f"  20-day trend = {trend}\n"
+                f"  Conviction: {'STRONG' if prob > 0.7 or prob < 0.3 else 'MODERATE' if prob > 0.6 or prob < 0.4 else 'TRANSITION'}"
+            )
     except Exception:
         pass
 
-    # PCA
+    # Sub-models: Markov
+    try:
+        markov = _run_markov(*args)
+        if markov is not None and len(markov.dropna()) > 0:
+            parts.append(f"  Markov-Switching: latest high-vol state prob = {float(markov.dropna().iloc[-1]):.2%}")
+    except Exception:
+        pass
+
+    # Sub-models: Entropy
+    try:
+        ent, sig = _run_entropy(*args)
+        if ent is not None and len(ent.dropna()) > 0:
+            ent_v = float(ent.dropna().iloc[-1])
+            sig_v = int(sig.dropna().iloc[-1]) if sig is not None and len(sig.dropna()) > 0 else 0
+            parts.append(f"  Permutation Entropy: latest = {ent_v:.3f}, regime signal = {'ELEVATED (early warning)' if sig_v == 1 else 'NORMAL'}")
+    except Exception:
+        pass
+
+    # Sub-models: GARCH vol
+    try:
+        vol, vol_breaks = _run_garch(*args)
+        if vol is not None and len(vol.dropna()) > 0:
+            vol_v = float(vol.dropna().iloc[-1])
+            vol_pct = float((vol.dropna() < vol_v).mean() * 100)
+            parts.append(f"  GARCH(1,1) Conditional Vol: {vol_v:.2f} bps/day ({vol_pct:.0f}th percentile)")
+    except Exception:
+        pass
+
+    # ── 2. PCA (variance + loadings) ──
     try:
         pca_res = _run_pca(*args)
         if pca_res is not None:
             ev = pca_res["explained_variance_ratio"]
-            parts.append(f"PCA: PC1 explains {ev[0]:.1%}, PC2 {ev[1]:.1%}, PC3 {ev[2]:.1%} of yield variance (cumulative {sum(ev):.1%}).")
+            loadings = pca_res["loadings"]
+            pca_lines = [
+                f"PCA YIELD CURVE DECOMPOSITION:",
+                f"  PC1 (Level): {ev[0]:.1%} variance explained",
+                f"  PC2 (Slope): {ev[1]:.1%} variance explained",
+                f"  PC3 (Curvature): {ev[2]:.1%} variance explained",
+                f"  Cumulative: {sum(ev):.1%}",
+                f"  PC1 loadings: {', '.join(f'{c}={v:+.3f}' for c, v in loadings.iloc[0].items())}",
+                f"  PC2 loadings: {', '.join(f'{c}={v:+.3f}' for c, v in loadings.iloc[1].items())}",
+                f"  PC3 loadings: {', '.join(f'{c}={v:+.3f}' for c, v in loadings.iloc[2].items())}",
+            ]
+            parts.append("\n".join(pca_lines))
     except Exception:
         pass
 
-    # Spillover
+    # ── 3. Nelson-Siegel curve factors ──
+    try:
+        ns_res = _run_ns(*args)
+        if ns_res is not None and "params" in ns_res:
+            ns_params = ns_res["params"]
+            if not ns_params.empty:
+                latest_ns = ns_params.iloc[-1]
+                parts.append(
+                    f"NELSON-SIEGEL CURVE FACTORS (latest):\n"
+                    f"  Beta0 (Level) = {latest_ns.get('beta0', float('nan')):.4f}\n"
+                    f"  Beta1 (Slope) = {latest_ns.get('beta1', float('nan')):.4f}\n"
+                    f"  Beta2 (Curvature) = {latest_ns.get('beta2', float('nan')):.4f}\n"
+                    f"  Interpretation: {'Flattening' if latest_ns.get('beta1', 0) > 0 else 'Steepening'} curve, "
+                    f"{'Positive' if latest_ns.get('beta2', 0) > 0 else 'Negative'} belly"
+                )
+    except Exception:
+        pass
+
+    # ── 4. Spillover (total + top directional edges) ──
     try:
         spill = _run_spillover(*args)
         if spill is not None:
             net = spill["net_spillover"]
-            top_t = net.idxmax()
-            parts.append(f"SPILLOVER: Total = {spill['total_spillover']:.1f}%. Net transmitter = {top_t}.")
+            mat = spill.get("spillover_matrix")
+            spill_lines = [
+                f"DIEBOLD-YILMAZ SPILLOVER (VAR(4), 10-step horizon):",
+                f"  Total spillover index = {spill['total_spillover']:.1f}%",
+                f"  Net transmitters: {', '.join(f'{k}={v:+.1f}%' for k, v in net.sort_values(ascending=False).head(3).items())}",
+                f"  Net receivers: {', '.join(f'{k}={v:+.1f}%' for k, v in net.sort_values().head(3).items())}",
+            ]
+            # Top 5 directional edges from spillover matrix
+            if mat is not None:
+                edges = []
+                for i in mat.index:
+                    for j in mat.columns:
+                        if i != j:
+                            edges.append((i, j, float(mat.loc[i, j])))
+                edges.sort(key=lambda x: -x[2])
+                top_edges = edges[:5]
+                spill_lines.append(f"  Top 5 directional flows:")
+                for src, tgt, val in top_edges:
+                    spill_lines.append(f"    {src} → {tgt}: {val:.1f}%")
+            parts.append("\n".join(spill_lines))
     except Exception:
         pass
 
-    # Carry
+    # ── 5. DCC correlations (latest) ──
+    try:
+        dcc_res = _run_dcc(*args)
+        if dcc_res is not None:
+            corrs = dcc_res.get("conditional_correlations", {})
+            if corrs:
+                dcc_lines = ["DCC TIME-VARYING CORRELATIONS (latest):"]
+                for pair, series in corrs.items():
+                    if len(series.dropna()) > 0:
+                        latest_c = float(series.dropna().iloc[-1])
+                        avg_c = float(series.dropna().mean())
+                        dcc_lines.append(f"  {pair}: current={latest_c:+.3f}, sample avg={avg_c:+.3f}, "
+                                         f"{'ELEVATED' if abs(latest_c) > abs(avg_c) + 0.1 else 'NORMAL'}")
+                parts.append("\n".join(dcc_lines))
+    except Exception:
+        pass
+
+    # ── 6. Granger causality (significant pairs only) ──
+    try:
+        granger_df = _run_granger(*args)
+        if granger_df is not None and not granger_df.empty:
+            sig_pairs = granger_df[granger_df["significant"] == True].sort_values("p_value")
+            if not sig_pairs.empty:
+                gc_lines = [f"GRANGER CAUSALITY (significant pairs, p<0.05):"]
+                for _, row in sig_pairs.head(8).iterrows():
+                    gc_lines.append(
+                        f"  {row['cause']} → {row['effect']}: F={row['f_stat']:.2f}, p={row['p_value']:.4f}, lag={int(row['optimal_lag'])}"
+                    )
+                parts.append("\n".join(gc_lines))
+    except Exception:
+        pass
+
+    # ── 7. Structural breaks ──
+    try:
+        changes, bkps = _run_breaks(*args)
+        if bkps and changes is not None and len(changes) > 0:
+            break_dates = [changes.index[min(b, len(changes) - 1)].strftime("%Y-%m-%d") for b in bkps if b < len(changes)]
+            if break_dates:
+                parts.append(f"STRUCTURAL BREAKS (PELT on JP_10Y changes): {', '.join(break_dates)}")
+    except Exception:
+        pass
+
+    # ── 8. FX Carry ──
     try:
         carry = _run_carry(*args)
         if carry is not None and len(carry["carry_to_vol"].dropna()) > 0:
             ctv = float(carry["carry_to_vol"].dropna().iloc[-1])
-            parts.append(f"FX CARRY: Carry-to-vol ratio = {ctv:.2f}. {'Attractive' if ctv > 1 else 'Marginal' if ctv > 0.5 else 'Unattractive'}.")
+            carry_raw = float(carry["carry"].dropna().iloc[-1]) if len(carry["carry"].dropna()) > 0 else float("nan")
+            parts.append(
+                f"FX CARRY ANALYTICS:\n"
+                f"  Carry (US-JP rate differential) = {carry_raw:.2f}%\n"
+                f"  Carry-to-vol ratio = {ctv:.2f} ({'Attractive — carry exceeds vol risk' if ctv > 1 else 'Marginal' if ctv > 0.5 else 'Unattractive — vol dominates carry'})"
+            )
     except Exception:
         pass
 
-    # Liquidity
+    # ── 9. Liquidity ──
     try:
         liq = _run_liquidity(*args)
         if liq is not None and len(liq["composite_index"].dropna()) > 0:
             liq_v = float(liq["composite_index"].dropna().iloc[-1])
-            parts.append(f"LIQUIDITY: Composite index = {liq_v:+.2f} z-score. {'Stressed' if liq_v < -1 else 'Healthy' if liq_v > 0 else 'Neutral'}.")
+            parts.append(f"LIQUIDITY: Composite index = {liq_v:+.2f} z-score. {'Stressed — wider bid-ask, higher impact costs' if liq_v < -1 else 'Healthy' if liq_v > 0 else 'Neutral'}.")
     except Exception:
         pass
 
-    # Latest data snapshot
+    # ── 10. Latest data snapshot ──
     try:
         df = load_unified(*args)
         if not df.empty:
@@ -2703,22 +2845,35 @@ def _build_analysis_context(args):
                     snap.append(f"{col}={latest[col]:.2f}")
             if snap:
                 parts.append(f"LATEST DATA ({df.index[-1]:%Y-%m-%d}): {', '.join(snap)}.")
+            # Curve slopes if available
+            slopes = []
+            for short, long, label in [("JP_2Y", "JP_10Y", "JP 2s10s"), ("JP_10Y", "JP_30Y", "JP 10s30s"), ("US_2Y", "US_10Y", "US 2s10s")]:
+                if short in latest.index and long in latest.index and pd.notna(latest[short]) and pd.notna(latest[long]):
+                    slopes.append(f"{label}={latest[long] - latest[short]:+.2f}%")
+            if slopes:
+                parts.append(f"CURVE SLOPES: {', '.join(slopes)}")
     except Exception:
         pass
 
-    # Trade ideas summary
+    # ── 11. Trade ideas (all, with failure scenarios) ──
     try:
         cards, rs = _generate_trades(*args)
         if cards:
-            top_3 = sorted(cards, key=lambda c: -c.conviction)[:3]
-            trade_lines = [f"  - {c.name} ({c.direction.upper()}, {c.conviction:.0%} conviction, {c.category})" for c in top_3]
-            parts.append(f"TOP TRADE IDEAS:\n" + "\n".join(trade_lines))
+            top_5 = sorted(cards, key=lambda c: -c.conviction)[:5]
+            trade_lines = [f"TOP TRADE IDEAS ({len(cards)} total, top 5 by conviction):"]
+            for c in top_5:
+                trade_lines.append(
+                    f"  - {c.name} ({c.direction.upper()}, {c.conviction:.0%}, {c.category})\n"
+                    f"    Entry: {c.entry_signal}\n"
+                    f"    Failure: {c.failure_scenario}"
+                )
+            parts.append("\n".join(trade_lines))
     except Exception:
         pass
 
-    # BOJ events
+    # ── 12. BOJ events ──
     from src.data.config import BOJ_EVENTS as _boj_events
-    parts.append("BOJ POLICY DATES: " + "; ".join(f"{d}: {e}" for d, e in _boj_events.items()))
+    parts.append("BOJ POLICY TIMELINE:\n" + "\n".join(f"  {d}: {e}" for d, e in _boj_events.items()))
 
     return "\n\n".join(parts)
 
@@ -2734,8 +2889,10 @@ def page_ai_qa():
     )
     st.header("AI Q&A")
     _page_intro(
-        "Ask questions about the JGB repricing analysis. The AI assistant has access to all model outputs, "
-        "regime state, and trade ideas computed in this session. Powered by Claude (Anthropic) or OpenAI."
+        "Chat interface grounded in the case study. The AI assistant is injected with live framework outputs — "
+        "regime ensemble (4 sub-models), PCA loadings, Nelson-Siegel curve factors, Diebold-Yilmaz spillover edges, "
+        "DCC correlations, Granger causality pairs, GARCH vol, carry analytics, liquidity, structural breaks, "
+        "and trade ideas with failure scenarios. Every answer must cite specific metrics from the analysis."
     )
 
     # --- API key setup (secrets.toml > env var > sidebar) ---
@@ -2776,16 +2933,16 @@ def page_ai_qa():
             "<div style='display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:2rem;'>"
             "<span style='background:#fafaf8;border:1px solid #eceae6;border-radius:8px;"
             "padding:8px 16px;font-size:var(--fs-base);color:#555960;font-family:var(--font-sans);'>"
-            "What is the current regime state?</span>"
+            "Regime call with evidence</span>"
             "<span style='background:#fafaf8;border:1px solid #eceae6;border-radius:8px;"
             "padding:8px 16px;font-size:var(--fs-base);color:#555960;font-family:var(--font-sans);'>"
-            "Explain the PCA decomposition</span>"
+            "PCA loadings &amp; curve factors</span>"
             "<span style='background:#fafaf8;border:1px solid #eceae6;border-radius:8px;"
             "padding:8px 16px;font-size:var(--fs-base);color:#555960;font-family:var(--font-sans);'>"
-            "Best trade ideas right now?</span>"
+            "Spillover transmission chain</span>"
             "<span style='background:#fafaf8;border:1px solid #eceae6;border-radius:8px;"
             "padding:8px 16px;font-size:var(--fs-base);color:#555960;font-family:var(--font-sans);'>"
-            "BOJ policy outlook</span>"
+            "Trade thesis &amp; failure scenarios</span>"
             "</div>",
             unsafe_allow_html=True,
         )
@@ -2812,12 +2969,12 @@ def page_ai_qa():
             "</div>",
             unsafe_allow_html=True,
         )
-        # Clickable topic cards
+        # Clickable topic cards — aligned to case study evaluation questions
         _topics = [
-            ("What is the current regime probability and what does it mean?", "Regime"),
-            ("Break down the PCA yield curve factors and explain the variance", "PCA"),
-            ("What are the top trade ideas and their conviction levels?", "Trades"),
-            ("How are spillovers flowing between JGBs, USTs, and FX?", "Spillover"),
+            ("Explain the current regime call: cite the ensemble probability, sub-model signals, and what is driving the reading.", "Regime Call"),
+            ("Break down the PCA loadings: what do PC1/PC2/PC3 represent economically, and what does the variance split tell us about yield dynamics?", "PCA Factors"),
+            ("Trace the transmission chain: how are shocks flowing between JGBs, USTs, USDJPY, and VIX using spillover edges, Granger causality, and DCC correlations?", "Spillover Chain"),
+            ("What are the top trade ideas, their entry signals, and what would falsify each thesis?", "Trade Thesis"),
         ]
         _cols = st.columns(len(_topics))
         for _col, (_q, _label) in zip(_cols, _topics):
@@ -2848,14 +3005,23 @@ def page_ai_qa():
         analysis_context = _build_analysis_context(args)
 
         system_prompt = (
-            "You are a senior rates strategist at a major investment bank, specialising in Japanese Government Bonds (JGBs), "
-            "global fixed income, macro trading, and quantitative finance. "
-            "You have access to live analysis outputs from a JGB repricing framework (below), but you can also "
-            "answer broader questions about bond markets, monetary policy, BOJ, Fed, yield curve theory, "
-            "trading strategies, financial concepts, and anything related to rates and macro. "
-            "When relevant, ground your answers in the live data and cite specific numbers. "
-            "Be concise, professional, and actionable.\n\n"
-            f"=== LIVE ANALYSIS CONTEXT ===\n{analysis_context}\n=== END CONTEXT ==="
+            "You are an AI research assistant for a JGB Repricing Framework — a quantitative case study "
+            "analyzing the regime shift from BOJ-suppressed yields to market-driven pricing in the Japanese "
+            "Government Bond market.\n\n"
+            "THESIS: Japan's decade of yield curve control (YCC) and quantitative easing artificially suppressed "
+            "JGB yields. As the BOJ exits these policies (Dec 2022 band widening → Mar 2024 formal YCC exit), "
+            "repricing risk propagates through rates, FX, volatility, and cross-asset channels.\n\n"
+            "RULES:\n"
+            "1. ALWAYS ground your answers in the live framework data below. Cite at least 2 specific metrics "
+            "   from the injected context when discussing regime, spillovers, curve, carry, or trade ideas.\n"
+            "2. Frame answers through the thesis lens: BOJ suppression → cross-asset spillovers → repricing risk "
+            "   → trade implications.\n"
+            "3. When referencing PCA, explain what the loadings mean economically (level/slope/curvature).\n"
+            "4. When discussing trades, always mention the failure scenario.\n"
+            "5. If the data does not support a claim, say so explicitly: 'Not supported by current framework outputs.'\n"
+            "6. Do NOT invent data that is not in the context below.\n"
+            "7. Be concise, quantitative, and actionable. Use bullet points for structure.\n\n"
+            f"=== LIVE FRAMEWORK CONTEXT ===\n{analysis_context}\n=== END CONTEXT ==="
         )
 
         # Build message history for the API

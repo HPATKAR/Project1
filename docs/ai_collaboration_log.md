@@ -118,6 +118,19 @@ AI was used as a **pair-programming partner and research accelerator** — provi
   - AI suggested hiding only the sidebar collapse button via CSS; I opted to hide the entire Streamlit header for a cleaner institutional look
 - **Verification:** Manually validated all 8 pages render under the new theme; checked footer navigation links across all pages; confirmed AI Q&A page handles missing API keys gracefully; verified profile photo renders correctly via base64 embedding.
 
+### Session 10: Typography Unification & AI Q&A Deep Grounding
+- **AI Tool:** Claude Code (primary) + **GPT-5.2 via PAL MCP** (AI Q&A grounding audit and improvement recommendations)
+- **What I asked:** (1) Optimize fonts across all dashboard pages for visual uniformity. (2) Audit the AI Q&A page against the professor's requirement of "a chat interface grounded in the case study" and implement improvements.
+- **What I decided:**
+  - Created a 13-step CSS custom property type scale (`--fs-micro` through `--fs-hero`) with letter-spacing and font-stack tokens, consolidating 28 scattered font sizes into a maintainable design system
+  - Enriched AI Q&A context injection from 7 summary metrics to 12 deep analytical sections: added PCA loadings (not just variance), Nelson-Siegel curve factors, spillover directional edges (top 5), DCC correlations with deviation flags, Granger causality significant pairs, GARCH conditional vol with percentile, entropy early-warning signals, structural break dates, curve slopes, trade failure scenarios
+  - Rewrote system prompt to enforce thesis-grounded answers: BOJ suppression → repricing → trade implications, with hard rules requiring citation of 2+ specific metrics and prohibition on inventing data
+  - Replaced generic topic cards with case-study-aligned prompts: "Regime Call," "PCA Factors," "Spillover Chain," "Trade Thesis"
+- **What AI generated vs. what I owned:**
+  - GPT-5.2 via PAL provided the audit framework (P0/P1/P2 priorities, system prompt tightening recommendations); I selected which improvements to implement and designed the final context structure
+  - AI generated the enriched `_build_analysis_context()` and tightened system prompt; I verified all data paths connect to existing cached functions and validated the analytical accuracy of injected content
+- **Verification:** All 37 tests pass. Context injection exercises all 12 analytical modules without error.
+
 ## AI Usage Summary
 
 | Category | AI Role | My Role |
