@@ -1,0 +1,22 @@
+{
+  "profile": "Analyst",
+  "enabled_tabs": [
+    "Overview & Data",
+    "Yield Curve Analytics",
+    "Regime Detection",
+    "Spillover & Info Flow",
+    "Trade Ideas",
+    "Early Warning",
+    "Performance Review",
+    "AI Q&A",
+    "About: Heramb Patkar",
+    "About: Dr. Zhang"
+  ],
+  "default_tab": "Regime Detection",
+  "chart_theme": "plotly_dark",
+  "refresh_interval": 60,
+  "risk_profile": "moderate",
+  "alert_severity_threshold": "WARNING",
+  "show_ml_predictions": true,
+  "entropy_window": 60
+}

@@ -35,6 +35,11 @@ if str(PROJECT_ROOT) not in sys.path:
 # ---------------------------------------------------------------------------
 from src.data.data_store import DataStore
 from src.data.config import BOJ_EVENTS, JGB_TENORS, DEFAULT_START, DEFAULT_END, ANALYSIS_WINDOWS
+from src.ui.layout_config import LayoutConfig, LayoutManager, render_settings_panel
+from src.ui.alert_system import AlertDetector, AlertNotifier, AlertThresholds
+from src.regime.early_warning import compute_simple_warning_score, generate_warnings
+from src.reporting.metrics_tracker import AccuracyTracker, generate_improvement_suggestions
+from src.reporting.pdf_export import JGBReportPDF, dataframe_to_csv_bytes
 
 # ---------------------------------------------------------------------------
 # Global Streamlit config
@@ -111,6 +116,7 @@ st.markdown(
         -moz-osx-font-smoothing: grayscale;
         color: var(--ink-soft);
         text-rendering: optimizeLegibility;
+        scroll-behavior: smooth;
     }
     .main .block-container {
         padding: 2.2rem 3rem 0 3rem;
@@ -125,9 +131,25 @@ st.markdown(
     [data-testid="stAppViewContainer"] > section > div {
         padding-bottom: 0 !important;
     }
-    /* Smooth transitions on interactive elements */
+    /* ---- Animations ---- */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Smooth transitions on hover/interactive elements */
     button, a, [data-testid="stMetric"], details[data-testid="stExpander"] {
-        transition: all 0.18s ease;
+        transition: all 0.2s ease;
+    }
+
+    /* Simple fade-in on render for all content blocks */
+    [data-testid="stMetric"],
+    [data-testid="stPlotlyChart"],
+    [data-testid="stDataFrame"],
+    [data-testid="stAlert"],
+    details[data-testid="stExpander"],
+    [data-testid="stChatMessage"] {
+        animation: fadeInUp 0.4s ease both;
     }
 
     /* ---- Typography ---- */
@@ -194,6 +216,7 @@ st.markdown(
         border-radius: 10px;
         padding: 16px 20px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.02);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
     [data-testid="stMetric"]:hover {
         box-shadow: 0 4px 12px rgba(0,0,0,0.06), 0 0 0 1px rgba(207,185,145,0.2);
@@ -222,7 +245,18 @@ st.markdown(
     /* ---- Sidebar ---- */
     section[data-testid="stSidebar"] {
         background: #000000;
-        border-right: 1px solid rgba(207,185,145,0.1);
+        border-right: 1px solid rgba(207,185,145,0.12);
+    }
+    section[data-testid="stSidebar"] > div:first-child {
+        padding-top: 0.6rem;
+        padding-bottom: 1rem;
+    }
+    /* Tighten default Streamlit element gaps inside sidebar */
+    section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] > [data-testid="element-container"] {
+        margin-bottom: 0px;
+    }
+    section[data-testid="stSidebar"] [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"] {
+        gap: 0.35rem;
     }
     /* Text & labels */
     section[data-testid="stSidebar"] p,
@@ -233,12 +267,12 @@ st.markdown(
         font-family: var(--font-sans);
     }
     section[data-testid="stSidebar"] label {
-        font-size: var(--fs-sm) !important;
+        font-size: 0.62rem !important;
         font-weight: 700 !important;
-        letter-spacing: var(--ls-wider);
+        letter-spacing: 0.1em;
         text-transform: uppercase;
-        color: rgba(255,255,255,0.75) !important;
-        margin-bottom: 2px;
+        color: rgba(255,255,255,0.55) !important;
+        margin-bottom: 1px;
     }
     section[data-testid="stSidebar"] b,
     section[data-testid="stSidebar"] strong {
@@ -253,30 +287,30 @@ st.markdown(
     section[data-testid="stSidebar"] [data-baseweb="select"] div,
     section[data-testid="stSidebar"] [data-baseweb="input"],
     section[data-testid="stSidebar"] [data-baseweb="base-input"] {
-        background: rgba(255,255,255,0.06) !important;
+        background: rgba(255,255,255,0.05) !important;
         color: rgba(255,255,255,0.9) !important;
-        border-color: rgba(255,255,255,0.12) !important;
-        border-radius: 6px;
+        border-color: rgba(255,255,255,0.1) !important;
+        border-radius: 4px;
         font-family: var(--font-mono);
         font-size: var(--fs-md);
     }
     section[data-testid="stSidebar"] input:focus,
     section[data-testid="stSidebar"] [data-baseweb="input"]:focus-within {
         border-color: rgba(207,185,145,0.5) !important;
-        box-shadow: 0 0 0 2px rgba(207,185,145,0.15);
+        box-shadow: 0 0 0 2px rgba(207,185,145,0.12);
     }
     /* Date input */
     section[data-testid="stSidebar"] [data-testid="stDateInput"] input {
-        background: rgba(255,255,255,0.06) !important;
+        background: rgba(255,255,255,0.05) !important;
         color: rgba(255,255,255,0.85) !important;
-        border-color: rgba(255,255,255,0.12) !important;
+        border-color: rgba(255,255,255,0.1) !important;
         font-family: var(--font-mono);
         font-size: var(--fs-md);
     }
     /* Select / dropdown */
     section[data-testid="stSidebar"] [data-baseweb="select"] {
-        background: rgba(255,255,255,0.06);
-        border-radius: 6px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 4px;
     }
     section[data-testid="stSidebar"] [data-baseweb="select"] [data-testid="stMarkdownContainer"] p {
         color: rgba(255,255,255,0.85) !important;
@@ -284,48 +318,49 @@ st.markdown(
     }
     /* Toggle */
     section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
-        color: rgba(255,255,255,0.85) !important;
-        font-size: var(--fs-md);
+        color: rgba(255,255,255,0.8) !important;
+        font-size: 0.72rem;
         font-weight: 600;
     }
     /* Nav buttons */
     section[data-testid="stSidebar"] .stButton > button {
         text-align: left;
         font-family: var(--font-sans);
-        font-size: var(--fs-lg);
-        border-radius: 6px;
-        padding: 0.5rem 0.85rem;
-        transition: all 0.15s ease;
-        font-weight: 500;
-        letter-spacing: 0.01em;
+        font-size: 0.78rem;
+        border-radius: 4px;
+        padding: 0.45rem 0.75rem;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        font-weight: 600;
+        letter-spacing: 0.015em;
+        margin-bottom: 1px;
     }
     section[data-testid="stSidebar"] .stButton > button[kind="secondary"] {
         background: transparent;
-        border: 1px solid rgba(255,255,255,0.1);
-        color: rgba(255,255,255,0.85) !important;
-        font-weight: 600;
+        border: 1px solid rgba(255,255,255,0.06);
+        color: rgba(255,255,255,0.7) !important;
     }
     section[data-testid="stSidebar"] .stButton > button[kind="secondary"]:hover {
-        background: rgba(255,255,255,0.07);
-        border-color: rgba(255,255,255,0.22);
+        background: rgba(255,255,255,0.06);
+        border-color: rgba(255,255,255,0.15);
         color: #fff !important;
     }
     section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
-        background: rgba(207,185,145,0.12);
-        border: 1px solid rgba(207,185,145,0.3);
+        background: rgba(207,185,145,0.1);
+        border: 1px solid rgba(207,185,145,0.25);
         border-left: 3px solid #CFB991;
         color: #CFB991 !important;
-        font-weight: 600;
+        font-weight: 700;
     }
     section[data-testid="stSidebar"] hr {
         border-color: rgba(255,255,255,0.06);
-        margin: 0.8rem 0;
+        margin: 0.5rem 0;
     }
     /* Multiselect / slider chips in sidebar */
     section[data-testid="stSidebar"] [data-baseweb="tag"] {
-        background: rgba(207,185,145,0.15) !important;
+        background: rgba(207,185,145,0.12) !important;
         color: #CFB991 !important;
         border: none;
+        font-size: 0.65rem;
     }
     /* ---- Expander ---- */
     .streamlit-expanderHeader {
@@ -340,6 +375,7 @@ st.markdown(
         margin-bottom: 0.6rem;
         background: var(--surface);
         box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
     details[data-testid="stExpander"]:hover {
         border-color: var(--gold-dust);
@@ -356,6 +392,11 @@ st.markdown(
         background: var(--surface);
         overflow: hidden;
         box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    [data-testid="stPlotlyChart"]:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        border-color: var(--gold-dust);
     }
 
     /* ---- Dataframes ---- */
@@ -432,6 +473,7 @@ st.markdown(
         font-size: var(--fs-xl);
         box-shadow: 0 1px 3px rgba(0,0,0,0.03);
         margin-bottom: 0.5rem;
+        animation: fadeInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
     }
     [data-testid="stChatMessage"][data-testid*="user"] {
         background: var(--surface-1);
@@ -512,6 +554,7 @@ st.markdown(
 
     /* ---- Column gap polish ---- */
     [data-testid="column"] { padding: 0 0.4rem; }
+
     </style>
     """,
     unsafe_allow_html=True,
@@ -521,24 +564,26 @@ st.markdown(
 # Sidebar: navigation + global controls
 # ---------------------------------------------------------------------------
 st.sidebar.markdown(
-    "<div style='padding:1rem 0 1.2rem 0; border-bottom:1px solid rgba(207,185,145,0.15); "
-    "margin-bottom:1rem;'>"
-    # Japanese flag (Hinomaru) rendered as inline SVG, sized to sit neatly above the title
-    "<div style='margin-bottom:10px;'>"
-    "<svg width='36' height='24' viewBox='0 0 900 600' xmlns='http://www.w3.org/2000/svg' "
-    "style='border-radius:3px; box-shadow:0 1px 3px rgba(0,0,0,0.25);'>"
+    "<div style='padding:0.8rem 0 1rem 0; border-bottom:1px solid rgba(207,185,145,0.12); "
+    "margin-bottom:0.6rem;'>"
+    # Japanese flag + "Rates Strategy Desk" on the same line
+    "<div style='display:flex; align-items:center; gap:8px; margin-bottom:8px;'>"
+    "<svg width='28' height='19' viewBox='0 0 900 600' xmlns='http://www.w3.org/2000/svg' "
+    "style='border-radius:2px; box-shadow:0 1px 3px rgba(0,0,0,0.3); flex-shrink:0;'>"
     "<rect width='900' height='600' fill='#fff'/>"
     "<circle cx='450' cy='300' r='180' fill='#BC002D'/>"
-    "</svg></div>"
-    "<div style='font-size:0.7rem; font-weight:700; text-transform:uppercase; "
-    "letter-spacing:var(--ls-widest); color:#CFB991; margin-bottom:6px;'>Rates Strategy Desk</div>"
-    "<div style='font-size:1.45rem; font-weight:800; color:rgba(255,255,255,0.95); "
-    "letter-spacing:var(--ls-tight); line-height:1.15; "
+    "</svg>"
+    "<span style='font-size:0.58rem; font-weight:700; text-transform:uppercase; "
+    "letter-spacing:0.14em; color:#CFB991; font-family:var(--font-sans);'>Rates Strategy Desk</span></div>"
+    "<div style='font-size:1.4rem; font-weight:800; color:#fff; "
+    "letter-spacing:-0.01em; line-height:1.1; "
     "font-family:var(--font-sans);'>JGB Repricing</div>"
-    "<div style='font-size:0.75rem; font-weight:600; color:rgba(255,255,255,0.8); "
-    "margin-top:5px; letter-spacing:0.04em;'>Quantitative Framework</div>"
-    "<div style='font-size:0.65rem; font-weight:600; color:rgba(207,185,145,0.8); "
-    "margin-top:4px; letter-spacing:var(--ls-wide);'>Purdue Daniels School of Business</div></div>",
+    "<div style='font-size:0.68rem; font-weight:600; color:rgba(255,255,255,0.6); "
+    "margin-top:3px; letter-spacing:0.06em; text-transform:uppercase; "
+    "font-family:var(--font-sans);'>Quantitative Framework</div>"
+    "<div style='font-size:0.56rem; font-weight:600; color:rgba(207,185,145,0.6); "
+    "margin-top:6px; letter-spacing:0.1em; text-transform:uppercase; "
+    "font-family:var(--font-sans);'>Purdue Daniels School of Business</div></div>",
     unsafe_allow_html=True,
 )
 
@@ -551,6 +596,8 @@ _QP_MAP = {
     "regime": "Regime Detection",
     "spillover": "Spillover & Info Flow",
     "trades": "Trade Ideas",
+    "early_warning": "Early Warning",
+    "performance": "Performance Review",
     "ai_qa": "AI Q&A",
 }
 _qp = st.query_params.get("page", "")
@@ -566,7 +613,9 @@ _NAV_ITEMS = [
     ("Yield Curve Analytics", "yield_curve"),
     ("Regime Detection", "regime"),
     ("Spillover & Info Flow", "spillover"),
+    ("Early Warning", "early_warning"),
     ("Trade Ideas", "trades"),
+    ("Performance Review", "performance"),
     ("AI Q&A", "ai_qa"),
 ]
 
@@ -583,11 +632,11 @@ for _label, _key in _NAV_ITEMS:
 
 page = st.session_state.current_page
 
-st.sidebar.markdown("---")
 st.sidebar.markdown(
-    "<p style='font-size:var(--fs-tiny);font-weight:600;text-transform:uppercase;"
-    "letter-spacing:var(--ls-widest);color:rgba(255,255,255,0.75);margin:0 0 0.5rem 0;"
-    "font-family:var(--font-sans);'>Configuration</p>",
+    "<div style='border-top:1px solid rgba(255,255,255,0.06); margin:0.4rem 0 0.5rem 0; padding-top:0.5rem;'>"
+    "<span style='font-size:0.55rem;font-weight:700;text-transform:uppercase;"
+    "letter-spacing:0.14em;color:rgba(255,255,255,0.4);"
+    "font-family:var(--font-sans);'>Configuration</span></div>",
     unsafe_allow_html=True,
 )
 
@@ -604,6 +653,35 @@ if len(date_range) == 2:
     start_date, end_date = date_range
 else:
     start_date, end_date = DEFAULT_START, DEFAULT_END
+
+# --- Dashboard Settings (Enhancement 4) ---
+try:
+    _layout_mgr = LayoutManager()
+    _layout_config = render_settings_panel(st.sidebar, _layout_mgr)
+except Exception:
+    from src.ui.layout_config import LayoutConfig
+    _layout_mgr = None
+    _layout_config = LayoutConfig()
+
+# --- Alert System (Enhancement 3) ---
+try:
+    _alert_notifier = AlertNotifier()
+    _alert_notifier.render_sidebar_log(st.sidebar)
+except Exception:
+    _alert_notifier = None
+
+# --- Last Update Indicator (Enhancement 1) ---
+st.sidebar.markdown(
+    "<div style='border-top:1px solid rgba(255,255,255,0.06);"
+    "margin:0.4rem 0 0.5rem 0;padding-top:0.5rem;'>"
+    "<span style='font-size:0.55rem;font-weight:700;text-transform:uppercase;"
+    "letter-spacing:0.14em;color:rgba(255,255,255,0.4);"
+    f"font-family:var(--font-sans);'>Last Update: {datetime.now().strftime('%H:%M:%S')}</span></div>",
+    unsafe_allow_html=True,
+)
+if st.sidebar.button("Refresh Data", key="manual_refresh", use_container_width=True, type="secondary"):
+    st.cache_data.clear()
+    st.rerun()
 
 
 # ===================================================================
@@ -640,11 +718,13 @@ _PLOTLY_LAYOUT = dict(
     hovermode="x unified",
     hoverlabel=dict(
         font_size=11,
-        font_family="DM Sans, sans-serif",
-        bgcolor="rgba(0,0,0,0.92)",
+        font_family="JetBrains Mono, monospace",
+        bgcolor="rgba(10,10,10,0.94)",
         font_color="#ffffff",
-        bordercolor="rgba(0,0,0,0)",
+        bordercolor="rgba(207,185,145,0.3)",
+        namelength=-1,
     ),
+    # Crosshair spike lines (Bloomberg-style)
     xaxis=dict(
         gridcolor="rgba(0,0,0,0.04)",
         linecolor="rgba(0,0,0,0.08)",
@@ -652,6 +732,12 @@ _PLOTLY_LAYOUT = dict(
         tickfont=dict(size=10, color="#9D9795", family="JetBrains Mono, monospace"),
         showgrid=True,
         gridwidth=1,
+        showspikes=True,
+        spikemode="across",
+        spikesnap="cursor",
+        spikethickness=1,
+        spikecolor="rgba(0,0,0,0.25)",
+        spikedash="dot",
     ),
     yaxis=dict(
         gridcolor="rgba(0,0,0,0.04)",
@@ -660,13 +746,63 @@ _PLOTLY_LAYOUT = dict(
         tickfont=dict(size=10, color="#9D9795", family="JetBrains Mono, monospace"),
         showgrid=True,
         gridwidth=1,
+        showspikes=True,
+        spikemode="across",
+        spikesnap="cursor",
+        spikethickness=1,
+        spikecolor="rgba(0,0,0,0.25)",
+        spikedash="dot",
     ),
+    # Smooth 300ms transitions on zoom/pan/relayout
+    transition=dict(duration=300, easing="cubic-in-out"),
+)
+
+# Range selector buttons for time-series charts (Bloomberg/TradingView style)
+_RANGE_SELECTOR = dict(
+    buttons=[
+        dict(count=1, label="1M", step="month", stepmode="backward"),
+        dict(count=3, label="3M", step="month", stepmode="backward"),
+        dict(count=6, label="6M", step="month", stepmode="backward"),
+        dict(count=1, label="YTD", step="year", stepmode="todate"),
+        dict(count=1, label="1Y", step="year", stepmode="backward"),
+        dict(count=3, label="3Y", step="year", stepmode="backward"),
+        dict(count=5, label="5Y", step="year", stepmode="backward"),
+        dict(step="all", label="ALL"),
+    ],
+    font=dict(size=9, family="DM Sans, sans-serif", color="#555960"),
+    bgcolor="rgba(0,0,0,0)",
+    activecolor="rgba(207,185,145,0.2)",
+    bordercolor="rgba(0,0,0,0.08)",
+    borderwidth=1,
+    x=0,
+    y=1.06,
 )
 
 
 def _style_fig(fig: go.Figure, height: int = 380) -> go.Figure:
-    """Apply the institutional plotly template."""
+    """Apply the institutional plotly template with screener-grade interactions."""
     fig.update_layout(**_PLOTLY_LAYOUT, height=height)
+
+    # Determine if this is a time-series chart (date x-axis)
+    _has_timeseries = False
+    for trace in fig.data:
+        if isinstance(trace, go.Scatter) and trace.x is not None and len(trace.x) > 0:
+            _sample = trace.x[0] if not hasattr(trace.x, 'iloc') else trace.x.iloc[0]
+            if hasattr(_sample, 'year') or (isinstance(_sample, str) and len(_sample) >= 8):
+                _has_timeseries = True
+                break
+
+    if _has_timeseries:
+        # Add range selector buttons + mini range slider
+        fig.update_xaxes(
+            rangeselector=_RANGE_SELECTOR,
+            rangeslider=dict(visible=True, thickness=0.04, bgcolor="rgba(0,0,0,0.02)",
+                             bordercolor="rgba(0,0,0,0.06)", borderwidth=1),
+        )
+        # Extra bottom margin for range slider
+        fig.update_layout(margin=dict(l=48, r=16, t=38, b=8), height=height + 30)
+
+    # Apply palette to unstyled traces
     for i, trace in enumerate(fig.data):
         if isinstance(trace, go.Scatter):
             has_color = getattr(trace.line, "color", None) or getattr(trace.marker, "color", None)
@@ -674,7 +810,28 @@ def _style_fig(fig: go.Figure, height: int = 380) -> go.Figure:
                 fig.data[i].update(
                     line=dict(color=_PALETTE[i % len(_PALETTE)], width=1.5),
                 )
+
+    # Plotly config: modebar tools for screener-grade interaction
+    fig._jgb_config = dict(
+        displayModeBar=True,
+        modeBarButtonsToRemove=["lasso2d", "select2d", "autoScale2d"],
+        displaylogo=False,
+        scrollZoom=True,
+    )
     return fig
+
+
+def _chart(fig: go.Figure, **kwargs):
+    """Render a Plotly chart with screener-grade config."""
+    config = getattr(fig, "_jgb_config", {
+        "displayModeBar": True,
+        "modeBarButtonsToRemove": ["lasso2d", "select2d", "autoScale2d"],
+        "displaylogo": False,
+        "scrollZoom": True,
+    })
+    kwargs.setdefault("use_container_width", True)
+    kwargs.setdefault("config", config)
+    st.plotly_chart(fig, **kwargs)
 
 
 def _page_intro(text: str):
@@ -795,7 +952,9 @@ def _page_footer():
         f"<li style='margin-bottom:8px;'><a href='?page=yield_curve' target='_self' style='{_w}'>Yield Curve Analytics</a></li>"
         f"<li style='margin-bottom:8px;'><a href='?page=regime' target='_self' style='{_w}'>Regime Detection</a></li>"
         f"<li style='margin-bottom:8px;'><a href='?page=spillover' target='_self' style='{_w}'>Spillover &amp; Info Flow</a></li>"
+        f"<li style='margin-bottom:8px;'><a href='?page=early_warning' target='_self' style='{_w}'>Early Warning</a></li>"
         f"<li style='margin-bottom:8px;'><a href='?page=trades' target='_self' style='{_w}'>Trade Ideas</a></li>"
+        f"<li style='margin-bottom:8px;'><a href='?page=performance' target='_self' style='{_w}'>Performance Review</a></li>"
         f"<li style='margin-bottom:8px;'><a href='?page=ai_qa' target='_self' style='{_w}'>AI Q&amp;A</a></li>"
         "</ul></div>"
         # col 3: about
@@ -952,7 +1111,7 @@ def page_overview():
         for col in rate_cols:
             fig.add_trace(go.Scatter(x=df.index, y=df[col], mode="lines", name=col))
         _add_boj_events(fig)
-        st.plotly_chart(_style_fig(fig, 420), use_container_width=True)
+        _chart(_style_fig(fig, 420))
         # Takeaway
         if len(_jp) > 0:
             _jp_last = float(_jp.iloc[-1])
@@ -1002,7 +1161,7 @@ def page_overview():
                 ))
             fig_asian.update_layout(yaxis_title="Cumulative Return (%)")
             _add_boj_events(fig_asian)
-            st.plotly_chart(_style_fig(fig_asian, 420), use_container_width=True)
+            _chart(_style_fig(fig_asian, 420))
             # Takeaway
             latest = cum_returns.iloc[-1]
             best = latest.idxmax()
@@ -1050,7 +1209,7 @@ def page_overview():
         for col in mkt_cols:
             fig2.add_trace(go.Scatter(x=df.index, y=df[col], mode="lines", name=col))
         _add_boj_events(fig2)
-        st.plotly_chart(_style_fig(fig2, 420), use_container_width=True)
+        _chart(_style_fig(fig2, 420))
         # Takeaway
         if len(_usdjpy) > 0:
             _fx_last = float(_usdjpy.iloc[-1])
@@ -1098,7 +1257,7 @@ def page_overview():
                 ))
             fig_etf.update_layout(yaxis_title="Cumulative Return (%)")
             _add_boj_events(fig_etf)
-            st.plotly_chart(_style_fig(fig_etf, 380), use_container_width=True)
+            _chart(_style_fig(fig_etf, 380))
             etf_latest = etf_returns.iloc[-1]
             if "TLT" in etf_latest and "SHY" in etf_latest:
                 duration_gap = float(etf_latest["TLT"] - etf_latest["SHY"])
@@ -1144,7 +1303,7 @@ def page_overview():
                 ))
             fig_global.update_layout(yaxis_title="Cumulative Return (%)")
             _add_boj_events(fig_global)
-            st.plotly_chart(_style_fig(fig_global, 380), use_container_width=True)
+            _chart(_style_fig(fig_global, 380))
             gl = global_returns.iloc[-1]
             nk_ret = float(gl.get("NIKKEI", 0))
             spx_ret = float(gl.get("SPX", 0)) if "SPX" in gl else None
@@ -1194,7 +1353,7 @@ def page_overview():
             fig_corr.add_hline(y=0, line_dash="dot", line_color="grey", line_width=1)
             fig_corr.update_layout(yaxis_title="Correlation", yaxis_range=[-1, 1])
             _add_boj_events(fig_corr)
-            st.plotly_chart(_style_fig(fig_corr, 340), use_container_width=True)
+            _chart(_style_fig(fig_corr, 340))
             _latest_corr = float(_rolling_corr.dropna().iloc[-1])
             _takeaway_block(
                 f"Current JP-US 10Y correlation: <b>{_latest_corr:.2f}</b>. "
@@ -1205,7 +1364,7 @@ def page_overview():
 
     # --- Raw data expander ---
     with st.expander("Raw data (last 20 rows)"):
-        st.dataframe(df.tail(20), use_container_width=True)
+        st.dataframe(df.tail(20))
 
     # --- Sovereign Credit & Trust Metrics ---
     st.subheader("Japan Sovereign Credit Context")
@@ -1384,7 +1543,7 @@ def page_yield_curve():
                 )
             )
             fig_ev.update_layout(yaxis_title="Variance Ratio")
-            st.plotly_chart(_style_fig(fig_ev, 320), use_container_width=True)
+            _chart(_style_fig(fig_ev, 320))
 
         with col_b:
             loadings = pca_result["loadings"]
@@ -1407,7 +1566,7 @@ def page_yield_curve():
                 color_continuous_scale="RdBu_r",
                 aspect="auto",
             )
-            st.plotly_chart(_style_fig(fig_ld, 320), use_container_width=True)
+            _chart(_style_fig(fig_ld, 320))
 
         # --- PCA Loadings by Security (line chart) ---
         loadings_line = pca_result["loadings"]
@@ -1447,7 +1606,7 @@ def page_yield_curve():
                 yaxis_title="Loading (beta)",
                 xaxis_title="Security",
             )
-            st.plotly_chart(_style_fig(fig_pcl, 340), use_container_width=True)
+            _chart(_style_fig(fig_pcl, 340))
 
         # --- PCA Factor Validation ---
         from src.yield_curve.pca import validate_pca_factors
@@ -1491,7 +1650,7 @@ def page_yield_curve():
                 )
             )
         _add_boj_events(fig_sc)
-        st.plotly_chart(_style_fig(fig_sc, 380), use_container_width=True)
+        _chart(_style_fig(fig_sc, 380))
 
         # PCA takeaway
         _takeaway_block(
@@ -1537,7 +1696,7 @@ def page_yield_curve():
                 go.Scatter(x=liq.index, y=liq[col], mode="lines", name=col)
             )
         _add_boj_events(fig_liq)
-        st.plotly_chart(_style_fig(fig_liq, 380), use_container_width=True)
+        _chart(_style_fig(fig_liq, 380))
 
         # Liquidity takeaway
         _comp = liq["composite_index"].dropna()
@@ -1602,7 +1761,7 @@ def page_yield_curve():
                     )
                 )
         _add_boj_events(fig_ns)
-        st.plotly_chart(_style_fig(fig_ns, 380), use_container_width=True)
+        _chart(_style_fig(fig_ns, 380))
 
     # --- Real Yield Proxy ---
     _df_yc = load_unified(*args)
@@ -1651,7 +1810,7 @@ def page_yield_curve():
             fig_real.add_hline(y=0, line_dash="dot", line_color="grey", line_width=1)
             fig_real.update_layout(yaxis_title="Yield (%)")
             _add_boj_events(fig_real)
-            st.plotly_chart(_style_fig(fig_real, 380), use_container_width=True)
+            _chart(_style_fig(fig_real, 380))
             _real_latest = float(_real_aligned["REAL_YIELD"].iloc[-1])
             _takeaway_block(
                 f"Real yield at <b>{_real_latest:.2f}%</b>. "
@@ -1712,7 +1871,7 @@ def page_yield_curve():
         fig_slope.add_hline(y=0, line_dash="dot", line_color="grey", line_width=1)
         fig_slope.update_layout(yaxis_title="Spread (pp)")
         _add_boj_events(fig_slope)
-        st.plotly_chart(_style_fig(fig_slope, 380), use_container_width=True)
+        _chart(_style_fig(fig_slope, 380))
         if "2s10s" in _slope_data:
             _s2s10s = float(_slope_data["2s10s"].iloc[-1])
             _takeaway_block(
@@ -1756,7 +1915,7 @@ def page_yield_curve():
                 texttemplate="%{text}",
             ))
             fig_heatmap.update_layout(yaxis_autorange="reversed")
-            st.plotly_chart(_style_fig(fig_heatmap, 420), use_container_width=True)
+            _chart(_style_fig(fig_heatmap, 420))
             # Find most/least correlated pairs
             _corr_vals = []
             for i in range(len(_corr_matrix)):
@@ -2015,7 +2174,7 @@ def page_regime():
         fig_ens.add_hline(y=0.5, line_dash="dash", line_color="red", annotation_text="Threshold")
         fig_ens.update_layout(yaxis_title="Probability")
         _add_boj_events(fig_ens)
-        st.plotly_chart(_style_fig(fig_ens, 380), use_container_width=True)
+        _chart(_style_fig(fig_ens, 380))
         # Ensemble takeaway
         _takeaway_block(
             f"Ensemble reads <b>{current_prob:.0%}</b> "
@@ -2072,7 +2231,7 @@ def page_regime():
             )
         fig_mk.update_layout(yaxis_title="Smoothed Probability")
         _add_boj_events(fig_mk)
-        st.plotly_chart(_style_fig(fig_mk, 350), use_container_width=True)
+        _chart(_style_fig(fig_mk, 350))
 
         st.caption(
             f"Regime means: {markov['regime_means']}, "
@@ -2115,7 +2274,7 @@ def page_regime():
         for bp in bkps:
             fig_bp.add_vline(x=bp, line_dash="dash", line_color="orange", line_width=2)
         _add_boj_events(fig_bp)
-        st.plotly_chart(_style_fig(fig_bp, 350), use_container_width=True)
+        _chart(_style_fig(fig_bp, 350))
     else:
         st.warning("Insufficient data for structural break detection.")
 
@@ -2168,7 +2327,7 @@ def page_regime():
             )
         fig_ent.update_layout(yaxis_title="Entropy")
         _add_boj_events(fig_ent)
-        st.plotly_chart(_style_fig(fig_ent, 350), use_container_width=True)
+        _chart(_style_fig(fig_ent, 350))
     else:
         st.warning("Insufficient data for entropy analysis.")
 
@@ -2216,7 +2375,7 @@ def page_regime():
                 fig_g.add_vline(x=bp, line_dash="dash", line_color="purple", line_width=2)
         fig_g.update_layout(yaxis_title="Volatility (bps)")
         _add_boj_events(fig_g)
-        st.plotly_chart(_style_fig(fig_g, 350), use_container_width=True)
+        _chart(_style_fig(fig_g, 350))
     else:
         st.warning("Insufficient data for GARCH model.")
 
@@ -2336,7 +2495,7 @@ def page_regime():
                 xaxis_title="Duration (trading days)", yaxis_title="Frequency",
                 barmode="overlay",
             )
-            st.plotly_chart(_style_fig(fig_dur, 340), use_container_width=True)
+            _chart(_style_fig(fig_dur, 340))
 
         _current_dur = int(_durations.iloc[-1]["duration_days"])
         _current_regime = "repricing" if _durations.iloc[-1]["regime"] == 1 else "suppressed"
@@ -2646,7 +2805,7 @@ def page_spillover():
             aspect="auto",
             labels=dict(color="TE"),
         )
-        st.plotly_chart(_style_fig(fig_te, 450), use_container_width=True)
+        _chart(_style_fig(fig_te, 450))
     else:
         st.warning("Insufficient data for transfer entropy.")
 
@@ -2697,7 +2856,7 @@ def page_spillover():
             aspect="auto",
             labels=dict(color="TE"),
         )
-        st.plotly_chart(_style_fig(fig_te_pca, 350), use_container_width=True)
+        _chart(_style_fig(fig_te_pca, 350))
     else:
         st.info("Insufficient PCA data for factor-level transfer entropy.")
 
@@ -2742,10 +2901,10 @@ def page_spillover():
                 go.Bar(x=net.index.tolist(), y=net.values, marker_color=["green" if v > 0 else "red" for v in net.values])
             )
             fig_net.update_layout(title="Net Directional Spillover", yaxis_title="Net (%)")
-            st.plotly_chart(_style_fig(fig_net, 320), use_container_width=True)
+            _chart(_style_fig(fig_net, 320))
 
         with st.expander("Spillover matrix"):
-            st.dataframe(spill["spillover_matrix"].round(2), use_container_width=True)
+            st.dataframe(spill["spillover_matrix"].round(2))
     else:
         st.warning("Insufficient data for spillover analysis.")
 
@@ -2799,7 +2958,7 @@ def page_spillover():
                 )
             fig_dcc.update_layout(yaxis_title="Conditional Correlation")
             _add_boj_events(fig_dcc)
-            st.plotly_chart(_style_fig(fig_dcc, 380), use_container_width=True)
+            _chart(_style_fig(fig_dcc, 380))
         else:
             st.info("No correlation pairs computed.")
     else:
@@ -2862,7 +3021,7 @@ def page_spillover():
             yaxis2=dict(title="Carry-to-Vol Ratio", overlaying="y", side="right"),
         )
         _add_boj_events(fig_c)
-        st.plotly_chart(_style_fig(fig_c, 380), use_container_width=True)
+        _chart(_style_fig(fig_c, 380))
     else:
         st.warning("Insufficient data for carry analytics.")
 
@@ -2914,7 +3073,7 @@ def page_spillover():
                     ))
                     fig_rs.update_layout(yaxis_title="Total Spillover (%)")
                     _add_boj_events(fig_rs)
-                    st.plotly_chart(_style_fig(fig_rs, 380), use_container_width=True)
+                    _chart(_style_fig(fig_rs, 380))
                     _rs_latest = float(_rs_df["spillover"].iloc[-1])
                     _rs_mean = float(_rs_df["spillover"].mean())
                     _takeaway_block(
@@ -3154,11 +3313,11 @@ def page_trade_ideas():
     c4.metric("Regime Prob", f"{regime_state['regime_prob']:.2%}")
 
     # --- Sidebar filters ---
-    st.sidebar.markdown("---")
     st.sidebar.markdown(
-        "<p style='font-size:var(--fs-tiny);font-weight:600;text-transform:uppercase;"
-        "letter-spacing:var(--ls-widest);color:rgba(255,255,255,0.75);margin:0 0 0.5rem 0;"
-        "font-family:var(--font-sans);'>Trade Filters</p>",
+        "<div style='border-top:1px solid rgba(255,255,255,0.06); margin:0.4rem 0 0.5rem 0; padding-top:0.5rem;'>"
+        "<span style='font-size:0.55rem;font-weight:700;text-transform:uppercase;"
+        "letter-spacing:0.14em;color:rgba(255,255,255,0.4);"
+        "font-family:var(--font-sans);'>Trade Filters</span></div>",
         unsafe_allow_html=True,
     )
     all_cats = sorted(set(c.category for c in cards))
@@ -3197,7 +3356,7 @@ def page_trade_ideas():
             color_discrete_sequence=px.colors.qualitative.Set2,
         )
         fig_conv.update_layout(xaxis_tickangle=-45)
-        st.plotly_chart(_style_fig(fig_conv, 350), use_container_width=True)
+        _chart(_style_fig(fig_conv, 350))
 
     # --- Trade cards ---
     st.subheader(f"Trade Cards ({len(filtered)} shown)")
@@ -3718,7 +3877,584 @@ def page_ai_qa():
 
 
 # ===================================================================
-# Page 7: About — Heramb Patkar
+# Page 7: Early Warning
+# ===================================================================
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=4)
+def _run_warning_score(simulated, start, end, api_key):
+    df = load_unified(simulated, start, end, api_key)
+    score = compute_simple_warning_score(df, entropy_window=_layout_config.entropy_window)
+    return score
+
+
+@st.cache_data(show_spinner=False, ttl=3600, max_entries=2)
+def _run_ml_predictor(simulated, start, end, api_key, entropy_window):
+    """Cached ML regime predictor — avoids retraining on every page load."""
+    from src.regime.ml_predictor import MLRegimePredictor, compute_regime_features, create_regime_labels
+
+    df = load_unified(simulated, start, end, api_key)
+    ensemble = _run_ensemble(simulated, start, end, api_key)
+    if ensemble is None or len(ensemble.dropna()) < 100:
+        return None, None, None
+    features = compute_regime_features(df, entropy_window=entropy_window)
+    if len(features) < 100:
+        return None, None, None
+    labels = create_regime_labels(ensemble)
+    predictor = MLRegimePredictor()
+    preds, probs, importance = predictor.fit_predict(features, labels)
+    return preds, probs, importance
+
+
+def page_early_warning():
+    st.header("Early Warning System")
+    _page_intro(
+        "Composite early warning score combining entropy divergence, carry stress, and spillover "
+        "intensity into a single 0-100 metric. The system monitors for conditions that historically "
+        "precede JGB repricing events, providing lead time for position adjustment."
+    )
+    _definition_block(
+        "How the Early Warning System Works",
+        "Three independent stress indicators are combined into a single composite score: "
+        "<b>Entropy Divergence (40% weight)</b>: When yield changes become unusually complex and "
+        "unpredictable (measured by rolling volatility z-score), it signals a breakdown in the "
+        "orderly BOJ-suppressed regime. This often fires 1-2 weeks BEFORE other indicators. "
+        "<b>Carry Stress (30% weight)</b>: The z-score of the US-Japan rate differential. Rising "
+        "carry stress means the gap between US and Japanese rates is widening beyond normal bounds, "
+        "creating pressure for JGB yields to catch up. "
+        "<b>Spillover Intensity (30% weight)</b>: When JP-US yield correlation exceeds historical "
+        "norms, foreign rate moves are transmitting into JGBs more than usual. "
+        "The composite score normalizes each to 0-100 and weights them. "
+        "<b>Thresholds:</b> 30+ = early signal (INFO), 50+ = elevated (WARNING), 80+ = critical (CRITICAL). "
+        "<b>How to read:</b> Watch the score trend, not just the level. A score rising from 20 to 50 "
+        "over two weeks is more actionable than a stable 60."
+    )
+
+    args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
+
+    # --- Load warning score with robust error handling ---
+    try:
+        with st.spinner("Computing early warning score..."):
+            warning_score = _run_warning_score(*args)
+    except Exception as exc:
+        st.error(f"Failed to compute early warning score: {exc}")
+        _page_footer()
+        return
+
+    if warning_score is None or len(warning_score.dropna()) < 10:
+        st.warning("Insufficient data for early warning computation. Ensure the date range covers at least 60 trading days and data sources are configured.")
+        _page_footer()
+        return
+
+    ws_clean = warning_score.dropna()
+    current_score = max(0.0, min(100.0, float(ws_clean.iloc[-1])))
+
+    # --- KPI row ---
+    try:
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Current Score", f"{current_score:.0f}/100")
+        severity = "CRITICAL" if current_score > 80 else "WARNING" if current_score > 50 else "INFO" if current_score > 30 else "NORMAL"
+        c2.metric("Status", severity)
+        avg_30 = ws_clean.tail(30).mean() if len(ws_clean) >= 1 else 0.0
+        c3.metric("30d Average", f"{avg_30:.0f}")
+        c4.metric("Sample Max", f"{ws_clean.max():.0f}")
+    except Exception as exc:
+        st.warning(f"Could not render KPI metrics: {exc}")
+
+    # --- Score time series ---
+    try:
+        st.subheader("Composite Warning Score Over Time")
+        _section_note(
+            f"Current score: <b>{current_score:.0f}/100</b>. "
+            f"{'CRITICAL: Multiple stress indicators firing. Prepare for regime shift.' if current_score > 80 else 'WARNING: Elevated stress. Monitor closely.' if current_score > 50 else 'Early signals detected but not yet actionable.' if current_score > 30 else 'All clear. No immediate repricing pressure.'}"
+        )
+        fig_ws = go.Figure()
+        fig_ws.add_trace(go.Scatter(
+            x=ws_clean.index, y=ws_clean.values,
+            mode="lines", name="Warning Score",
+            line=dict(color="#E8413C", width=2),
+            fill="tozeroy", fillcolor="rgba(232,65,60,0.08)",
+        ))
+        fig_ws.add_hline(y=80, line_dash="dash", line_color="#dc2626", annotation_text="CRITICAL (80)")
+        fig_ws.add_hline(y=50, line_dash="dash", line_color="#d97706", annotation_text="WARNING (50)")
+        fig_ws.add_hline(y=30, line_dash="dot", line_color="#2563eb", annotation_text="INFO (30)")
+        fig_ws.update_layout(yaxis_title="Score (0-100)", yaxis_range=[0, 100])
+        _add_boj_events(fig_ws)
+        _chart(_style_fig(fig_ws, 420))
+
+        _takeaway_block(
+            f"Early warning score at <b>{current_score:.0f}/100</b>. "
+            f"{'All three components (entropy, carry, spillover) are elevated. This historically precedes repricing by 5-15 trading days. Reduce long JGB duration immediately.' if current_score > 80 else 'Stress is building across multiple indicators. Begin reducing exposure to long-dated JGBs and consider protective hedges.' if current_score > 50 else 'Early stress detected. No action required yet but tighten monitoring frequency and review stop-loss levels.' if current_score > 30 else 'No stress signals. Current positioning can be maintained with standard risk parameters.'}"
+        )
+    except Exception as exc:
+        st.warning(f"Could not render warning score time series: {exc}")
+
+    # --- Score distribution ---
+    try:
+        st.subheader("Score Distribution")
+        _section_note("Histogram of daily warning scores over the full sample period.")
+        fig_hist = go.Figure()
+        fig_hist.add_trace(go.Histogram(
+            x=ws_clean.values, nbinsx=50,
+            marker_color="#CFB991", opacity=0.8,
+        ))
+        fig_hist.add_vline(x=current_score, line_dash="dash", line_color="#E8413C",
+                           annotation_text=f"Current: {current_score:.0f}")
+        fig_hist.update_layout(xaxis_title="Warning Score", yaxis_title="Frequency")
+        _chart(_style_fig(fig_hist, 340))
+    except Exception as exc:
+        st.warning(f"Could not render score distribution: {exc}")
+
+    # --- Component breakdown ---
+    try:
+        st.subheader("Component Breakdown")
+        _section_note(
+            "Each component contributes to the composite score. "
+            "Entropy Divergence (40%), Carry Stress (30%), Spillover Intensity (30%)."
+        )
+        df = load_unified(use_simulated, str(start_date), str(end_date), fred_api_key or None)
+        _ew = _layout_config.entropy_window
+        # Entropy divergence component
+        jp10 = df["JP_10Y"].dropna() if "JP_10Y" in df.columns else pd.Series(dtype=float)
+        ent_comp = pd.Series(dtype=float)
+        carry_comp = pd.Series(dtype=float)
+        spill_comp = pd.Series(dtype=float)
+        if len(jp10) > _ew:
+            roll_vol = jp10.diff().rolling(_ew).std()
+            vol_mean = roll_vol.rolling(_ew * 2).mean()
+            vol_std = roll_vol.rolling(_ew * 2).std().replace(0, float("nan"))
+            z = ((roll_vol - vol_mean) / vol_std).clip(-3, 3)
+            ent_comp = ((z + 3) / 6 * 100).dropna()
+        # Carry stress component
+        us10 = df["US_10Y"].dropna() if "US_10Y" in df.columns else pd.Series(dtype=float)
+        if len(jp10) > _ew and len(us10) > _ew:
+            spread = (us10 - jp10.reindex(us10.index, method="ffill")).dropna()
+            if len(spread) > _ew:
+                sp_mean = spread.rolling(_ew * 2).mean()
+                sp_std = spread.rolling(_ew * 2).std().replace(0, float("nan"))
+                z_carry = ((spread - sp_mean) / sp_std).clip(-3, 3)
+                carry_comp = ((z_carry + 3) / 6 * 100).dropna()
+        # Spillover intensity component
+        if len(jp10) > _ew and len(us10) > _ew:
+            corr = jp10.diff().rolling(_ew).corr(us10.diff().reindex(jp10.index, method="ffill").diff())
+            spill_comp = (corr.clip(0, 1) * 100).dropna()
+
+        fig_comp = go.Figure()
+        if len(ent_comp) > 0:
+            fig_comp.add_trace(go.Scatter(x=ent_comp.index, y=ent_comp.values, mode="lines", name="Entropy Divergence (40%)", line=dict(color="#c0392b", width=1.5)))
+        if len(carry_comp) > 0:
+            fig_comp.add_trace(go.Scatter(x=carry_comp.index, y=carry_comp.values, mode="lines", name="Carry Stress (30%)", line=dict(color="#CFB991", width=1.5)))
+        if len(spill_comp) > 0:
+            fig_comp.add_trace(go.Scatter(x=spill_comp.index, y=spill_comp.values, mode="lines", name="Spillover Intensity (30%)", line=dict(color="#2e7d32", width=1.5)))
+        fig_comp.update_layout(yaxis_title="Component Score (0-100)", yaxis_range=[0, 100])
+        _add_boj_events(fig_comp)
+        _chart(_style_fig(fig_comp, 380))
+
+        _takeaway_block(
+            "The component breakdown reveals <b>which stress channel</b> is driving the composite score. "
+            "If entropy divergence leads, the source is domestic (BOJ policy uncertainty). If carry stress "
+            "leads, global rate differentials are the driver. If spillover intensity leads, foreign bond "
+            "sell-offs are transmitting into JGBs."
+        )
+    except Exception as exc:
+        st.warning(f"Could not render component breakdown: {exc}")
+
+    # --- Rolling statistics ---
+    try:
+        st.subheader("Rolling Statistics")
+        _section_note("30-day rolling mean and standard deviation of the composite warning score.")
+        if len(ws_clean) >= 30:
+            roll_mean = ws_clean.rolling(30).mean().dropna()
+            roll_std = ws_clean.rolling(30).std().dropna()
+            fig_roll = go.Figure()
+            fig_roll.add_trace(go.Scatter(x=roll_mean.index, y=roll_mean.values, mode="lines", name="30d Mean", line=dict(color="#000000", width=2)))
+            fig_roll.add_trace(go.Scatter(x=roll_mean.index, y=(roll_mean + roll_std).values, mode="lines", name="+1 Std Dev", line=dict(color="#CFB991", width=1, dash="dot")))
+            fig_roll.add_trace(go.Scatter(x=roll_mean.index, y=(roll_mean - roll_std).clip(lower=0).values, mode="lines", name="-1 Std Dev", line=dict(color="#CFB991", width=1, dash="dot"), fill="tonexty", fillcolor="rgba(207,185,145,0.1)"))
+            fig_roll.update_layout(yaxis_title="Score", yaxis_range=[0, 100])
+            _add_boj_events(fig_roll)
+            _chart(_style_fig(fig_roll, 340))
+        else:
+            st.info("Need at least 30 observations for rolling statistics.")
+    except Exception as exc:
+        st.warning(f"Could not render rolling statistics: {exc}")
+
+    # --- Alert generation ---
+    try:
+        warnings = generate_warnings(ws_clean.tail(60))
+        if warnings:
+            st.subheader("Recent Warnings")
+            _section_note(f"{len(warnings)} warning(s) in the last 60 trading days.")
+            for w in warnings[-10:]:
+                color = {"CRITICAL": "#dc2626", "WARNING": "#d97706", "INFO": "#2563eb"}.get(w.severity, "#6b7280")
+                st.markdown(
+                    f"<div style='border-left:4px solid {color};padding:8px 12px;margin-bottom:8px;"
+                    f"background:rgba(0,0,0,0.02);border-radius:0 6px 6px 0;'>"
+                    f"<b style='color:{color}'>{w.severity}</b> "
+                    f"<span style='color:#666;font-size:0.85rem'>{w.timestamp:%Y-%m-%d}</span><br>"
+                    f"{w.message}</div>",
+                    unsafe_allow_html=True,
+                )
+        else:
+            st.subheader("Recent Warnings")
+            st.info("No warnings triggered in the last 60 trading days. The market is in a calm state.")
+    except Exception as exc:
+        st.warning(f"Could not generate warnings: {exc}")
+
+    # --- Detect and persist alerts ---
+    try:
+        ensemble = _run_ensemble(*args)
+        regime_prob = float(ensemble.dropna().iloc[-1]) if ensemble is not None and len(ensemble.dropna()) > 0 else None
+    except Exception:
+        regime_prob = None
+
+    try:
+        detector = AlertDetector()
+        alerts = detector.check_all_conditions(
+            warning_score=current_score,
+            regime_prob=regime_prob,
+        )
+        if alerts:
+            if _alert_notifier is not None:
+                _alert_notifier.process_alerts(alerts)
+            for a in alerts:
+                st.toast(f"{a.severity}: {a.title}", icon="🔴" if a.severity == "CRITICAL" else "🟡")
+    except Exception as exc:
+        st.warning(f"Alert detection encountered an issue: {exc}")
+
+    # --- Data table ---
+    try:
+        st.subheader("Warning Score Data")
+        _section_note("Raw daily warning scores for the selected date range. Download via the CSV button on the Performance Review page.")
+        score_df = pd.DataFrame({"Warning Score": ws_clean}).tail(60)
+        score_df.index.name = "Date"
+        st.dataframe(score_df.style.format({"Warning Score": "{:.1f}"}), use_container_width=True, height=300)
+    except Exception as exc:
+        st.warning(f"Could not render data table: {exc}")
+
+    # --- Page conclusion (always render, even if sections above failed) ---
+    try:
+        _verdict_ew = (
+            f"Score at {current_score:.0f}: {'CRITICAL — act now' if current_score > 80 else 'WARNING — prepare to act' if current_score > 50 else 'monitoring' if current_score > 30 else 'all clear'}."
+        )
+        _page_conclusion(
+            _verdict_ew,
+            f"The composite early warning score integrates entropy divergence, carry stress, and "
+            f"spillover intensity with an entropy window of {_layout_config.entropy_window} days. "
+            f"Current reading: <b>{current_score:.0f}/100</b>.",
+        )
+    except Exception:
+        pass
+    _page_footer()
+
+
+# ===================================================================
+# Page 8: Performance Review
+# ===================================================================
+def page_performance_review():
+    st.header("Performance Review")
+    _page_intro(
+        "Model performance tracking, accuracy metrics, and improvement suggestions. "
+        "This page evaluates the regime detection ensemble against actual market outcomes "
+        "and provides actionable recommendations for model refinement. Export reports as PDF or CSV."
+    )
+    _definition_block(
+        "How Performance is Measured",
+        "The framework tracks every regime prediction the ensemble makes and compares it against "
+        "what actually happened. <b>Accuracy</b> is the percentage of correct predictions. "
+        "<b>Precision</b> measures how often a repricing signal is genuine (vs false alarm). "
+        "<b>Recall</b> measures how many actual repricing events the model caught. "
+        "<b>False Positive Rate</b> is how often the model cried wolf. "
+        "A good model has high precision (few false alarms) AND high recall (catches most real events). "
+        "The improvement suggestions below are generated automatically based on which metrics need attention."
+    )
+
+    args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
+
+    # --- Compute metrics from ensemble predictions ---
+    tracker = AccuracyTracker()
+    ensemble = None
+    predicted = None
+    actual = None
+    df = None
+
+    try:
+        ensemble = _run_ensemble(*args)
+        df = load_unified(use_simulated, str(start_date), str(end_date), fred_api_key or None)
+        if ensemble is not None and len(ensemble.dropna()) > 30:
+            ens_clean = ensemble.dropna()
+            predicted = (ens_clean > 0.5).astype(int)
+            jp10 = df["JP_10Y"].dropna() if "JP_10Y" in df.columns else pd.Series(dtype=float)
+            if len(jp10) > 30:
+                future_change = jp10.diff(5).shift(-5)
+                vol = jp10.diff().rolling(60).std()
+                actual = ((future_change > vol).astype(int)).reindex(predicted.index)
+                metrics = tracker.compute_from_series(predicted, actual.dropna())
+            else:
+                metrics = tracker.compute_metrics()
+        else:
+            metrics = tracker.compute_metrics()
+    except Exception as exc:
+        st.warning(f"Could not compute metrics from ensemble: {exc}")
+        metrics = tracker.compute_metrics()
+
+    # --- KPI row ---
+    try:
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Accuracy", f"{metrics.prediction_accuracy:.1%}")
+        c2.metric("Precision", f"{metrics.precision:.1%}")
+        c3.metric("Recall", f"{metrics.recall:.1%}")
+        c4.metric("False Positive Rate", f"{metrics.false_positive_rate:.1%}")
+    except Exception as exc:
+        st.warning(f"Could not render KPI metrics: {exc}")
+
+    # --- Detailed metrics table ---
+    metrics_df = pd.DataFrame({
+        "Metric": ["Accuracy", "Precision", "Recall", "False Positive Rate",
+                    "Average Lead Time", "Total Predictions"],
+        "Value": [f"{metrics.prediction_accuracy:.1%}", f"{metrics.precision:.1%}",
+                  f"{metrics.recall:.1%}", f"{metrics.false_positive_rate:.1%}",
+                  f"{metrics.average_lead_time:.1f} days", str(metrics.total_predictions)],
+    })
+    try:
+        st.subheader("Detailed Metrics")
+        _section_note(
+            f"Based on {metrics.total_predictions} observations. "
+            f"Average lead time: {metrics.average_lead_time:.1f} days."
+        )
+        st.dataframe(metrics_df, use_container_width=True, hide_index=True)
+    except Exception as exc:
+        st.warning(f"Could not render detailed metrics: {exc}")
+
+    # --- Confusion matrix visualization ---
+    try:
+        if predicted is not None and actual is not None:
+            st.subheader("Prediction Analysis")
+            _section_note(
+                "Comparison of predicted regime states vs actual outcomes. "
+                "The ensemble predicts repricing when probability > 0.5."
+            )
+            # Align predicted and actual
+            common_idx = predicted.dropna().index.intersection(actual.dropna().index)
+            if len(common_idx) > 10:
+                p_aligned = predicted.loc[common_idx]
+                a_aligned = actual.loc[common_idx]
+                tp = int(((p_aligned == 1) & (a_aligned == 1)).sum())
+                fp = int(((p_aligned == 1) & (a_aligned == 0)).sum())
+                fn = int(((p_aligned == 0) & (a_aligned == 1)).sum())
+                tn = int(((p_aligned == 0) & (a_aligned == 0)).sum())
+                cm1, cm2, cm3, cm4 = st.columns(4)
+                cm1.metric("True Positives", f"{tp}")
+                cm2.metric("False Positives", f"{fp}")
+                cm3.metric("True Negatives", f"{tn}")
+                cm4.metric("False Negatives", f"{fn}")
+
+                # Ensemble probability over time with actual regime overlay
+                if ensemble is not None:
+                    ens_clean = ensemble.dropna()
+                    fig_pred = go.Figure()
+                    fig_pred.add_trace(go.Scatter(
+                        x=ens_clean.index, y=ens_clean.values,
+                        mode="lines", name="Ensemble Probability",
+                        line=dict(color="#CFB991", width=2),
+                    ))
+                    fig_pred.add_trace(go.Scatter(
+                        x=a_aligned.index, y=a_aligned.values * 0.95,
+                        mode="markers", name="Actual Repricing",
+                        marker=dict(color="#c0392b", size=4, opacity=0.5),
+                    ))
+                    fig_pred.add_hline(y=0.5, line_dash="dash", line_color="red", annotation_text="Decision Boundary")
+                    fig_pred.update_layout(yaxis_title="Probability / Actual", yaxis_range=[0, 1])
+                    _add_boj_events(fig_pred)
+                    _chart(_style_fig(fig_pred, 380))
+
+                    _takeaway_block(
+                        f"Out of {len(common_idx)} aligned observations: <b>{tp} true positives</b> (correctly predicted repricing), "
+                        f"<b>{fp} false positives</b> (false alarms), <b>{fn} false negatives</b> (missed repricing events), "
+                        f"and <b>{tn} true negatives</b> (correctly predicted suppression)."
+                    )
+    except Exception as exc:
+        st.warning(f"Could not render prediction analysis: {exc}")
+
+    # --- Improvement suggestions ---
+    suggestions = generate_improvement_suggestions(metrics)
+    try:
+        st.subheader("Improvement Suggestions")
+        if suggestions:
+            for s in suggestions:
+                st.info(s)
+        else:
+            st.success("All metrics are within acceptable ranges. No immediate improvements needed.")
+    except Exception as exc:
+        st.warning(f"Could not render improvement suggestions: {exc}")
+
+    # --- Ensemble model agreement analysis ---
+    try:
+        st.subheader("Model Agreement Analysis")
+        _section_note(
+            "How often do the four regime detection models agree? Higher agreement means stronger conviction."
+        )
+        markov_result = _run_markov(*args)
+        _, ent_sig = _run_entropy(*args)
+        vol, _ = _run_garch(*args)
+
+        model_signals = {}
+        if ensemble is not None and len(ensemble.dropna()) > 0:
+            model_signals["Ensemble"] = (ensemble.dropna() > 0.5).astype(int)
+        # markov_result is a dict with 'regime_probabilities' key
+        if markov_result is not None and isinstance(markov_result, dict):
+            markov_prob = markov_result.get("regime_probabilities")
+            if markov_prob is not None and len(markov_prob) > 0:
+                prob_col = markov_prob.columns[-1]
+                mp = markov_prob[prob_col].dropna()
+                if len(mp) > 0:
+                    model_signals["Markov"] = (mp > 0.5).astype(int)
+        if ent_sig is not None and hasattr(ent_sig, "dropna") and len(ent_sig.dropna()) > 0:
+            model_signals["Entropy"] = ent_sig.dropna().astype(int)
+        # vol is a Series from GARCH
+        if vol is not None and hasattr(vol, "dropna") and len(vol.dropna()) > 0:
+            vol_clean = vol.dropna()
+            vol_median = vol_clean.median()
+            model_signals["GARCH"] = (vol_clean > vol_median).astype(int)
+
+        if len(model_signals) >= 2:
+            agreement_df = pd.DataFrame(model_signals)
+            agreement_df = agreement_df.dropna()
+            if len(agreement_df) > 0:
+                agreement_rate = agreement_df.apply(lambda row: row.nunique() == 1, axis=1).mean()
+                st.metric("Model Agreement Rate", f"{agreement_rate:.1%}")
+                _takeaway_block(
+                    f"The regime detection models agree <b>{agreement_rate:.0%}</b> of the time. "
+                    f"{'High agreement strengthens signal conviction.' if agreement_rate > 0.7 else 'Moderate agreement suggests uncertainty in regime classification.' if agreement_rate > 0.5 else 'Low agreement indicates conflicting signals. Rely on the ensemble average rather than any single model.'}"
+                )
+        else:
+            st.info("Insufficient model outputs to compute agreement analysis.")
+    except Exception as exc:
+        st.warning(f"Could not render model agreement analysis: {exc}")
+
+    # --- ML Regime Predictor (Enhancement 1b) ---
+    if _layout_config.show_ml_predictions:
+        try:
+            st.subheader("ML Regime Predictor")
+            _definition_block(
+                "RandomForest Walk-Forward Predictor",
+                "A machine learning model trained on features derived from the framework's analytics. "
+                "Uses walk-forward training (504-day window, retrained quarterly) to avoid look-ahead bias. "
+                "Features include structural entropy, carry stress, spillover correlation, volatility z-score, "
+                "and USDJPY momentum."
+            )
+            with st.spinner("Running ML predictor..."):
+                preds, probs, importance = _run_ml_predictor(
+                    use_simulated, str(start_date), str(end_date),
+                    fred_api_key or None, _layout_config.entropy_window,
+                )
+
+            if probs is not None and len(probs.dropna()) > 0:
+                latest_prob = float(probs.dropna().iloc[-1])
+                _section_note(
+                    f"ML prediction probability (latest): <b>{latest_prob:.0%}</b>. "
+                    f"Walk-forward trained on {len(probs.dropna())} prediction points."
+                )
+                fig_ml = go.Figure()
+                fig_ml.add_trace(go.Scatter(
+                    x=probs.index, y=probs.values,
+                    mode="lines", name="ML Regime Prob",
+                    line=dict(color="#CFB991", width=2),
+                ))
+                fig_ml.add_hline(y=0.5, line_dash="dash", line_color="red")
+                fig_ml.update_layout(yaxis_title="Probability", yaxis_range=[0, 1])
+                _add_boj_events(fig_ml)
+                _chart(_style_fig(fig_ml, 380))
+
+                _takeaway_block(
+                    f"The ML predictor assigns a <b>{latest_prob:.0%}</b> probability to the repricing regime. "
+                    f"{'This confirms the ensemble signal. Both statistical and ML models agree.' if (latest_prob > 0.5) == (metrics.prediction_accuracy > 0.5) else 'The ML model disagrees with the ensemble. When models diverge, reduce position sizes and wait for convergence.'}"
+                )
+
+                # Feature importance
+                if importance is not None and len(importance) > 0:
+                    st.subheader("Feature Importance")
+                    _section_note("RandomForest feature importances from the latest training window.")
+                    fig_imp = go.Figure(go.Bar(
+                        x=importance.values,
+                        y=importance.index,
+                        orientation="h",
+                        marker_color="#CFB991",
+                    ))
+                    fig_imp.update_layout(xaxis_title="Importance", yaxis_title="Feature")
+                    _chart(_style_fig(fig_imp, 320))
+
+                    top_feature = importance.idxmax() if len(importance) > 0 else "N/A"
+                    _takeaway_block(
+                        f"The most important feature is <b>{top_feature}</b>. "
+                        "Feature importances reveal which market signals the ML model relies on most heavily. "
+                        "If a single feature dominates (>40%), the model may be fragile to changes in that signal."
+                    )
+            else:
+                st.info("Insufficient data for ML regime predictor. Need at least 100 observations with both regime classes present in the training window.")
+        except ImportError:
+            st.info("ML predictor requires scikit-learn. Install with: `pip install scikit-learn`")
+        except Exception as exc:
+            st.warning(f"ML predictor not available: {exc}")
+
+    # --- Export ---
+    try:
+        st.subheader("Export Reports")
+        _section_note("Download a comprehensive PDF report or raw metrics as CSV.")
+        col_pdf, col_csv = st.columns(2)
+
+        with col_pdf:
+            try:
+                report = JGBReportPDF()
+                report.add_title_page(subtitle=f"Generated {datetime.now():%Y-%m-%d %H:%M}")
+                report.add_metrics_summary(metrics)
+                report.add_suggestions(suggestions)
+                # Add data table if available
+                if metrics_df is not None:
+                    report.add_data_table(metrics_df, title="Performance Metrics")
+                pdf_bytes = report.to_bytes()
+                st.download_button(
+                    "Download PDF Report",
+                    data=pdf_bytes,
+                    file_name=f"jgb_report_{datetime.now():%Y%m%d}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                )
+            except ImportError:
+                st.info("Install fpdf2 for PDF export: `pip install fpdf2`")
+            except Exception as exc:
+                st.warning(f"Could not generate PDF: {exc}")
+
+        with col_csv:
+            try:
+                csv_bytes = dataframe_to_csv_bytes(metrics_df)
+                st.download_button(
+                    "Download Metrics CSV",
+                    data=csv_bytes,
+                    file_name=f"jgb_metrics_{datetime.now():%Y%m%d}.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                )
+            except Exception as exc:
+                st.warning(f"Could not generate CSV: {exc}")
+    except Exception as exc:
+        st.warning(f"Could not render export section: {exc}")
+
+    # --- Page conclusion (always render, even if sections above failed) ---
+    try:
+        _verdict_pr = (
+            f"Accuracy at {metrics.prediction_accuracy:.0%}: "
+            f"{'strong model performance' if metrics.prediction_accuracy > 0.7 else 'room for improvement' if metrics.prediction_accuracy > 0.5 else 'model needs retraining'}."
+        )
+        _page_conclusion(
+            _verdict_pr,
+            f"Performance metrics computed over {metrics.total_predictions} observations. "
+            f"{len(suggestions)} improvement suggestion(s) generated.",
+        )
+    except Exception:
+        pass
+    _page_footer()
+
+
+# ===================================================================
+# Page 9: About — Heramb Patkar
 # ===================================================================
 def _about_page_styles():
     """Inject shared CSS for About pages."""
@@ -3892,7 +4628,7 @@ def page_about_heramb():
             "<div class='stat-row'>"
             "<div class='stat-item'><p class='stat-num'>4</p><p class='stat-label'>Regime Models</p></div>"
             "<div class='stat-item'><p class='stat-num'>6</p><p class='stat-label'>Tenors</p></div>"
-            "<div class='stat-item'><p class='stat-num'>8</p><p class='stat-label'>Dashboard Pages</p></div>"
+            "<div class='stat-item'><p class='stat-num'>10</p><p class='stat-label'>Dashboard Pages</p></div>"
             "<div class='stat-item'><p class='stat-num'>5</p><p class='stat-label'>Analytical Layers</p></div>"
             "</div>"
             "</div>",
@@ -4226,19 +4962,27 @@ _args = (use_simulated, str(start_date), str(end_date), fred_api_key)
 # ===================================================================
 # Router
 # ===================================================================
-if page == "Overview & Data":
-    page_overview()
-elif page == "Yield Curve Analytics":
-    page_yield_curve()
-elif page == "Regime Detection":
-    page_regime()
-elif page == "Spillover & Info Flow":
-    page_spillover()
-elif page == "Trade Ideas":
-    page_trade_ideas()
-elif page == "AI Q&A":
-    page_ai_qa()
-elif page == "About: Heramb Patkar":
-    page_about_heramb()
-elif page == "About: Dr. Zhang":
-    page_about_zhang()
+_PAGE_FN_MAP = {
+    "Overview & Data": page_overview,
+    "Yield Curve Analytics": page_yield_curve,
+    "Regime Detection": page_regime,
+    "Spillover & Info Flow": page_spillover,
+    "Early Warning": page_early_warning,
+    "Trade Ideas": page_trade_ideas,
+    "Performance Review": page_performance_review,
+    "AI Q&A": page_ai_qa,
+    "About: Heramb Patkar": page_about_heramb,
+    "About: Dr. Zhang": page_about_zhang,
+}
+
+_page_fn = _PAGE_FN_MAP.get(page)
+if _page_fn is not None:
+    try:
+        _page_fn()
+    except Exception as _page_exc:
+        st.error(f"An error occurred while rendering **{page}**: {_page_exc}")
+        st.info("Try refreshing the page or adjusting the date range / data source in the sidebar.")
+        import traceback
+        with st.expander("Error details", expanded=False):
+            st.code(traceback.format_exc(), language="text")
+        _page_footer()

@@ -145,6 +145,24 @@ AI was used as a **pair-programming partner and research accelerator** — provi
   - AI generated the workflow YAML files and badge markdown; I defined the pipeline architecture (separate CI vs deploy, test-gated deployment, secret-based deploy hook)
 - **Verification:** Workflow syntax validated. All 37 existing tests expected to pass in CI. Badge will render after first workflow run.
 
+### Session 12: README Institutional Polish & LICENSE
+- **AI Tool:** Claude Code (Claude Opus 4.6)
+- **What I asked:** Rewrite README to institutional-grade quality (modeled after gs-quant, Qlib, Bloomberg quant-research repos). Add MIT LICENSE file. Keep Purdue Daniels affiliation framed professionally.
+- **What I decided:**
+  - Removed course/assignment/thesis framing from top block; repositioned Purdue affiliation to Contact section as institutional credit (how a quant paper cites a university)
+  - Replaced ASCII directory tree with compact module table; moved full tree into `<details>` collapsible
+  - Added Reference column to regime detection table (Hamilton 1989, Rabiner 1989, Bandt & Pompe 2002, Bollerslev 1986) and PCA table (Litterman & Scheinkman 1991)
+  - Removed "Development Process" section (commit count reads as proving effort)
+  - Reduced "Limitations & Next Steps" to 3 factual limitations; moved roadmap items to product-roadmap.md
+  - Dashboard section lists 6 analytical pages only; removed About page descriptions
+  - Added References section (6 academic citations), Disclaimer, MIT License
+  - Renamed "Getting Started" to "Quickstart" (3 commands); Docker/FRED config in collapsible
+  - Deleted "Dashboard theme" and "Deployment" rows from Technical Decisions (not research methodology)
+  - Removed "premium" from FRED description
+  - AI collaboration reduced to one sentence + link
+- **What I rejected:** Initial plan called for removing all Purdue references. I overrode this — Purdue Daniels is my institutional affiliation and should be credited professionally, not hidden.
+- **Verification:** Final README contains no mentions of "course", "professor", or "assignment". Purdue Daniels appears once in Contact section as professional affiliation. All internal links (LICENSE, ai_collaboration_log.md, product/README.md) are valid.
+
 ## AI Usage Summary
 
 | Category | AI Role | My Role |
