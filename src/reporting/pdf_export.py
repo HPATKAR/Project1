@@ -38,6 +38,22 @@ class JGBReportPDF:
         self.pdf.set_auto_page_break(auto=True, margin=15)
 
     # ── helpers ──────────────────────────────────────────────────────────
+    @staticmethod
+    def _safe(text: str) -> str:
+        """Sanitize text for Helvetica (Latin-1). Replace unsupported chars."""
+        return (
+            text.replace("\u2014", "-")   # em dash
+                .replace("\u2013", "-")   # en dash
+                .replace("\u2018", "'")   # left single quote
+                .replace("\u2019", "'")   # right single quote
+                .replace("\u201c", '"')   # left double quote
+                .replace("\u201d", '"')   # right double quote
+                .replace("\u2026", "...")  # ellipsis
+                .replace("\u2022", "*")   # bullet
+                .replace("\u00b7", "*")   # middle dot
+                .encode("latin-1", errors="replace").decode("latin-1")
+        )
+
     def _draw_gold_rule(self, y: float | None = None, width: float = 190) -> None:
         """Draw a horizontal Boilermaker Gold rule."""
         if y is None:
@@ -267,23 +283,23 @@ class JGBReportPDF:
             f"Of these, {n_high} {'are' if n_high != 1 else 'is'} high conviction (>=70%), "
             f"{n_med} medium (40-69%), and {n_low} low (<40%)."
         )
-        self.pdf.multi_cell(0, 5, exec_text)
+        self.pdf.multi_cell(0, 5, self._safe(exec_text))
         self.pdf.ln(2)
 
         if top:
             self.pdf.set_font("Helvetica", "B", 9)
-            self.pdf.multi_cell(0, 5,
+            self.pdf.multi_cell(0, 5, self._safe(
                 f"Lead Recommendation: {top.name} ({top.direction.upper()}, "
                 f"{top.conviction:.0%} conviction) on {', '.join(top.instruments[:3])}."
-            )
+            ))
             self.pdf.ln(1)
             self.pdf.set_font("Helvetica", "", 9)
-            self.pdf.multi_cell(0, 5,
+            self.pdf.multi_cell(0, 5, self._safe(
                 f"Rationale: {top.edge_source}. "
                 f"This trade activates when: {top.regime_condition}. "
                 f"Entry signal: {top.entry_signal}. "
                 f"Exit signal: {top.exit_signal}."
-            )
+            ))
         self.pdf.ln(3)
 
         # Regime context box
@@ -368,11 +384,11 @@ class JGBReportPDF:
         self.pdf.ln()
         self.pdf.set_font("Helvetica", "", 8)
         for card in sorted_cards:
-            self.pdf.cell(col_w[0], 6, card.name[:28], border=1)
+            self.pdf.cell(col_w[0], 6, self._safe(card.name[:28]), border=1)
             self.pdf.cell(col_w[1], 6, card.direction.upper(), border=1, align="C")
             self.pdf.cell(col_w[2], 6, f"{card.conviction:.0%}", border=1, align="C")
-            self.pdf.cell(col_w[3], 6, ", ".join(card.instruments[:2])[:26], border=1)
-            self.pdf.cell(col_w[4], 6, card.category, border=1, align="C")
+            self.pdf.cell(col_w[3], 6, self._safe(", ".join(card.instruments[:2])[:26]), border=1)
+            self.pdf.cell(col_w[4], 6, self._safe(card.category), border=1, align="C")
             self.pdf.ln()
         self._add_page_footer()
 
@@ -391,7 +407,7 @@ class JGBReportPDF:
         # Title bar
         dir_label = "LONG" if card.direction == "long" else "SHORT"
         self.pdf.set_font("Helvetica", "B", 14)
-        self.pdf.cell(0, 10, f"{dir_label}  |  {card.name}  |  {card.conviction:.0%} Conviction", ln=True)
+        self.pdf.cell(0, 10, self._safe(f"{dir_label}  |  {card.name}  |  {card.conviction:.0%} Conviction"), ln=True)
         self.pdf.ln(2)
         self._draw_gold_rule()
         self.pdf.ln(4)
@@ -427,7 +443,7 @@ class JGBReportPDF:
                 "Low conviction indicates mixed or weak signals. This idea should be on a watchlist "
                 "rather than actively traded. Wait for additional confirming signals before deploying capital."
             )
-        self.pdf.multi_cell(0, 4.5, thesis)
+        self.pdf.multi_cell(0, 4.5, self._safe(thesis))
         self.pdf.ln(3)
 
         # --- Trade specification ---
@@ -451,9 +467,7 @@ class JGBReportPDF:
             self.pdf.cell(35, 5, label + ":", align="R")
             self.pdf.set_font("Helvetica", "", 8)
             self.pdf.cell(3, 5, "")  # spacer
-            x_start = self.pdf.get_x()
-            y_start = self.pdf.get_y()
-            self.pdf.multi_cell(152, 5, value[:200])
+            self.pdf.multi_cell(0, 5, self._safe(value[:200]))
             self.pdf.ln(1)
 
         # --- Entry/exit logic explanation ---
@@ -471,17 +485,17 @@ class JGBReportPDF:
             f"The position should be unwound when the exit signal triggers, regardless of P&L at that point. "
             f"Discipline in following pre-defined exit rules is critical to risk management."
         )
-        self.pdf.multi_cell(0, 4.5, exec_logic)
+        self.pdf.multi_cell(0, 4.5, self._safe(exec_logic))
         self.pdf.ln(2)
 
         # --- Failure scenario (red highlight) ---
         self.pdf.set_fill_color(255, 240, 240)
         self.pdf.set_font("Helvetica", "B", 8)
         self.pdf.set_text_color(180, 30, 30)
-        self.pdf.cell(0, 6, "  FAILURE SCENARIO  —  READ BEFORE ENTERING TRADE", ln=True, fill=True)
+        self.pdf.cell(0, 6, "  FAILURE SCENARIO - READ BEFORE ENTERING TRADE", ln=True, fill=True)
         self.pdf.set_text_color(60, 20, 20)
         self.pdf.set_font("Helvetica", "", 8)
-        self.pdf.multi_cell(0, 5, "  " + card.failure_scenario[:400])
+        self.pdf.multi_cell(0, 5, self._safe("  " + card.failure_scenario[:400]))
         self.pdf.set_text_color(80, 80, 80)
         self.pdf.set_font("Helvetica", "I", 7)
         self.pdf.multi_cell(0, 4,
