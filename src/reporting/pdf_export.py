@@ -463,11 +463,19 @@ class JGBReportPDF:
             ("Sizing Method", card.sizing_method),
         ]
         for label, value in fields:
+            self.pdf.set_x(self.pdf.l_margin)
             self.pdf.set_font("Helvetica", "B", 8)
-            self.pdf.cell(35, 5, label + ":", align="R")
+            self.pdf.cell(35, 5, label + ":")
+            x_after = self.pdf.get_x()
             self.pdf.set_font("Helvetica", "", 8)
-            self.pdf.cell(3, 5, "")  # spacer
-            self.pdf.multi_cell(0, 5, self._safe(value[:200]))
+            remaining_w = self.pdf.w - self.pdf.r_margin - x_after
+            if remaining_w < 20:
+                self.pdf.ln(5)
+                self.pdf.set_x(self.pdf.l_margin)
+                self.pdf.multi_cell(0, 5, self._safe(value[:200]))
+            else:
+                self.pdf.multi_cell(remaining_w, 5, self._safe(value[:200]))
+            self.pdf.set_x(self.pdf.l_margin)
             self.pdf.ln(1)
 
         # --- Entry/exit logic explanation ---
@@ -485,6 +493,7 @@ class JGBReportPDF:
             f"The position should be unwound when the exit signal triggers, regardless of P&L at that point. "
             f"Discipline in following pre-defined exit rules is critical to risk management."
         )
+        self.pdf.set_x(self.pdf.l_margin)
         self.pdf.multi_cell(0, 4.5, self._safe(exec_logic))
         self.pdf.ln(2)
 
@@ -492,17 +501,20 @@ class JGBReportPDF:
         self.pdf.set_fill_color(255, 240, 240)
         self.pdf.set_font("Helvetica", "B", 8)
         self.pdf.set_text_color(180, 30, 30)
+        self.pdf.set_x(self.pdf.l_margin)
         self.pdf.cell(0, 6, "  FAILURE SCENARIO - READ BEFORE ENTERING TRADE", ln=True, fill=True)
         self.pdf.set_text_color(60, 20, 20)
         self.pdf.set_font("Helvetica", "", 8)
+        self.pdf.set_x(self.pdf.l_margin)
         self.pdf.multi_cell(0, 5, self._safe("  " + card.failure_scenario[:400]))
         self.pdf.set_text_color(80, 80, 80)
         self.pdf.set_font("Helvetica", "I", 7)
-        self.pdf.multi_cell(0, 4,
+        self.pdf.set_x(self.pdf.l_margin)
+        self.pdf.multi_cell(0, 4, self._safe(
             "  If this failure scenario is already playing out or is likely imminent, "
             "skip this trade regardless of conviction score. The failure scenario is the "
             "single most important risk check before deployment."
-        )
+        ))
         self.pdf.set_text_color(0, 0, 0)
         self.pdf.ln(3)
 
