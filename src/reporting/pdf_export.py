@@ -218,7 +218,7 @@ class JGBReportPDF:
 
     # ── trade ideas ────────────────────────────────────────────────────
     def add_trade_ideas(self, cards: list, regime_state: dict | None = None) -> None:
-        """Add a full Trade Ideas section with payout graphs.
+        """Add a full Trade Ideas section with payout graphs and detailed textual logic.
 
         Parameters
         ----------
@@ -232,6 +232,13 @@ class JGBReportPDF:
         if not cards:
             return
 
+        sorted_cards = sorted(cards, key=lambda c: -c.conviction)
+        n_high = sum(1 for c in cards if c.conviction >= 0.7)
+        n_med = sum(1 for c in cards if 0.4 <= c.conviction < 0.7)
+        n_low = sum(1 for c in cards if c.conviction < 0.4)
+        categories = sorted(set(c.category for c in cards))
+        top = sorted_cards[0] if sorted_cards else None
+
         # --- Summary page ---
         self.pdf.add_page()
         self._draw_header_bar()
@@ -242,19 +249,117 @@ class JGBReportPDF:
         self._draw_gold_rule(width=60)
         self.pdf.ln(6)
 
-        # Regime context
+        # Executive summary
+        self.pdf.set_font("Helvetica", "B", 10)
+        self.pdf.set_text_color(*_AGED_GOLD)
+        self.pdf.cell(0, 6, "EXECUTIVE SUMMARY", ln=True)
+        self.pdf.set_text_color(0, 0, 0)
+        self.pdf.ln(2)
+
+        rp = regime_state.get("regime_prob", 0.5) if regime_state else 0.5
+        regime_word = "repricing" if rp > 0.5 else "suppressed"
+        self.pdf.set_font("Helvetica", "", 9)
+        exec_text = (
+            f"The framework has generated {len(cards)} trade idea{'s' if len(cards) != 1 else ''} "
+            f"under a {regime_word} regime environment (regime probability: {rp:.1%}). "
+            f"The ideas span {len(categories)} categor{'ies' if len(categories) != 1 else 'y'}: "
+            f"{', '.join(categories)}. "
+            f"Of these, {n_high} {'are' if n_high != 1 else 'is'} high conviction (>=70%), "
+            f"{n_med} medium (40-69%), and {n_low} low (<40%)."
+        )
+        self.pdf.multi_cell(0, 5, exec_text)
+        self.pdf.ln(2)
+
+        if top:
+            self.pdf.set_font("Helvetica", "B", 9)
+            self.pdf.multi_cell(0, 5,
+                f"Lead Recommendation: {top.name} ({top.direction.upper()}, "
+                f"{top.conviction:.0%} conviction) on {', '.join(top.instruments[:3])}."
+            )
+            self.pdf.ln(1)
+            self.pdf.set_font("Helvetica", "", 9)
+            self.pdf.multi_cell(0, 5,
+                f"Rationale: {top.edge_source}. "
+                f"This trade activates when: {top.regime_condition}. "
+                f"Entry signal: {top.entry_signal}. "
+                f"Exit signal: {top.exit_signal}."
+            )
+        self.pdf.ln(3)
+
+        # Regime context box
         if regime_state:
-            rp = regime_state.get("regime_prob", 0)
-            self.pdf.set_font("Helvetica", "", 10)
-            self.pdf.set_text_color(80, 80, 80)
-            self.pdf.cell(0, 7, f"Regime Probability: {rp:.1%}  |  "
-                          f"Total Ideas: {len(cards)}  |  "
-                          f"Categories: {', '.join(sorted(set(c.category for c in cards)))}",
-                          ln=True, align="C")
+            self.pdf.set_font("Helvetica", "B", 10)
+            self.pdf.set_text_color(*_AGED_GOLD)
+            self.pdf.cell(0, 6, "MARKET REGIME CONTEXT", ln=True)
             self.pdf.set_text_color(0, 0, 0)
-            self.pdf.ln(6)
+            self.pdf.ln(2)
+            self.pdf.set_font("Helvetica", "", 9)
+            regime_text = (
+                f"Current regime probability is {rp:.1%}, indicating a "
+                f"{'strong repricing' if rp > 0.7 else 'moderate repricing' if rp > 0.5 else 'suppressed'} "
+                f"environment. "
+            )
+            if rp > 0.7:
+                regime_text += (
+                    "In a strong repricing regime, directional short-JGB and volatility-long trades "
+                    "tend to perform best. Carry trades face elevated risk of sharp unwind. "
+                    "Position sizes should reflect the heightened conviction from aligned signals."
+                )
+            elif rp > 0.5:
+                regime_text += (
+                    "A moderate repricing regime suggests transitional conditions. Relative value "
+                    "and spread trades may outperform outright directional bets. Consider hedged "
+                    "positions and asymmetric option strategies to manage regime uncertainty."
+                )
+            else:
+                regime_text += (
+                    "A suppressed regime favors carry and yield-enhancement strategies. "
+                    "Volatility selling (short straddles/strangles) can capture range-bound premium. "
+                    "Watch for early warning signals of regime shift before adding to carry exposure."
+                )
+            self.pdf.multi_cell(0, 5, regime_text)
+            self.pdf.ln(3)
+
+        # Risk allocation guidance
+        self.pdf.set_font("Helvetica", "B", 10)
+        self.pdf.set_text_color(*_AGED_GOLD)
+        self.pdf.cell(0, 6, "RISK ALLOCATION GUIDANCE", ln=True)
+        self.pdf.set_text_color(0, 0, 0)
+        self.pdf.ln(2)
+        self.pdf.set_font("Helvetica", "", 9)
+        risk_text = (
+            f"With {n_high} high-conviction trade{'s' if n_high != 1 else ''}, "
+            f"allocate the majority of risk budget to these ideas first. "
+        )
+        if n_high >= 2:
+            risk_text += (
+                "Multiple high-conviction signals suggest strong model consensus - "
+                "consider concentrating 60-70% of risk budget on these positions. "
+            )
+        elif n_high == 1:
+            risk_text += (
+                "A single high-conviction trade suggests focused opportunity - "
+                "allocate up to 40% of risk budget here with the remainder spread across medium-conviction ideas. "
+            )
+        else:
+            risk_text += (
+                "No high-conviction trades are present. This is a signal for conservative positioning - "
+                "keep individual position sizes small and focus on relative-value structures. "
+            )
+        risk_text += (
+            "Medium-conviction ideas (40-69%) should carry standard position sizes. "
+            "Low-conviction ideas (<40%) should be monitored but not actively traded until signals strengthen. "
+            "Always read the failure scenario for each trade before sizing."
+        )
+        self.pdf.multi_cell(0, 5, risk_text)
+        self.pdf.ln(4)
 
         # Summary table
+        self.pdf.set_font("Helvetica", "B", 10)
+        self.pdf.set_text_color(*_AGED_GOLD)
+        self.pdf.cell(0, 6, "TRADE SUMMARY TABLE", ln=True)
+        self.pdf.set_text_color(0, 0, 0)
+        self.pdf.ln(2)
         self.pdf.set_font("Helvetica", "B", 9)
         col_w = [55, 22, 22, 50, 41]
         headers = ["Trade", "Dir", "Conv.", "Instruments", "Category"]
@@ -262,7 +367,7 @@ class JGBReportPDF:
             self.pdf.cell(w, 7, h, border=1, align="C")
         self.pdf.ln()
         self.pdf.set_font("Helvetica", "", 8)
-        for card in sorted(cards, key=lambda c: -c.conviction):
+        for card in sorted_cards:
             self.pdf.cell(col_w[0], 6, card.name[:28], border=1)
             self.pdf.cell(col_w[1], 6, card.direction.upper(), border=1, align="C")
             self.pdf.cell(col_w[2], 6, f"{card.conviction:.0%}", border=1, align="C")
@@ -272,11 +377,11 @@ class JGBReportPDF:
         self._add_page_footer()
 
         # --- Individual trade card pages ---
-        for card in sorted(cards, key=lambda c: -c.conviction):
+        for card in sorted_cards:
             self._add_trade_card_page(card)
 
     def _add_trade_card_page(self, card) -> None:
-        """Render a single trade card as a full PDF page with payout graph."""
+        """Render a single trade card as a full PDF page with payout graph and textual analysis."""
         import numpy as np
 
         self.pdf.add_page()
@@ -289,9 +394,43 @@ class JGBReportPDF:
         self.pdf.cell(0, 10, f"{dir_label}  |  {card.name}  |  {card.conviction:.0%} Conviction", ln=True)
         self.pdf.ln(2)
         self._draw_gold_rule()
-        self.pdf.ln(6)
+        self.pdf.ln(4)
 
-        # Two-column layout via multi_cell
+        # --- Trade thesis narrative ---
+        self.pdf.set_font("Helvetica", "B", 9)
+        self.pdf.set_text_color(*_AGED_GOLD)
+        self.pdf.cell(0, 6, "TRADE THESIS", ln=True)
+        self.pdf.set_text_color(0, 0, 0)
+        self.pdf.ln(1)
+        self.pdf.set_font("Helvetica", "", 8)
+        conv_word = "high" if card.conviction >= 0.7 else "moderate" if card.conviction >= 0.4 else "low"
+        thesis = (
+            f"This is a {conv_word}-conviction {card.direction} trade on "
+            f"{', '.join(card.instruments[:3])} in the {card.category.replace('_', ' ')} space. "
+            f"The trade is driven by: {card.edge_source}. "
+            f"It activates under the following regime condition: {card.regime_condition}. "
+        )
+        if card.conviction >= 0.7:
+            thesis += (
+                "At this conviction level, multiple quantitative signals are aligned. "
+                "This represents a strong opportunity where model consensus is high and the "
+                "risk/reward profile favors aggressive sizing relative to other ideas in the portfolio."
+            )
+        elif card.conviction >= 0.4:
+            thesis += (
+                "At moderate conviction, some signals agree but not all models confirm the thesis. "
+                "Standard position sizing is appropriate. Monitor the regime condition closely "
+                "for strengthening or weakening signals before adjusting exposure."
+            )
+        else:
+            thesis += (
+                "Low conviction indicates mixed or weak signals. This idea should be on a watchlist "
+                "rather than actively traded. Wait for additional confirming signals before deploying capital."
+            )
+        self.pdf.multi_cell(0, 4.5, thesis)
+        self.pdf.ln(3)
+
+        # --- Trade specification ---
         self.pdf.set_font("Helvetica", "B", 9)
         self.pdf.set_text_color(*_AGED_GOLD)
         self.pdf.cell(0, 6, "TRADE SPECIFICATION", ln=True)
@@ -312,21 +451,44 @@ class JGBReportPDF:
             self.pdf.cell(35, 5, label + ":", align="R")
             self.pdf.set_font("Helvetica", "", 8)
             self.pdf.cell(3, 5, "")  # spacer
-            # Use multi_cell for wrapping but track position
             x_start = self.pdf.get_x()
             y_start = self.pdf.get_y()
             self.pdf.multi_cell(152, 5, value[:200])
             self.pdf.ln(1)
 
-        # Failure scenario (red highlight)
+        # --- Entry/exit logic explanation ---
         self.pdf.ln(2)
+        self.pdf.set_font("Helvetica", "B", 9)
+        self.pdf.set_text_color(*_AGED_GOLD)
+        self.pdf.cell(0, 6, "EXECUTION LOGIC", ln=True)
+        self.pdf.set_text_color(0, 0, 0)
+        self.pdf.ln(1)
+        self.pdf.set_font("Helvetica", "", 8)
+        exec_logic = (
+            f"Entry: {card.entry_signal}. Once the entry condition is met, initiate the "
+            f"{card.direction} position using {card.sizing_method} sizing methodology. "
+            f"Exit: {card.exit_signal}. "
+            f"The position should be unwound when the exit signal triggers, regardless of P&L at that point. "
+            f"Discipline in following pre-defined exit rules is critical to risk management."
+        )
+        self.pdf.multi_cell(0, 4.5, exec_logic)
+        self.pdf.ln(2)
+
+        # --- Failure scenario (red highlight) ---
         self.pdf.set_fill_color(255, 240, 240)
         self.pdf.set_font("Helvetica", "B", 8)
         self.pdf.set_text_color(180, 30, 30)
-        self.pdf.cell(0, 6, "  FAILURE SCENARIO", ln=True, fill=True)
+        self.pdf.cell(0, 6, "  FAILURE SCENARIO  —  READ BEFORE ENTERING TRADE", ln=True, fill=True)
         self.pdf.set_text_color(60, 20, 20)
         self.pdf.set_font("Helvetica", "", 8)
-        self.pdf.multi_cell(0, 5, "  " + card.failure_scenario[:300])
+        self.pdf.multi_cell(0, 5, "  " + card.failure_scenario[:400])
+        self.pdf.set_text_color(80, 80, 80)
+        self.pdf.set_font("Helvetica", "I", 7)
+        self.pdf.multi_cell(0, 4,
+            "  If this failure scenario is already playing out or is likely imminent, "
+            "skip this trade regardless of conviction score. The failure scenario is the "
+            "single most important risk check before deployment."
+        )
         self.pdf.set_text_color(0, 0, 0)
         self.pdf.ln(3)
 
@@ -355,6 +517,14 @@ class JGBReportPDF:
                 fmt = f"{v:,.2f}" if isinstance(v, float) else str(v)
                 self.pdf.cell(40, 5, fmt, border="B", ln=True)
                 self.pdf.set_font("Helvetica", "B", 8)
+            self.pdf.ln(2)
+
+            # Textual explanation of key levels
+            self.pdf.set_font("Helvetica", "I", 7)
+            self.pdf.set_text_color(80, 80, 80)
+            level_text = self._explain_key_levels(card, meta, levels)
+            self.pdf.multi_cell(0, 4, level_text)
+            self.pdf.set_text_color(0, 0, 0)
             self.pdf.ln(3)
 
         # Payout graph
@@ -364,18 +534,122 @@ class JGBReportPDF:
             self.pdf.set_text_color(*_AGED_GOLD)
             self.pdf.cell(0, 6, "ESTIMATED PAYOUT PROFILE", ln=True)
             self.pdf.set_text_color(0, 0, 0)
+            self.pdf.ln(1)
+
+            # Payout interpretation text
+            self.pdf.set_font("Helvetica", "", 7)
+            self.pdf.set_text_color(80, 80, 80)
+            payout_text = self._explain_payout(card, meta)
+            self.pdf.multi_cell(0, 4, payout_text)
+            self.pdf.set_text_color(0, 0, 0)
             self.pdf.ln(2)
+
             try:
                 self.pdf.image(payout_path, x=15, w=180)
             except Exception:
                 pass
-            # Cleanup temp file
             try:
                 Path(payout_path).unlink(missing_ok=True)
             except Exception:
                 pass
+            self.pdf.ln(2)
+            self.pdf.set_font("Helvetica", "I", 7)
+            self.pdf.set_text_color(120, 120, 120)
+            self.pdf.multi_cell(0, 4,
+                "Note: Payout profiles are estimated using proxy premium assumptions and are for "
+                "illustrative purposes only. Actual P&L will depend on market conditions, execution "
+                "prices, and volatility at the time of trade entry. Always verify with live pricing."
+            )
+            self.pdf.set_text_color(0, 0, 0)
 
         self._add_page_footer()
+
+    def _explain_key_levels(self, card, meta: dict, levels: dict) -> str:
+        """Generate textual explanation of key levels for the trade."""
+        parts = []
+        if "target_yield" in meta and "stop_yield" in meta:
+            entry = meta.get("jp10_level", meta.get("target_yield", 0))
+            target = meta["target_yield"]
+            stop = meta["stop_yield"]
+            rr = abs(target - entry) / max(abs(stop - entry), 0.001)
+            parts.append(
+                f"The entry level is {entry:.3f}%, targeting {target:.2f}% "
+                f"with a stop at {stop:.2f}%. This gives an approximate risk/reward ratio "
+                f"of {rr:.1f}:1. "
+            )
+            if rr >= 2:
+                parts.append("The risk/reward is favorable (>=2:1). ")
+            elif rr >= 1:
+                parts.append("The risk/reward is acceptable (>=1:1) but not exceptional. ")
+            else:
+                parts.append("The risk/reward is unfavorable (<1:1) - consider tighter sizing. ")
+        if "usdjpy_spot" in meta:
+            parts.append(f"USDJPY spot reference: {meta['usdjpy_spot']:.2f}. ")
+        if "straddle_strike" in meta:
+            K = meta["straddle_strike"]
+            parts.append(
+                f"Straddle struck at {K:.1f}. Maximum loss is the total premium paid. "
+                f"Breakeven points are approximately {K:.1f} +/- premium on each side."
+            )
+        if "atm_strike" in meta and "otm_strike" in meta:
+            parts.append(
+                f"Payer spread: buy at ATM strike {meta['atm_strike']:.3f}%, "
+                f"sell at OTM strike {meta['otm_strike']:.3f}%. "
+                f"Max gain capped at the spread width minus net premium. Max loss is net premium paid."
+            )
+        if "spread_bps" in meta and "target_spread_bps" in meta:
+            parts.append(
+                f"Entry spread: {meta['spread_bps']:.0f} bps, targeting {meta['target_spread_bps']:.0f} bps. "
+                f"P&L is linear in spread movement."
+            )
+        return "".join(parts) if parts else "Key levels define the trade's entry, target, and risk boundaries."
+
+    def _explain_payout(self, card, meta: dict) -> str:
+        """Generate textual interpretation of the payout profile."""
+        if "straddle_strike" in meta:
+            return (
+                "This straddle profits when the underlying moves significantly in either direction. "
+                "The gold-shaded region shows profit zones; the red-shaded region shows the loss zone around "
+                "the strike where the combined premium cost exceeds the intrinsic value. The trade is "
+                "market-neutral and benefits from realized volatility exceeding implied volatility."
+            )
+        if "atm_strike" in meta and "otm_strike" in meta:
+            return (
+                "This payer spread has a capped upside (max gain at or above the OTM strike) and a defined "
+                "max loss (net premium paid). The gold region shows profits when rates rise above the lower "
+                "strike plus premium. This is a directional bet on higher rates with limited downside."
+            )
+        if "call_strike" in meta and "put_strike" in meta:
+            return (
+                "This short strangle collects premium by selling both a call and a put. The gold region "
+                "between the strikes shows the profit zone where neither option is exercised. Losses are "
+                "theoretically unlimited beyond the breakeven points. This trade profits from low volatility."
+            )
+        if "put_strike" in meta and "usdjpy_spot" in meta:
+            return (
+                "This long put profits when the underlying falls below the strike price minus the premium paid. "
+                "Maximum loss is limited to the premium. The gold region shows the profit zone on a decline; "
+                "the red region shows the fixed premium cost if the underlying stays above the strike."
+            )
+        if "target_yield" in meta and "stop_yield" in meta:
+            return (
+                f"This is a linear {'short' if card.direction == 'short' else 'long'} yield trade. "
+                f"P&L scales linearly with yield movement. The green dashed line marks the target; "
+                f"the red dashed line marks the stop-loss level. The gold-shaded area represents the "
+                f"profitable zone; the red-shaded area represents the loss zone."
+            )
+        if "target" in meta and "stop" in meta and "usdjpy_spot" in meta:
+            return (
+                f"This is a linear {card.direction} FX trade on USDJPY. P&L is proportional to the "
+                f"percentage move from spot. Target and stop levels define the expected range. "
+                f"Gold shading shows profit, red shows loss."
+            )
+        if "spread_bps" in meta and "target_spread_bps" in meta:
+            return (
+                "This is a spread trade where P&L depends on the change in the basis-point spread. "
+                "The trade profits when the spread moves toward the target level."
+            )
+        return "The chart below shows the estimated payout profile for this trade structure."
 
     def _generate_payout_graph(self, card) -> Optional[str]:
         """Generate a payout diagram as a temp PNG. Returns path or None."""

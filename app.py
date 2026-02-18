@@ -3237,6 +3237,132 @@ def _generate_trades(simulated, start, end, api_key):
     return cards, regime_state
 
 
+def _build_payout_chart(card) -> "go.Figure | None":
+    """Build a Plotly payout profile chart for a trade card. Returns None if unsupported."""
+    meta = card.metadata or {}
+    _GOLD = "#CFB991"
+    _RED = "#c0392b"
+    _GREEN = "#2e7d32"
+    _BLK = "#000000"
+
+    fig = None
+
+    # --- Straddle ---
+    if "straddle_strike" in meta:
+        K = meta["straddle_strike"]
+        premium = abs(K) * 0.015
+        x = np.linspace(K - K * 0.05, K + K * 0.05, 200)
+        call_pay = np.maximum(x - K, 0) - premium / 2
+        put_pay = np.maximum(K - x, 0) - premium / 2
+        total = call_pay + put_pay
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=x, y=total, mode="lines", line=dict(color=_BLK, width=2), name="Straddle P&L"))
+        fig.add_trace(go.Scatter(x=x, y=np.where(total > 0, total, 0), fill="tozeroy", line=dict(width=0), fillcolor="rgba(207,185,145,0.3)", showlegend=False))
+        fig.add_trace(go.Scatter(x=x, y=np.where(total < 0, total, 0), fill="tozeroy", line=dict(width=0), fillcolor="rgba(192,57,43,0.15)", showlegend=False))
+        fig.add_vline(x=K, line_dash="dot", line_color=_GOLD, annotation_text=f"Strike {K:.1f}")
+        fig.add_hline(y=0, line_dash="dash", line_color="#888")
+        fig.update_layout(xaxis_title="Underlying Price", yaxis_title="P&L", title=f"{card.name} — Straddle Payout")
+
+    # --- Payer spread ---
+    elif "atm_strike" in meta and "otm_strike" in meta:
+        K1 = meta["atm_strike"]
+        K2 = meta["otm_strike"]
+        premium = abs(K2 - K1) * 0.4
+        x = np.linspace(K1 - abs(K2 - K1) * 2, K2 + abs(K2 - K1) * 2, 200)
+        total = np.maximum(x - K1, 0) - np.maximum(x - K2, 0) - premium
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=x, y=total, mode="lines", line=dict(color=_BLK, width=2), name="Payer Spread P&L"))
+        fig.add_trace(go.Scatter(x=x, y=np.where(total > 0, total, 0), fill="tozeroy", line=dict(width=0), fillcolor="rgba(207,185,145,0.3)", showlegend=False))
+        fig.add_trace(go.Scatter(x=x, y=np.where(total < 0, total, 0), fill="tozeroy", line=dict(width=0), fillcolor="rgba(192,57,43,0.15)", showlegend=False))
+        fig.add_vline(x=K1, line_dash="dot", line_color=_GOLD, annotation_text=f"Buy {K1:.3f}%")
+        fig.add_vline(x=K2, line_dash="dot", line_color=_RED, annotation_text=f"Sell {K2:.3f}%")
+        fig.add_hline(y=0, line_dash="dash", line_color="#888")
+        fig.update_layout(xaxis_title="Swap Rate (%)", yaxis_title="P&L (bps)", title=f"{card.name} — Payer Spread Payout")
+
+    # --- Short strangle ---
+    elif "call_strike" in meta and "put_strike" in meta:
+        Kc = meta["call_strike"]
+        Kp = meta["put_strike"]
+        premium = abs(Kc - Kp) * 0.3
+        x = np.linspace(Kp - abs(Kc - Kp), Kc + abs(Kc - Kp), 200)
+        total = -np.maximum(x - Kc, 0) - np.maximum(Kp - x, 0) + premium
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=x, y=total, mode="lines", line=dict(color=_BLK, width=2), name="Short Strangle P&L"))
+        fig.add_trace(go.Scatter(x=x, y=np.where(total > 0, total, 0), fill="tozeroy", line=dict(width=0), fillcolor="rgba(207,185,145,0.3)", showlegend=False))
+        fig.add_trace(go.Scatter(x=x, y=np.where(total < 0, total, 0), fill="tozeroy", line=dict(width=0), fillcolor="rgba(192,57,43,0.15)", showlegend=False))
+        fig.add_vline(x=Kp, line_dash="dot", line_color=_GREEN, annotation_text=f"Put {Kp:.2f}")
+        fig.add_vline(x=Kc, line_dash="dot", line_color=_RED, annotation_text=f"Call {Kc:.2f}")
+        fig.add_hline(y=0, line_dash="dash", line_color="#888")
+        fig.update_layout(xaxis_title="Underlying Price", yaxis_title="P&L", title=f"{card.name} — Short Strangle Payout")
+
+    # --- Single put ---
+    elif "put_strike" in meta and "usdjpy_spot" in meta:
+        K = meta["put_strike"]
+        spot = meta["usdjpy_spot"]
+        premium = abs(spot - K) * 0.15
+        x = np.linspace(K * 0.94, spot * 1.04, 200)
+        total = np.maximum(K - x, 0) - premium
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=x, y=total, mode="lines", line=dict(color=_BLK, width=2), name="Long Put P&L"))
+        fig.add_trace(go.Scatter(x=x, y=np.where(total > 0, total, 0), fill="tozeroy", line=dict(width=0), fillcolor="rgba(207,185,145,0.3)", showlegend=False))
+        fig.add_trace(go.Scatter(x=x, y=np.where(total < 0, total, 0), fill="tozeroy", line=dict(width=0), fillcolor="rgba(192,57,43,0.15)", showlegend=False))
+        fig.add_vline(x=K, line_dash="dot", line_color=_GOLD, annotation_text=f"Strike {K:.0f}")
+        fig.add_vline(x=spot, line_dash="dot", line_color=_BLK, annotation_text=f"Spot {spot:.0f}")
+        fig.add_hline(y=0, line_dash="dash", line_color="#888")
+        fig.update_layout(xaxis_title="USDJPY", yaxis_title="P&L per unit", title=f"{card.name} — Put Payout (K={K:.0f})")
+
+    # --- Directional yield with target/stop ---
+    elif "target_yield" in meta and "stop_yield" in meta:
+        entry = meta.get("jp10_level", 1.0)
+        target = meta["target_yield"]
+        stop = meta["stop_yield"]
+        x = np.linspace(min(stop, entry) - 0.1, max(target, entry) + 0.1, 200)
+        pnl = (entry - x) * 100 if card.direction == "short" else (x - entry) * 100
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=x, y=pnl, mode="lines", line=dict(color=_BLK, width=2), name="P&L (bps)"))
+        fig.add_trace(go.Scatter(x=x, y=np.where(pnl > 0, pnl, 0), fill="tozeroy", line=dict(width=0), fillcolor="rgba(207,185,145,0.3)", showlegend=False))
+        fig.add_trace(go.Scatter(x=x, y=np.where(pnl < 0, pnl, 0), fill="tozeroy", line=dict(width=0), fillcolor="rgba(192,57,43,0.15)", showlegend=False))
+        fig.add_vline(x=entry, line_dash="solid", line_color=_BLK, annotation_text=f"Entry {entry:.3f}%")
+        fig.add_vline(x=target, line_dash="dash", line_color=_GREEN, annotation_text=f"Target {target:.2f}%")
+        fig.add_vline(x=stop, line_dash="dash", line_color=_RED, annotation_text=f"Stop {stop:.2f}%")
+        fig.add_hline(y=0, line_dash="dash", line_color="#888")
+        fig.update_layout(xaxis_title="Yield (%)", yaxis_title="P&L (bps)", title=f"{card.name} — {card.direction.upper()} P&L Profile")
+
+    # --- USDJPY with target/stop ---
+    elif "target" in meta and "stop" in meta and "usdjpy_spot" in meta:
+        spot = meta["usdjpy_spot"]
+        target = meta["target"]
+        stop = meta["stop"]
+        x = np.linspace(stop * 0.98, target * 1.02, 200)
+        pnl = (x - spot) / spot * 100 if card.direction == "long" else (spot - x) / spot * 100
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=x, y=pnl, mode="lines", line=dict(color=_BLK, width=2), name="P&L (%)"))
+        fig.add_trace(go.Scatter(x=x, y=np.where(pnl > 0, pnl, 0), fill="tozeroy", line=dict(width=0), fillcolor="rgba(207,185,145,0.3)", showlegend=False))
+        fig.add_trace(go.Scatter(x=x, y=np.where(pnl < 0, pnl, 0), fill="tozeroy", line=dict(width=0), fillcolor="rgba(192,57,43,0.15)", showlegend=False))
+        fig.add_vline(x=spot, line_dash="solid", line_color=_BLK, annotation_text=f"Spot {spot:.2f}")
+        fig.add_vline(x=target, line_dash="dash", line_color=_GREEN, annotation_text=f"Target {target:.2f}")
+        fig.add_vline(x=stop, line_dash="dash", line_color=_RED, annotation_text=f"Stop {stop:.2f}")
+        fig.add_hline(y=0, line_dash="dash", line_color="#888")
+        fig.update_layout(xaxis_title="USDJPY", yaxis_title="P&L (%)", title=f"{card.name} — {card.direction.upper()} P&L Profile")
+
+    # --- Spread trade ---
+    elif "spread_bps" in meta and "target_spread_bps" in meta:
+        entry = meta["spread_bps"]
+        target = meta["target_spread_bps"]
+        x = np.linspace(entry - 30, max(target, entry) + 20, 200)
+        pnl = x - entry if card.direction == "long" else entry - x
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=x, y=pnl, mode="lines", line=dict(color=_BLK, width=2), name="Spread P&L (bps)"))
+        fig.add_trace(go.Scatter(x=x, y=np.where(pnl > 0, pnl, 0), fill="tozeroy", line=dict(width=0), fillcolor="rgba(207,185,145,0.3)", showlegend=False))
+        fig.add_trace(go.Scatter(x=x, y=np.where(pnl < 0, pnl, 0), fill="tozeroy", line=dict(width=0), fillcolor="rgba(192,57,43,0.15)", showlegend=False))
+        fig.add_vline(x=entry, line_dash="solid", line_color=_BLK, annotation_text=f"Entry {entry:.0f} bps")
+        fig.add_vline(x=target, line_dash="dash", line_color=_GREEN, annotation_text=f"Target {target:.0f} bps")
+        fig.add_hline(y=0, line_dash="dash", line_color="#888")
+        fig.update_layout(xaxis_title="Spread (bps)", yaxis_title="P&L (bps)", title=f"{card.name} — Spread P&L")
+
+    return fig
+
+
 def page_trade_ideas():
     st.header("Trade Ideas")
     _page_intro(
@@ -3411,6 +3537,36 @@ def page_trade_ideas():
                     f"<span style='color:#2d2d2d;'>{card.failure_scenario}</span></div>",
                     unsafe_allow_html=True,
                 )
+
+            # --- Key Levels ---
+            meta = card.metadata or {}
+            levels = {}
+            for _k in ["jp10_level", "target_yield", "stop_yield", "usdjpy_spot",
+                        "target", "stop", "put_strike", "straddle_strike",
+                        "payer_strike", "call_strike", "receiver_strike",
+                        "atm_strike", "otm_strike", "breakeven",
+                        "spread_bps", "target_spread_bps"]:
+                if _k in meta and meta[_k] is not None:
+                    levels[_k.replace("_", " ").title()] = meta[_k]
+            if levels:
+                st.markdown(
+                    "<div style='margin-top:10px;'>"
+                    "<span style='font-size:var(--fs-xs);font-weight:700;text-transform:uppercase;"
+                    "letter-spacing:var(--ls-widest);color:#8E6F3E;'>Key Levels &amp; Strike Prices</span></div>",
+                    unsafe_allow_html=True,
+                )
+                _lvl_cols = st.columns(min(len(levels), 5))
+                for _i, (_lk, _lv) in enumerate(levels.items()):
+                    _fmt = f"{_lv:,.2f}" if isinstance(_lv, float) else str(_lv)
+                    _lvl_cols[_i % len(_lvl_cols)].metric(_lk, _fmt)
+
+            # --- Payout Graph ---
+            try:
+                payout_fig = _build_payout_chart(card)
+                if payout_fig is not None:
+                    _chart(_style_fig(payout_fig, 300))
+            except Exception:
+                pass
 
     # --- Export ---
     if filtered:
