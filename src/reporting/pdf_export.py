@@ -58,6 +58,9 @@ class JGBReportPDF:
 
     def _add_page_footer(self) -> None:
         """Add a small footer with course + date to the current page bottom."""
+        # Temporarily disable auto page break so writing near the bottom
+        # doesn't create a spurious blank page.
+        self.pdf.set_auto_page_break(auto=False)
         self.pdf.set_y(-20)
         self._draw_gold_rule(width=170)
         self.pdf.ln(3)
@@ -66,6 +69,7 @@ class JGBReportPDF:
         self.pdf.cell(0, 5, "AI for Finance | MGMT 69000-119 | Purdue University", align="L")
         self.pdf.cell(0, 5, f"Generated {datetime.now():%Y-%m-%d %H:%M}", align="R", ln=True)
         self.pdf.set_text_color(0, 0, 0)
+        self.pdf.set_auto_page_break(auto=True, margin=15)
 
     # ── title page ──────────────────────────────────────────────────────
     def add_title_page(
