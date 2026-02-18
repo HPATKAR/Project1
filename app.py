@@ -3414,14 +3414,39 @@ def page_trade_ideas():
 
     # --- Export ---
     if filtered:
-        df_export = trade_cards_to_dataframe(filtered)
-        csv = df_export.to_csv(index=False)
-        st.download_button(
-            "Download Trade Cards as CSV",
-            data=csv,
-            file_name="jgb_trade_cards.csv",
-            mime="text/csv",
-        )
+        st.subheader("Export Trade Ideas")
+        _section_note("Download trade cards as a branded PDF report with payout graphs, or as raw CSV data.")
+        col_pdf, col_csv = st.columns(2)
+
+        with col_pdf:
+            try:
+                report = JGBReportPDF()
+                report.add_title_page(
+                    title="JGB Trade Ideas Report",
+                    subtitle=f"{len(filtered)} Trade Ideas  |  {datetime.now():%Y-%m-%d %H:%M}",
+                )
+                report.add_trade_ideas(filtered, regime_state)
+                pdf_bytes = report.to_bytes()
+                st.download_button(
+                    "Download Trade Ideas PDF",
+                    data=pdf_bytes,
+                    file_name=f"jgb_trade_ideas_{datetime.now():%Y%m%d}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                )
+            except Exception as exc:
+                st.warning(f"Could not generate PDF: {exc}")
+
+        with col_csv:
+            df_export = trade_cards_to_dataframe(filtered)
+            csv = df_export.to_csv(index=False)
+            st.download_button(
+                "Download Trade Cards CSV",
+                data=csv,
+                file_name=f"jgb_trade_cards_{datetime.now():%Y%m%d}.csv",
+                mime="text/csv",
+                use_container_width=True,
+            )
 
     # --- Page conclusion ---
     _n_total = len(cards)
