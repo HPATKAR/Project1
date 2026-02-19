@@ -4803,7 +4803,7 @@ def page_about_heramb():
             "<div class='about-card'>"
             "<p class='about-card-title'>This Project</p>"
             f"<p style='{_f}color:#1a1a1a;font-size:var(--fs-md);line-height:1.75;margin:0 0 12px 0;'>"
-            "Built this JGB Repricing Framework as Course Project 1 for Prof. Xinde Zhang's "
+            "Built this JGB Repricing Framework as Course Project 1 for Prof. Cinder Zhang's"
             "MGMT 69000-119: a quantitative dashboard that detects regime shifts in Japanese "
             "Government Bond markets and generates institutional-grade trade ideas.</p>"
             "<div class='stat-row'>"
@@ -4940,7 +4940,7 @@ def page_about_heramb():
         st.markdown(
             "<div class='about-card'>"
             "<p class='about-card-title'>Acknowledgments</p>"
-            "<p class='ack-text'><strong>Prof. Xinde Zhang</strong>, MGMT 69000: "
+            "<p class='ack-text'><strong>Prof. Cinder Zhang</strong>, MGMT 69000: "
             "Framework-first thinking behind regime and spillover design</p>"
             "<p class='ack-text' style='margin-top:8px;'><strong>Prof. Adem Atmaz</strong>, "
             "MGMT 511: Fixed income intuition behind PCA decomposition and "
@@ -4963,7 +4963,7 @@ def page_about_zhang():
     st.markdown(
         "<div class='about-hero'><div class='about-hero-inner'>"
         "<p class='overline'>Course Instructor</p>"
-        "<h1>Dr. Xinde (Cinder) Zhang, Ph.D.</h1>"
+        "<h1>Dr. Cinder Zhang, Ph.D.</h1>"
         "<p class='subtitle'>Finance Faculty, Mitchell E. Daniels, Jr. School of Business</p>"
         "<p class='tagline'>Creator of the DRIVER Framework. Award-winning educator "
         "pioneering AI-integrated finance pedagogy at Purdue University.</p>"

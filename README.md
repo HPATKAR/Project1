@@ -7,7 +7,7 @@ Regime detection and trade generation for the Japanese Government Bond market.
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
 
 **Author:** Heramb Patkar — Purdue University, Daniels School of Business
-**Course:** MGMT 69000 — Mastering AI for Finance (Prof. Yanjun Zhang)
+**Course:** MGMT 69000 — Mastering AI for Finance (Prof. Cinder Zhang)
 **Methodology:** Built using the [DRIVER Framework](product/README.md) — a structured product-development workflow (Define → Represent → Implement → Validate → Evolve → Reflect) designed by Prof. Zhang for AI-augmented financial engineering.
 
 ## Overview
@@ -249,6 +249,6 @@ MIT. See [LICENSE](LICENSE).
 ## Contact
 
 Heramb Patkar — Purdue University, Daniels School of Business | [GitHub](https://github.com/HPATKAR)
-MGMT 69000: Mastering AI for Finance — Prof. Yanjun Zhang
+MGMT 69000: Mastering AI for Finance — Prof. Cinder Zhang
 
 AI tools were used as pair-programming partners for scaffolding, debugging, and code review. All analytical decisions — model selection, parameter choices, thesis formulation, trade logic — were my own. See [`docs/ai_collaboration_log.md`](docs/ai_collaboration_log.md) for the structured collaboration log.
