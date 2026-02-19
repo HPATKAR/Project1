@@ -850,6 +850,151 @@ class JGBReportPDF:
         plt.close(fig)
         return tmp.name
 
+    def add_intraday_fx_summary(
+        self, df: pd.DataFrame, boj_dates: list, reactions: list
+    ) -> None:
+        """Add Intraday FX Event Study summary pages to the PDF."""
+        import numpy as np
+
+        # --- Page 1: Overview ---
+        self.pdf.add_page()
+        self._draw_header_bar()
+        self.pdf.ln(14)
+        self.pdf.set_font("Helvetica", "B", 18)
+        self.pdf.cell(0, 12, "Intraday FX Event Study", ln=True)
+        self.pdf.ln(2)
+        self._draw_gold_rule(width=60)
+        self.pdf.ln(6)
+
+        # Executive summary
+        self.pdf.set_font("Helvetica", "B", 10)
+        self.pdf.set_text_color(*_AGED_GOLD)
+        self.pdf.cell(0, 6, "EXECUTIVE SUMMARY", ln=True)
+        self.pdf.set_text_color(0, 0, 0)
+        self.pdf.ln(2)
+        self.pdf.set_font("Helvetica", "", 9)
+
+        mid_col = "MID_PRICE" if "MID_PRICE" in df.columns else "BID"
+        avg_mid = float(df[mid_col].mean()) if mid_col in df.columns else 0
+
+        exec_text = self._safe(
+            f"This report analyzes minute-level USDJPY price action around {len(boj_dates)} "
+            f"Bank of Japan monetary policy announcements, using data from LSEG (Refinitiv) "
+            f"via Purdue University's institutional subscription. The dataset contains "
+            f"{len(df):,} individual price observations at 1-minute frequency, covering "
+            f"bid/ask/mid prices and quote activity metrics."
+        )
+        self.pdf.set_x(self.pdf.l_margin)
+        self.pdf.multi_cell(0, 5, exec_text)
+        self.pdf.ln(2)
+
+        self.pdf.set_font("Helvetica", "", 9)
+        method_text = self._safe(
+            "Methodology: For each BOJ meeting date, USDJPY is tracked from 30 minutes before "
+            "to 60 minutes after the approximate announcement time (~12:00 JST / 03:00 UTC). "
+            "The 'reaction' is defined as the pip change over this window. Positive values mean "
+            "USDJPY rose (yen weakened - dovish outcome). Negative values mean USDJPY fell "
+            "(yen strengthened - hawkish surprise). Bid-ask spreads and tick counts provide "
+            "additional measures of liquidity stress and market activity intensity."
+        )
+        self.pdf.set_x(self.pdf.l_margin)
+        self.pdf.multi_cell(0, 5, method_text)
+        self.pdf.ln(4)
+
+        # Key findings
+        if reactions:
+            self.pdf.set_font("Helvetica", "B", 10)
+            self.pdf.set_text_color(*_AGED_GOLD)
+            self.pdf.cell(0, 6, "KEY FINDINGS", ln=True)
+            self.pdf.set_text_color(0, 0, 0)
+            self.pdf.ln(2)
+
+            react_vals = [r["Reaction (pips)"] for r in reactions]
+            avg_abs = np.mean([abs(v) for v in react_vals])
+            best = max(reactions, key=lambda r: abs(r["Reaction (pips)"]))
+            n_pos = sum(1 for v in react_vals if v > 0)
+            n_neg = sum(1 for v in react_vals if v < 0)
+            avg_max_spread = np.mean([r.get("Max Spread (pips)", 0) for r in reactions])
+
+            findings = [
+                f"Average absolute FX reaction: {avg_abs:.1f} pips across {len(reactions)} meetings.",
+                f"Largest reaction: {best['Reaction (pips)']:+.1f} pips on {best['Date']}.",
+                f"Direction: Yen weakened {n_pos} times, strengthened {n_neg} times.",
+                f"Average max spread on BOJ days: {avg_max_spread:.1f} pips (normal: 1-2 pips).",
+                f"Average USDJPY level: {avg_mid:.2f}.",
+            ]
+
+            self.pdf.set_font("Helvetica", "", 9)
+            for finding in findings:
+                self.pdf.set_x(self.pdf.l_margin)
+                self.pdf.multi_cell(0, 5, self._safe(f"  - {finding}"))
+                self.pdf.ln(1)
+            self.pdf.ln(2)
+
+            # Inference
+            self.pdf.set_font("Helvetica", "B", 9)
+            if n_neg > n_pos:
+                inference = self._safe(
+                    "INFERENCE: The BOJ has been more hawkish than markets expected during this period. "
+                    "Yen strengthening (USDJPY falling) has been the more common reaction, suggesting "
+                    "markets have consistently underestimated the pace of BOJ policy normalization."
+                )
+            elif n_pos > n_neg:
+                inference = self._safe(
+                    "INFERENCE: The BOJ has been more dovish than markets expected. Yen weakening "
+                    "(USDJPY rising) has been more common, suggesting markets have repeatedly "
+                    "overestimated how quickly the BOJ would tighten policy."
+                )
+            else:
+                inference = self._safe(
+                    "INFERENCE: Reactions have been balanced, suggesting the market has been "
+                    "reasonably well-calibrated to BOJ policy direction on average."
+                )
+            self.pdf.set_x(self.pdf.l_margin)
+            self.pdf.multi_cell(0, 5, inference)
+            self.pdf.ln(4)
+
+            # Reaction table
+            self.pdf.set_font("Helvetica", "B", 10)
+            self.pdf.set_text_color(*_AGED_GOLD)
+            self.pdf.cell(0, 6, "REACTION TABLE", ln=True)
+            self.pdf.set_text_color(0, 0, 0)
+            self.pdf.ln(2)
+
+            col_w = [30, 25, 25, 30, 30, 25, 25]
+            headers = ["Date", "Pre", "Post", "React(pips)", "Range(pips)", "AvgSprd", "MaxSprd"]
+            self.pdf.set_font("Helvetica", "B", 7)
+            for w, h in zip(col_w, headers):
+                self.pdf.cell(w, 6, h, border=1, align="C")
+            self.pdf.ln()
+            self.pdf.set_font("Helvetica", "", 7)
+            for r in reactions:
+                self.pdf.cell(col_w[0], 5, str(r["Date"]), border=1)
+                self.pdf.cell(col_w[1], 5, f"{r['Pre-Price']:.2f}", border=1, align="C")
+                self.pdf.cell(col_w[2], 5, f"{r['Post-Price']:.2f}", border=1, align="C")
+                self.pdf.cell(col_w[3], 5, f"{r['Reaction (pips)']:+.1f}", border=1, align="C")
+                self.pdf.cell(col_w[4], 5, f"{r['Day Range (pips)']:.1f}", border=1, align="C")
+                self.pdf.cell(col_w[5], 5, f"{r['Avg Spread (pips)']:.1f}", border=1, align="C")
+                self.pdf.cell(col_w[6], 5, f"{r['Max Spread (pips)']:.1f}", border=1, align="C")
+                self.pdf.ln()
+
+        self.pdf.ln(4)
+
+        # Data source attribution
+        self.pdf.set_font("Helvetica", "I", 7)
+        self.pdf.set_text_color(100, 100, 100)
+        self.pdf.set_x(self.pdf.l_margin)
+        self.pdf.multi_cell(0, 4, self._safe(
+            "Data Source: LSEG (formerly Refinitiv) via Purdue University Daniels School of Business "
+            "institutional subscription. RIC: JPY= (USDJPY spot). 1-minute frequency. "
+            "All times in UTC. BOJ announcement time approximated as 03:00 UTC (12:00 JST). "
+            "Reactions measured from -30 min to +60 min around announcement. "
+            "This analysis is for educational purposes only and does not constitute investment advice."
+        ))
+        self.pdf.set_text_color(0, 0, 0)
+
+        self._add_page_footer()
+
     def save(self, path: str | Path) -> str:
         path = str(path)
         self.pdf.output(path)
