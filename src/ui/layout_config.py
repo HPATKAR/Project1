@@ -22,8 +22,9 @@ class LayoutConfig:
     profile: str = "Analyst"
     enabled_tabs: List[str] = field(default_factory=lambda: [
         "Overview & Data", "Yield Curve Analytics", "Regime Detection",
-        "Spillover & Info Flow", "Trade Ideas", "Early Warning",
-        "Performance Review", "AI Q&A", "About: Heramb Patkar", "About: Dr. Zhang",
+        "Spillover & Info Flow", "Trade Ideas", "Intraday FX Event Study",
+        "Early Warning", "Performance Review", "AI Q&A",
+        "About: Heramb Patkar", "About: Dr. Zhang",
     ])
     default_tab: str = "Regime Detection"
     chart_theme: str = "plotly_dark"

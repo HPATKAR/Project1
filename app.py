@@ -596,6 +596,7 @@ _QP_MAP = {
     "regime": "Regime Detection",
     "spillover": "Spillover & Info Flow",
     "trades": "Trade Ideas",
+    "intraday_fx": "Intraday FX Event Study",
     "early_warning": "Early Warning",
     "performance": "Performance Review",
     "ai_qa": "AI Q&A",
@@ -615,6 +616,7 @@ _NAV_ITEMS = [
     ("Spillover & Info Flow", "spillover"),
     ("Early Warning", "early_warning"),
     ("Trade Ideas", "trades"),
+    ("Intraday FX Event Study", "intraday_fx"),
     ("Performance Review", "performance"),
     ("AI Q&A", "ai_qa"),
 ]
@@ -5135,6 +5137,453 @@ def page_about_zhang():
 
 
 # ===================================================================
+# Page 9: Intraday FX Event Study (LSEG Data)
+# ===================================================================
+_LSEG_CSV_PATH = Path(__file__).resolve().parent / "output" / "data" / "lseg" / "usdjpy_boj_intraday.csv"
+
+# Known BOJ announcement times (approximate, Tokyo time ~12:00 JST = 03:00 UTC)
+_BOJ_ANNOUNCE_HOUR_UTC = 3  # ~12:00 JST
+
+
+@st.cache_data(show_spinner=False, ttl=3600)
+def _load_lseg_intraday() -> "pd.DataFrame | None":
+    """Load LSEG intraday USDJPY CSV."""
+    if not _LSEG_CSV_PATH.exists():
+        return None
+    try:
+        df = pd.read_csv(_LSEG_CSV_PATH, parse_dates=["Timestamp"])
+        if "Timestamp" not in df.columns and df.index.name == "Timestamp":
+            df = df.reset_index()
+        if "Timestamp" not in df.columns:
+            # Try first column as index
+            df = pd.read_csv(_LSEG_CSV_PATH, index_col=0, parse_dates=True).reset_index()
+            df.rename(columns={df.columns[0]: "Timestamp"}, inplace=True)
+        return df
+    except Exception:
+        return None
+
+
+def page_intraday_fx():
+    st.header("Intraday FX Event Study")
+    _page_intro(
+        "Minute-level USDJPY price action around Bank of Japan monetary policy announcements, "
+        "sourced from LSEG (Refinitiv) via Purdue University's data subscription. This page examines "
+        "how currency markets react in real-time to BOJ decisions — a critical dimension for understanding "
+        "the transmission mechanism from policy changes to market repricing."
+    )
+    _definition_block(
+        "What Is an FX Event Study?",
+        "An event study isolates the market reaction to a specific event (here, BOJ announcements) by "
+        "examining price behavior in a tight window around the event time. By looking at minute-by-minute "
+        "data, we can observe:"
+        "<br><br>"
+        "<b>Price impact:</b> How much does USDJPY move when the BOJ announces? A hawkish surprise "
+        "(rate hike, YCC tweak) typically strengthens the yen (USDJPY drops). A dovish hold weakens it."
+        "<br><br>"
+        "<b>Liquidity stress:</b> The bid-ask spread widens sharply during announcements as market makers "
+        "pull quotes. Wider spreads mean higher trading costs and signal uncertainty."
+        "<br><br>"
+        "<b>Activity surge:</b> Tick counts (number of quote updates per minute) spike during announcements, "
+        "reflecting frenzied repositioning by algorithmic and human traders."
+        "<br><br>"
+        "<b>Price discovery speed:</b> How quickly does USDJPY find its new equilibrium? Some announcements "
+        "resolve in 5 minutes; others see volatility persist for hours."
+        "<br><br>"
+        "<b>Why USDJPY?</b> The yen is the most liquid expression of BOJ policy expectations. Currency "
+        "futures react faster than bonds because they trade 24 hours and have deeper global liquidity. "
+        "A BOJ rate hike makes yen deposits more attractive, strengthening JPY (USDJPY falls). A dovish "
+        "hold does the opposite."
+        "<br><br>"
+        "<b>Data source:</b> LSEG (formerly Refinitiv) via Purdue University's institutional subscription. "
+        "1-minute bid/ask/mid prices for USDJPY spot (RIC: JPY=)."
+    )
+
+    df = _load_lseg_intraday()
+    if df is None or len(df) == 0:
+        st.warning(
+            "No LSEG intraday data found. Place `usdjpy_boj_intraday.csv` in "
+            "`output/data/lseg/` to enable this page."
+        )
+        st.code("output/data/lseg/usdjpy_boj_intraday.csv", language="text")
+        _page_footer()
+        return
+
+    # Parse and clean
+    try:
+        if "boj_date" not in df.columns:
+            # Infer boj_date from timestamp date
+            df["boj_date"] = df["Timestamp"].dt.date.astype(str)
+
+        boj_dates = sorted(df["boj_date"].unique())
+        mid_col = "MID_PRICE" if "MID_PRICE" in df.columns else "BID"
+
+        # --- Summary metrics ---
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("BOJ Dates Covered", len(boj_dates))
+        c2.metric("Total Data Points", f"{len(df):,}")
+        c3.metric("Date Range", f"{boj_dates[0]} to {boj_dates[-1]}")
+        avg_mid = df[mid_col].mean()
+        c4.metric("Avg USDJPY", f"{avg_mid:.2f}")
+    except Exception as exc:
+        st.error(f"Error processing LSEG data: {exc}")
+        _page_footer()
+        return
+
+    # =================================================================
+    # Section 1: Overlay of all BOJ announcement days
+    # =================================================================
+    st.subheader("USDJPY Price Action on BOJ Days (Overlay)")
+    _section_note(
+        "Each line represents one BOJ meeting day. Time axis is relative to midnight UTC "
+        "(BOJ typically announces around 03:00 UTC / 12:00 JST). "
+        "Diverging lines after the announcement window indicate varying policy surprise magnitude."
+    )
+
+    try:
+        fig_overlay = go.Figure()
+        # Normalize each day: index by minutes from midnight, rebase to 100
+        for boj_date in boj_dates:
+            day_df = df[df["boj_date"] == boj_date].copy()
+            if len(day_df) < 10:
+                continue
+            day_df = day_df.sort_values("Timestamp")
+            # Minutes from midnight UTC
+            day_df["minutes"] = (
+                day_df["Timestamp"].dt.hour * 60 + day_df["Timestamp"].dt.minute
+            )
+            base_price = day_df[mid_col].iloc[0]
+            if base_price > 0:
+                day_df["rebased"] = (day_df[mid_col] / base_price - 1) * 10000  # bps
+            else:
+                continue
+
+            fig_overlay.add_trace(go.Scatter(
+                x=day_df["minutes"],
+                y=day_df["rebased"],
+                mode="lines",
+                name=boj_date,
+                line=dict(width=1.5),
+                hovertemplate=f"<b>{boj_date}</b><br>Min from midnight: %{{x}}<br>Move: %{{y:.1f}} bps<extra></extra>",
+            ))
+
+        # Add BOJ announcement window
+        fig_overlay.add_vrect(
+            x0=_BOJ_ANNOUNCE_HOUR_UTC * 60 - 5,
+            x1=_BOJ_ANNOUNCE_HOUR_UTC * 60 + 30,
+            fillcolor="rgba(207,185,145,0.15)",
+            line_width=0,
+            annotation_text="BOJ Window",
+            annotation_position="top left",
+        )
+        fig_overlay.add_vline(
+            x=_BOJ_ANNOUNCE_HOUR_UTC * 60,
+            line_dash="dash", line_color="#CFB991", line_width=2,
+            annotation_text="~12:00 JST",
+        )
+        fig_overlay.update_layout(
+            xaxis_title="Minutes from Midnight (UTC)",
+            yaxis_title="Price Change (bps from open)",
+            hovermode="x unified",
+        )
+        _chart(_style_fig(fig_overlay, 450))
+
+        # Interpretation
+        _section_note(
+            "<b>How to read:</b> Lines that spike up after the gold band indicate yen weakening "
+            "(dovish BOJ). Lines that drop indicate yen strengthening (hawkish surprise). "
+            "The tighter the cluster before the announcement, the more the reaction is news-driven "
+            "rather than pre-positioned."
+        )
+    except Exception as exc:
+        st.warning(f"Could not render overlay chart: {exc}")
+
+    # =================================================================
+    # Section 2: Individual day deep dive
+    # =================================================================
+    st.subheader("Single-Day Deep Dive")
+    _section_note(
+        "Select a BOJ meeting date to examine detailed price action, bid-ask spread behavior, "
+        "and market activity intensity."
+    )
+
+    selected_date = st.selectbox("Select BOJ Meeting Date", boj_dates, index=len(boj_dates) - 1)
+
+    try:
+        day_df = df[df["boj_date"] == selected_date].copy().sort_values("Timestamp")
+        if len(day_df) < 5:
+            st.info(f"Insufficient data for {selected_date}.")
+        else:
+            # Day metrics
+            day_open = day_df[mid_col].iloc[0]
+            day_close = day_df[mid_col].iloc[-1]
+            day_high = day_df[mid_col].max()
+            day_low = day_df[mid_col].min()
+            day_range = day_high - day_low
+            day_move = day_close - day_open
+
+            mc1, mc2, mc3, mc4, mc5 = st.columns(5)
+            mc1.metric("Open", f"{day_open:.2f}")
+            mc2.metric("Close", f"{day_close:.2f}", delta=f"{day_move:+.2f}")
+            mc3.metric("High", f"{day_high:.2f}")
+            mc4.metric("Low", f"{day_low:.2f}")
+            mc5.metric("Range (pips)", f"{day_range * 100:.0f}")
+
+            # --- Price chart with bid/ask/mid ---
+            fig_day = go.Figure()
+
+            if "BID" in day_df.columns and "ASK" in day_df.columns:
+                fig_day.add_trace(go.Scatter(
+                    x=day_df["Timestamp"], y=day_df["ASK"],
+                    mode="lines", name="Ask", line=dict(color="#c0392b", width=0.8),
+                    hovertemplate="Ask: %{y:.2f}<extra></extra>",
+                ))
+                fig_day.add_trace(go.Scatter(
+                    x=day_df["Timestamp"], y=day_df["BID"],
+                    mode="lines", name="Bid", line=dict(color="#2e7d32", width=0.8),
+                    fill="tonexty", fillcolor="rgba(207,185,145,0.1)",
+                    hovertemplate="Bid: %{y:.2f}<extra></extra>",
+                ))
+
+            fig_day.add_trace(go.Scatter(
+                x=day_df["Timestamp"], y=day_df[mid_col],
+                mode="lines", name="Mid", line=dict(color="#000", width=2),
+                hovertemplate="Mid: %{y:.2f}<extra></extra>",
+            ))
+
+            fig_day.update_layout(
+                xaxis_title="Time (UTC)",
+                yaxis_title="USDJPY",
+                hovermode="x unified",
+            )
+            _chart(_style_fig(fig_day, 400))
+
+            # --- Bid-Ask Spread ---
+            if "BID" in day_df.columns and "ASK" in day_df.columns:
+                st.subheader("Bid-Ask Spread (Liquidity)")
+                _section_note(
+                    "The bid-ask spread measures the cost of immediately executing a trade. "
+                    "Wider spreads indicate lower liquidity and higher uncertainty. During BOJ announcements, "
+                    "market makers widen quotes to protect against adverse selection — they don't want to be "
+                    "picked off by faster traders who see the news first. A spread spike is a real-time "
+                    "measure of market stress."
+                )
+                day_df["spread_pips"] = (day_df["ASK"] - day_df["BID"]) * 100  # in pips
+
+                fig_spread = go.Figure()
+                fig_spread.add_trace(go.Scatter(
+                    x=day_df["Timestamp"], y=day_df["spread_pips"],
+                    mode="lines", name="Spread (pips)",
+                    line=dict(color="#CFB991", width=1.5),
+                    fill="tozeroy", fillcolor="rgba(207,185,145,0.2)",
+                    hovertemplate="Spread: %{y:.1f} pips<extra></extra>",
+                ))
+                fig_spread.update_layout(
+                    xaxis_title="Time (UTC)", yaxis_title="Bid-Ask Spread (pips)",
+                    hovermode="x unified",
+                )
+                _chart(_style_fig(fig_spread, 300))
+
+                avg_spread = day_df["spread_pips"].mean()
+                max_spread = day_df["spread_pips"].max()
+                max_spread_time = day_df.loc[day_df["spread_pips"].idxmax(), "Timestamp"]
+                _section_note(
+                    f"Average spread: <b>{avg_spread:.1f} pips</b>. "
+                    f"Maximum spread: <b>{max_spread:.1f} pips</b> at {max_spread_time.strftime('%H:%M UTC')}. "
+                    f"{'The max spread occurred near the BOJ window, consistent with announcement-driven liquidity withdrawal.' if abs(max_spread_time.hour - _BOJ_ANNOUNCE_HOUR_UTC) <= 1 else 'The max spread occurred outside the typical BOJ window.'}"
+                )
+
+            # --- Tick Activity ---
+            bid_mov_col = "BID_NUMMOV" if "BID_NUMMOV" in day_df.columns else None
+            ask_mov_col = "ASK_NUMMOV" if "ASK_NUMMOV" in day_df.columns else None
+
+            if bid_mov_col or ask_mov_col:
+                st.subheader("Market Activity (Tick Count)")
+                _section_note(
+                    "Tick count measures how many times quotes updated per minute. Higher tick counts "
+                    "indicate more active trading and repositioning. A spike in ticks combined with a spread "
+                    "widening signals genuine market stress, not just normal trading."
+                )
+                fig_ticks = go.Figure()
+                if bid_mov_col:
+                    fig_ticks.add_trace(go.Bar(
+                        x=day_df["Timestamp"], y=day_df[bid_mov_col],
+                        name="Bid Updates", marker_color="rgba(46,125,50,0.6)",
+                        hovertemplate="Bid ticks: %{y}<extra></extra>",
+                    ))
+                if ask_mov_col:
+                    fig_ticks.add_trace(go.Bar(
+                        x=day_df["Timestamp"], y=day_df[ask_mov_col],
+                        name="Ask Updates", marker_color="rgba(192,57,43,0.6)",
+                        hovertemplate="Ask ticks: %{y}<extra></extra>",
+                    ))
+                fig_ticks.update_layout(
+                    xaxis_title="Time (UTC)", yaxis_title="Quote Updates / Minute",
+                    barmode="overlay", hovermode="x unified",
+                )
+                _chart(_style_fig(fig_ticks, 300))
+
+                if bid_mov_col:
+                    total_ticks = day_df[bid_mov_col].sum()
+                    peak_ticks = day_df[bid_mov_col].max()
+                    peak_time = day_df.loc[day_df[bid_mov_col].idxmax(), "Timestamp"]
+                    _section_note(
+                        f"Total bid quote updates: <b>{total_ticks:,.0f}</b>. "
+                        f"Peak activity: <b>{peak_ticks:,.0f}</b> updates/min at {peak_time.strftime('%H:%M UTC')}."
+                    )
+
+    except Exception as exc:
+        st.warning(f"Could not render day detail: {exc}")
+
+    # =================================================================
+    # Section 3: Cross-date comparison
+    # =================================================================
+    st.subheader("Announcement Reaction Summary")
+    _section_note(
+        "Comparison of price impact across all BOJ meeting dates. The 'reaction' is measured as "
+        "the USDJPY move (in pips) from 30 minutes before to 60 minutes after the approximate "
+        "announcement time (~03:00 UTC / 12:00 JST)."
+    )
+
+    try:
+        reactions = []
+        for boj_date in boj_dates:
+            day_df = df[df["boj_date"] == boj_date].copy().sort_values("Timestamp")
+            if len(day_df) < 10:
+                continue
+            day_df["hour"] = day_df["Timestamp"].dt.hour
+            day_df["minute_of_day"] = day_df["Timestamp"].dt.hour * 60 + day_df["Timestamp"].dt.minute
+
+            # Pre-announcement: 30 min before
+            pre_mask = (day_df["minute_of_day"] >= (_BOJ_ANNOUNCE_HOUR_UTC * 60 - 30)) & \
+                       (day_df["minute_of_day"] < _BOJ_ANNOUNCE_HOUR_UTC * 60)
+            # Post-announcement: 60 min after
+            post_mask = (day_df["minute_of_day"] >= _BOJ_ANNOUNCE_HOUR_UTC * 60) & \
+                        (day_df["minute_of_day"] <= (_BOJ_ANNOUNCE_HOUR_UTC * 60 + 60))
+
+            pre_df = day_df[pre_mask]
+            post_df = day_df[post_mask]
+
+            if len(pre_df) == 0 or len(post_df) == 0:
+                # Fallback: use first/last available prices
+                pre_price = day_df[mid_col].iloc[0]
+                post_price = day_df[mid_col].iloc[-1]
+            else:
+                pre_price = pre_df[mid_col].iloc[0]
+                post_price = post_df[mid_col].iloc[-1]
+
+            move_pips = (post_price - pre_price) * 100
+            day_range = (day_df[mid_col].max() - day_df[mid_col].min()) * 100
+
+            # Spread stats
+            if "BID" in day_df.columns and "ASK" in day_df.columns:
+                avg_spread = ((day_df["ASK"] - day_df["BID"]) * 100).mean()
+                max_spread = ((day_df["ASK"] - day_df["BID"]) * 100).max()
+            else:
+                avg_spread = max_spread = np.nan
+
+            reactions.append({
+                "Date": boj_date,
+                "Pre-Price": pre_price,
+                "Post-Price": post_price,
+                "Reaction (pips)": round(move_pips, 1),
+                "Day Range (pips)": round(day_range, 1),
+                "Avg Spread (pips)": round(avg_spread, 1),
+                "Max Spread (pips)": round(max_spread, 1),
+            })
+
+        if reactions:
+            react_df = pd.DataFrame(reactions)
+
+            # Bar chart of reactions
+            fig_react = go.Figure()
+            colors = ["#2e7d32" if r >= 0 else "#c0392b" for r in react_df["Reaction (pips)"]]
+            fig_react.add_trace(go.Bar(
+                x=react_df["Date"],
+                y=react_df["Reaction (pips)"],
+                marker_color=colors,
+                hovertemplate="<b>%{x}</b><br>Reaction: %{y:+.1f} pips<extra></extra>",
+            ))
+            fig_react.update_layout(
+                xaxis_title="BOJ Meeting Date",
+                yaxis_title="USDJPY Reaction (pips)",
+                xaxis_tickangle=-45,
+            )
+            fig_react.add_hline(y=0, line_dash="dash", line_color="#888")
+            _chart(_style_fig(fig_react, 400))
+
+            _section_note(
+                "<b>Interpretation:</b> Green bars = USDJPY rose (yen weakened, dovish/no-change). "
+                "Red bars = USDJPY fell (yen strengthened, hawkish surprise). "
+                "Taller bars indicate larger policy surprises relative to market expectations."
+            )
+
+            # Data table
+            st.dataframe(
+                react_df.style.format({
+                    "Pre-Price": "{:.2f}", "Post-Price": "{:.2f}",
+                    "Reaction (pips)": "{:+.1f}", "Day Range (pips)": "{:.1f}",
+                    "Avg Spread (pips)": "{:.1f}", "Max Spread (pips)": "{:.1f}",
+                }),
+                use_container_width=True,
+                hide_index=True,
+            )
+
+            # Summary stats
+            avg_abs_reaction = react_df["Reaction (pips)"].abs().mean()
+            max_reaction = react_df.loc[react_df["Reaction (pips)"].abs().idxmax()]
+            n_positive = (react_df["Reaction (pips)"] > 0).sum()
+            n_negative = (react_df["Reaction (pips)"] < 0).sum()
+
+            _section_note(
+                f"Across {len(reactions)} BOJ meetings: average absolute reaction = "
+                f"<b>{avg_abs_reaction:.1f} pips</b>. "
+                f"Largest reaction: <b>{max_reaction['Reaction (pips)']:+.1f} pips</b> on "
+                f"{max_reaction['Date']}. "
+                f"Yen weakened {n_positive} times, strengthened {n_negative} times."
+            )
+    except Exception as exc:
+        st.warning(f"Could not compute reactions: {exc}")
+
+    # =================================================================
+    # Section 4: Export
+    # =================================================================
+    st.subheader("Export Intraday Data")
+    _section_note("Download the raw LSEG intraday data for further analysis.")
+
+    try:
+        csv_export = df.to_csv(index=False)
+        st.download_button(
+            "Download Intraday CSV",
+            data=csv_export,
+            file_name="usdjpy_boj_intraday_export.csv",
+            mime="text/csv",
+            use_container_width=True,
+        )
+    except Exception:
+        pass
+
+    # Conclusion
+    try:
+        if reactions:
+            _best = max(reactions, key=lambda r: abs(r["Reaction (pips)"]))
+            _verdict = (
+                f"The largest FX reaction was {_best['Reaction (pips)']:+.1f} pips on {_best['Date']}. "
+                f"Average absolute reaction across {len(reactions)} meetings is {avg_abs_reaction:.1f} pips. "
+                f"{'Hawkish surprises dominate — yen has strengthened more often.' if n_negative > n_positive else 'Dovish outcomes dominate — yen has weakened more often.' if n_positive > n_negative else 'Reactions are balanced between hawkish and dovish outcomes.'}"
+            )
+            _summary = (
+                f"Intraday USDJPY analysis covers <b>{len(boj_dates)}</b> BOJ meeting dates with "
+                f"<b>{len(df):,}</b> minute-level observations from LSEG. "
+                f"The data reveals how currency markets process BOJ policy decisions in real time."
+            )
+            _page_conclusion(_verdict, _summary)
+    except Exception:
+        pass
+
+    _page_footer()
+
+
+# ===================================================================
 # Cache warming args
 # ===================================================================
 _args = (use_simulated, str(start_date), str(end_date), fred_api_key)
@@ -5150,6 +5599,7 @@ _PAGE_FN_MAP = {
     "Spillover & Info Flow": page_spillover,
     "Early Warning": page_early_warning,
     "Trade Ideas": page_trade_ideas,
+    "Intraday FX Event Study": page_intraday_fx,
     "Performance Review": page_performance_review,
     "AI Q&A": page_ai_qa,
     "About: Heramb Patkar": page_about_heramb,
