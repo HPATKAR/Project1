@@ -914,6 +914,17 @@ def _page_conclusion(verdict: str, summary: str):
     )
 
 
+@st.cache_data(ttl=86400)
+def _footer_logo_b64() -> str:
+    """Return base64-encoded reverse Daniels logo for footer embedding."""
+    import base64
+    logo_path = Path(__file__).resolve().parent / "assets" / "purdue_daniels_logo_reverse.png"
+    if logo_path.exists():
+        with open(logo_path, "rb") as f:
+            return "data:image/png;base64," + base64.b64encode(f.read()).decode()
+    return ""
+
+
 def _page_footer():
     """Render full-bleed institutional footer with Daniels School branding."""
     yr = datetime.now().year
@@ -936,7 +947,7 @@ def _page_footer():
         # col 1: branding
         "<div>"
         "<a href='https://business.purdue.edu/' target='_blank'>"
-        "<img src='https://business.purdue.edu/includes/img/medsb_h-full-reverse-rgb_1.png' "
+        f"<img src='{_footer_logo_b64()}' "
         "alt='Purdue Daniels School of Business' "
         "style='height:40px;margin-bottom:16px;display:block;' /></a>"
         "<p style='font-size:var(--fs-base);color:rgba(255,255,255,0.7);line-height:1.65;margin:0 0 16px 0;max-width:260px;'>"
