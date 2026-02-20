@@ -201,23 +201,54 @@ class AlertNotifier:
         return new_alerts
 
     def render_sidebar_log(self, st_module) -> None:
-        """Render recent alerts in a sidebar expander."""
+        """Render recent alerts in a clean, compact sidebar expander."""
         recent = get_recent_alerts(20, self.db_path)
         if recent.empty:
             return
 
-        with st_module.expander(f"Alert Log ({len(recent)} recent)", expanded=False):
+        # Count by severity for badge
+        sev_counts = recent["severity"].value_counts().to_dict() if "severity" in recent.columns else {}
+        crit = sev_counts.get("CRITICAL", 0)
+        warn = sev_counts.get("WARNING", 0)
+
+        badge = ""
+        if crit:
+            badge += f"<span style='background:#dc2626;color:#fff;border-radius:3px;padding:1px 5px;font-size:0.6rem;font-weight:700;margin-right:3px;'>{crit} CRIT</span>"
+        if warn:
+            badge += f"<span style='background:#d97706;color:#fff;border-radius:3px;padding:1px 5px;font-size:0.6rem;font-weight:700;'>{warn} WARN</span>"
+
+        st_module.markdown(
+            "<div style='border-top:1px solid rgba(255,255,255,0.06);"
+            "margin:0.4rem 0 0.3rem 0;padding-top:0.5rem;'>"
+            "<span style='font-size:0.55rem;font-weight:700;text-transform:uppercase;"
+            "letter-spacing:0.14em;color:rgba(255,255,255,0.4);"
+            f"font-family:var(--font-sans);'>Alerts</span> {badge}</div>",
+            unsafe_allow_html=True,
+        )
+
+        with st_module.expander(f"{len(recent)} recent alerts", expanded=False):
+            _sev_icon = {"CRITICAL": "\u25cf", "WARNING": "\u25b2", "INFO": "\u25cb"}
+            _sev_color = {"CRITICAL": "#dc2626", "WARNING": "#d97706", "INFO": "#2563eb"}
+            _sev_bg = {"CRITICAL": "rgba(220,38,38,0.08)", "WARNING": "rgba(217,119,6,0.06)", "INFO": "rgba(37,99,235,0.05)"}
+
             for _, row in recent.iterrows():
-                severity_color = {
-                    "CRITICAL": "#dc2626",
-                    "WARNING": "#d97706",
-                    "INFO": "#2563eb",
-                }.get(row.get("severity", "INFO"), "#6b7280")
+                sev = row.get("severity", "INFO")
+                color = _sev_color.get(sev, "#6b7280")
+                bg = _sev_bg.get(sev, "transparent")
+                icon = _sev_icon.get(sev, "\u25cb")
+                ts = str(row.get("timestamp", ""))[:16]
+                title = row.get("title", "")
+
                 st_module.markdown(
-                    f"<div style='border-left:3px solid {severity_color};"
-                    f"padding:4px 8px;margin-bottom:6px;font-size:0.75rem;'>"
-                    f"<b style='color:{severity_color}'>{row.get('severity', 'INFO')}</b> "
-                    f"<span style='color:#666'>{row.get('timestamp', '')[:16]}</span><br>"
-                    f"{row.get('title', '')}</div>",
+                    f"<div style='background:{bg};border-left:3px solid {color};"
+                    f"border-radius:0 4px 4px 0;padding:5px 8px;margin-bottom:4px;"
+                    f"font-family:var(--font-sans);'>"
+                    f"<div style='display:flex;align-items:center;gap:5px;'>"
+                    f"<span style='color:{color};font-size:0.6rem;'>{icon}</span>"
+                    f"<span style='color:{color};font-size:0.6rem;font-weight:700;letter-spacing:0.08em;'>{sev}</span>"
+                    f"<span style='color:rgba(255,255,255,0.35);font-size:0.55rem;margin-left:auto;'>{ts}</span>"
+                    f"</div>"
+                    f"<div style='color:rgba(255,255,255,0.75);font-size:0.7rem;margin-top:2px;line-height:1.3;'>{title}</div>"
+                    f"</div>",
                     unsafe_allow_html=True,
                 )

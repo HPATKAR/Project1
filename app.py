@@ -3585,33 +3585,80 @@ def page_trade_ideas():
     # --- Export ---
     if filtered:
         st.subheader("Export Trade Ideas")
-        _section_note("Download trade cards as a branded PDF report with payout graphs, or as raw CSV data.")
-        col_pdf, col_csv = st.columns(2)
+        _section_note(
+            "Download a **profile-tailored PDF** — each version is optimised for a different audience. "
+            "**Trader**: action-first with regime calls, key levels, and sizing. "
+            "**Analyst**: balanced coverage of models, trades, and performance. "
+            "**Academic**: full methodology, validation detail, and references."
+        )
 
-        with col_pdf:
-            try:
-                report = JGBReportPDF()
-                report.add_title_page(
-                    title="JGB Trade Ideas Report",
-                    subtitle=f"{len(filtered)} Trade Ideas  |  {datetime.now():%Y-%m-%d %H:%M}",
-                )
-                report.add_trade_ideas(filtered, regime_state)
-                pdf_bytes = report.to_bytes()
-                st.download_button(
-                    "Download Trade Ideas PDF",
-                    data=pdf_bytes,
-                    file_name=f"jgb_trade_ideas_{datetime.now():%Y%m%d}.pdf",
-                    mime="application/pdf",
-                    use_container_width=True,
-                )
-            except Exception as exc:
-                st.warning(f"Could not generate PDF: {exc}")
+        # Gather framework-wide context for the full report
+        _pdf_args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
+        _pdf_pca = _run_pca(*_pdf_args)
+        _pdf_ensemble_val = None
+        try:
+            _pdf_ens = _run_ensemble(*_pdf_args)
+            if _pdf_ens is not None and len(_pdf_ens.dropna()) > 0:
+                _pdf_ensemble_val = float(_pdf_ens.dropna().iloc[-1])
+        except Exception:
+            pass
+        _pdf_warn = None
+        try:
+            _ws = _run_warning_score(*_pdf_args)
+            if _ws is not None and len(_ws.dropna()) > 0:
+                _pdf_warn = float(_ws.dropna().iloc[-1])
+        except Exception:
+            pass
+        _pdf_ml_prob = None
+        _pdf_ml_imp = None
+        try:
+            _, _ml_p, _ml_i = _run_ml_predictor(*_pdf_args, _layout_config.entropy_window)
+            if _ml_p is not None and len(_ml_p.dropna()) > 0:
+                _pdf_ml_prob = float(_ml_p.dropna().iloc[-1])
+                _pdf_ml_imp = _ml_i
+        except Exception:
+            pass
+
+        _pdf_kwargs = dict(
+            regime_state=regime_state,
+            pca_result=_pdf_pca,
+            ensemble_prob=_pdf_ensemble_val,
+            warning_score=_pdf_warn,
+            ml_prob=_pdf_ml_prob,
+            ml_importance=_pdf_ml_imp,
+            cards=filtered,
+        )
+
+        col_t, col_a, col_ac, col_csv = st.columns(4)
+        for _col, _prof, _icon, _key in [
+            (col_t,  "Trader",   "Trader PDF",   "pdf_trader"),
+            (col_a,  "Analyst",  "Analyst PDF",  "pdf_analyst"),
+            (col_ac, "Academic", "Academic PDF",  "pdf_academic"),
+        ]:
+            with _col:
+                try:
+                    _r = JGBReportPDF()
+                    _r.add_title_page(
+                        title=f"JGB Report  -  {_prof} View",
+                        subtitle=f"{len(filtered)} Trades  |  {datetime.now():%Y-%m-%d %H:%M}",
+                    )
+                    _r.add_full_analysis_report(_prof, **_pdf_kwargs)
+                    st.download_button(
+                        _icon,
+                        data=_r.to_bytes(),
+                        file_name=f"jgb_{_prof.lower()}_{datetime.now():%Y%m%d}.pdf",
+                        mime="application/pdf",
+                        use_container_width=True,
+                        key=_key,
+                    )
+                except Exception as exc:
+                    st.warning(f"Could not generate {_prof} PDF: {exc}")
 
         with col_csv:
             df_export = trade_cards_to_dataframe(filtered)
             csv = df_export.to_csv(index=False)
             st.download_button(
-                "Download Trade Cards CSV",
+                "Trade Cards CSV",
                 data=csv,
                 file_name=f"jgb_trade_cards_{datetime.now():%Y%m%d}.csv",
                 mime="text/csv",
@@ -4592,36 +4639,72 @@ def page_performance_review():
     # --- Export ---
     try:
         st.subheader("Export Reports")
-        _section_note("Download a comprehensive PDF report or raw metrics as CSV.")
-        col_pdf, col_csv = st.columns(2)
+        _section_note(
+            "Download profile-tailored PDFs or raw metrics CSV. "
+            "**Trader**: regime + trades. **Analyst**: full analysis. **Academic**: methodology + references."
+        )
 
-        with col_pdf:
-            try:
-                report = JGBReportPDF()
-                report.add_title_page(subtitle=f"Generated {datetime.now():%Y-%m-%d %H:%M}")
-                report.add_metrics_summary(metrics)
-                report.add_suggestions(suggestions)
-                # Add data table if available
-                if metrics_df is not None:
-                    report.add_data_table(metrics_df, title="Performance Metrics")
-                pdf_bytes = report.to_bytes()
-                st.download_button(
-                    "Download PDF Report",
-                    data=pdf_bytes,
-                    file_name=f"jgb_report_{datetime.now():%Y%m%d}.pdf",
-                    mime="application/pdf",
-                    use_container_width=True,
-                )
-            except ImportError:
-                st.info("Install fpdf2 for PDF export: `pip install fpdf2`")
-            except Exception as exc:
-                st.warning(f"Could not generate PDF: {exc}")
+        _pr_args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
+        _pr_kwargs = dict(
+            metrics=metrics,
+            suggestions=suggestions,
+        )
+        # Gather ML context
+        try:
+            _, _pr_ml_p, _pr_ml_i = _run_ml_predictor(*_pr_args, _layout_config.entropy_window)
+            if _pr_ml_p is not None and len(_pr_ml_p.dropna()) > 0:
+                _pr_kwargs["ml_prob"] = float(_pr_ml_p.dropna().iloc[-1])
+                _pr_kwargs["ml_importance"] = _pr_ml_i
+        except Exception:
+            pass
+        try:
+            _pr_ens = _run_ensemble(*_pr_args)
+            if _pr_ens is not None and len(_pr_ens.dropna()) > 0:
+                _pr_kwargs["ensemble_prob"] = float(_pr_ens.dropna().iloc[-1])
+        except Exception:
+            pass
+        try:
+            _pr_pca = _run_pca(*_pr_args)
+            _pr_kwargs["pca_result"] = _pr_pca
+        except Exception:
+            pass
+        try:
+            _pr_ws = _run_warning_score(*_pr_args)
+            if _pr_ws is not None and len(_pr_ws.dropna()) > 0:
+                _pr_kwargs["warning_score"] = float(_pr_ws.dropna().iloc[-1])
+        except Exception:
+            pass
+
+        col_t, col_a, col_ac, col_csv = st.columns(4)
+        for _col, _prof, _key in [
+            (col_t,  "Trader",   "pr_pdf_trader"),
+            (col_a,  "Analyst",  "pr_pdf_analyst"),
+            (col_ac, "Academic", "pr_pdf_academic"),
+        ]:
+            with _col:
+                try:
+                    _r = JGBReportPDF()
+                    _r.add_title_page(
+                        title=f"Performance Review  -  {_prof}",
+                        subtitle=f"Generated {datetime.now():%Y-%m-%d %H:%M}",
+                    )
+                    _r.add_full_analysis_report(_prof, **_pr_kwargs)
+                    st.download_button(
+                        f"{_prof} PDF",
+                        data=_r.to_bytes(),
+                        file_name=f"jgb_review_{_prof.lower()}_{datetime.now():%Y%m%d}.pdf",
+                        mime="application/pdf",
+                        use_container_width=True,
+                        key=_key,
+                    )
+                except Exception as exc:
+                    st.warning(f"Could not generate {_prof} PDF: {exc}")
 
         with col_csv:
             try:
                 csv_bytes = dataframe_to_csv_bytes(metrics_df)
                 st.download_button(
-                    "Download Metrics CSV",
+                    "Metrics CSV",
                     data=csv_bytes,
                     file_name=f"jgb_metrics_{datetime.now():%Y%m%d}.csv",
                     mime="text/csv",
@@ -5654,35 +5737,57 @@ def page_intraday_fx():
     # =================================================================
     st.subheader("Export Intraday Data")
     _section_note(
-        "Download the LSEG intraday data as CSV for your own analysis, or as a branded PDF "
-        "report summarizing the event study findings."
+        "Download profile-tailored PDFs or raw CSV. "
+        "**Trader**: reaction summary + key levels. **Analyst**: full analysis. **Academic**: methodology + references."
     )
 
     try:
-        col_pdf, col_csv = st.columns(2)
-        with col_pdf:
-            try:
-                report = JGBReportPDF()
-                report.add_title_page(
-                    title="Intraday FX Event Study",
-                    subtitle=f"USDJPY Around BOJ Announcements  |  {datetime.now():%Y-%m-%d %H:%M}",
-                )
-                report.add_intraday_fx_summary(df, boj_dates, reactions if reactions else [])
-                pdf_bytes = report.to_bytes()
-                st.download_button(
-                    "Download Event Study PDF",
-                    data=pdf_bytes,
-                    file_name=f"jgb_intraday_fx_event_study_{datetime.now():%Y%m%d}.pdf",
-                    mime="application/pdf",
-                    use_container_width=True,
-                )
-            except Exception as exc:
-                st.warning(f"Could not generate PDF: {exc}")
+        _fx_args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
+        _fx_kwargs = dict(reactions=reactions if reactions else [])
+        # Gather extra context for full report
+        try:
+            _fx_ens = _run_ensemble(*_fx_args)
+            if _fx_ens is not None and len(_fx_ens.dropna()) > 0:
+                _fx_kwargs["ensemble_prob"] = float(_fx_ens.dropna().iloc[-1])
+        except Exception:
+            pass
+        try:
+            _, _fx_ml_p, _fx_ml_i = _run_ml_predictor(*_fx_args, _layout_config.entropy_window)
+            if _fx_ml_p is not None and len(_fx_ml_p.dropna()) > 0:
+                _fx_kwargs["ml_prob"] = float(_fx_ml_p.dropna().iloc[-1])
+                _fx_kwargs["ml_importance"] = _fx_ml_i
+        except Exception:
+            pass
+
+        col_t, col_a, col_ac, col_csv = st.columns(4)
+        for _col, _prof, _key in [
+            (col_t,  "Trader",   "fx_pdf_trader"),
+            (col_a,  "Analyst",  "fx_pdf_analyst"),
+            (col_ac, "Academic", "fx_pdf_academic"),
+        ]:
+            with _col:
+                try:
+                    _r = JGBReportPDF()
+                    _r.add_title_page(
+                        title=f"FX Event Study  -  {_prof}",
+                        subtitle=f"USDJPY Around BOJ  |  {datetime.now():%Y-%m-%d %H:%M}",
+                    )
+                    _r.add_full_analysis_report(_prof, **_fx_kwargs)
+                    st.download_button(
+                        f"{_prof} PDF",
+                        data=_r.to_bytes(),
+                        file_name=f"jgb_fx_{_prof.lower()}_{datetime.now():%Y%m%d}.pdf",
+                        mime="application/pdf",
+                        use_container_width=True,
+                        key=_key,
+                    )
+                except Exception as exc:
+                    st.warning(f"Could not generate {_prof} PDF: {exc}")
 
         with col_csv:
             csv_export = df.to_csv(index=False)
             st.download_button(
-                "Download Intraday CSV",
+                "Intraday CSV",
                 data=csv_export,
                 file_name="usdjpy_boj_intraday_export.csv",
                 mime="text/csv",

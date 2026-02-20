@@ -995,6 +995,263 @@ class JGBReportPDF:
 
         self._add_page_footer()
 
+    # ── profile-aware full report ──────────────────────────────────────
+    def add_full_analysis_report(
+        self,
+        profile: str,
+        *,
+        regime_state: dict | None = None,
+        pca_result: dict | None = None,
+        ensemble_prob: float | None = None,
+        warning_score: float | None = None,
+        ml_prob: float | None = None,
+        ml_importance: "pd.Series | None" = None,
+        spillover_pct: float | None = None,
+        carry_ratio: float | None = None,
+        cards: list | None = None,
+        metrics: "AccuracyMetrics | None" = None,
+        suggestions: list | None = None,
+        reactions: list | None = None,
+    ) -> None:
+        """Build a dense, profile-tailored PDF covering the full framework.
+
+        Profiles
+        --------
+        Trader   — action-first: regime state, trade ideas, alerts, key levels.
+        Analyst  — balanced: all sections with moderate detail.
+        Academic — methodology-heavy: model descriptions, validation, references.
+        """
+        import numpy as np
+
+        profile = profile.strip().title()
+        rp = (regime_state or {}).get("regime_prob", ensemble_prob or 0.5)
+        regime_word = "repricing" if rp > 0.5 else "suppressed"
+
+        # ── Page 1: Regime Overview ──────────────────────────────────────
+        self.pdf.add_page()
+        self._draw_header_bar()
+        self.pdf.ln(14)
+        self.pdf.set_font("Helvetica", "B", 18)
+        self.pdf.cell(0, 12, self._safe(f"JGB Repricing Report  -  {profile} View"), ln=True)
+        self.pdf.ln(1)
+        self._draw_gold_rule(width=80)
+        self.pdf.ln(6)
+
+        self.pdf.set_font("Helvetica", "B", 10)
+        self.pdf.set_text_color(*_AGED_GOLD)
+        self.pdf.cell(0, 6, "CURRENT REGIME STATE", ln=True)
+        self.pdf.set_text_color(0, 0, 0)
+        self.pdf.ln(2)
+        self.pdf.set_font("Helvetica", "", 9)
+        regime_text = (
+            f"Ensemble regime probability: {rp:.1%} ({regime_word.upper()}). "
+        )
+        if ml_prob is not None:
+            regime_text += f"ML 5-day forward probability: {ml_prob:.1%}. "
+            if (ml_prob > 0.5) == (rp > 0.5):
+                regime_text += "Statistical ensemble and ML model agree - high conviction. "
+            else:
+                regime_text += "Ensemble and ML diverge - reduce sizing, wait for convergence. "
+        if warning_score is not None:
+            regime_text += f"Composite warning score: {warning_score:.0f}/100. "
+            if warning_score > 70:
+                regime_text += "CRITICAL: multiple stress indicators firing. "
+            elif warning_score > 50:
+                regime_text += "Elevated: monitor for potential regime shift. "
+        self.pdf.set_x(self.pdf.l_margin)
+        self.pdf.multi_cell(0, 5, self._safe(regime_text))
+        self.pdf.ln(3)
+
+        # Spillover / carry context
+        if spillover_pct is not None or carry_ratio is not None:
+            self.pdf.set_font("Helvetica", "B", 10)
+            self.pdf.set_text_color(*_AGED_GOLD)
+            self.pdf.cell(0, 6, "CROSS-MARKET CONDITIONS", ln=True)
+            self.pdf.set_text_color(0, 0, 0)
+            self.pdf.ln(2)
+            self.pdf.set_font("Helvetica", "", 9)
+            cm_text = ""
+            if spillover_pct is not None:
+                cm_text += (
+                    f"Total spillover index: {spillover_pct:.1f}%. "
+                    f"{'Above 30% = tightly coupled markets, diversification impaired. ' if spillover_pct > 30 else 'Below 30% = markets relatively independent. '}"
+                )
+            if carry_ratio is not None:
+                cm_text += (
+                    f"Carry-to-vol ratio: {carry_ratio:.2f}. "
+                    f"{'Ratio below 0.5 signals carry trades are poorly compensated for vol risk. ' if carry_ratio < 0.5 else 'Ratio above 1.0 signals attractive carry compensation. ' if carry_ratio > 1.0 else ''}"
+                )
+            self.pdf.set_x(self.pdf.l_margin)
+            self.pdf.multi_cell(0, 5, self._safe(cm_text))
+            self.pdf.ln(3)
+
+        # ── PCA / Yield Curve (Analyst + Academic) ───────────────────────
+        if profile in ("Analyst", "Academic") and pca_result is not None:
+            self.pdf.set_font("Helvetica", "B", 10)
+            self.pdf.set_text_color(*_AGED_GOLD)
+            self.pdf.cell(0, 6, "YIELD CURVE DECOMPOSITION (PCA)", ln=True)
+            self.pdf.set_text_color(0, 0, 0)
+            self.pdf.ln(2)
+            self.pdf.set_font("Helvetica", "", 9)
+            ev = pca_result.get("explained_variance_ratio", [])
+            pca_text = ""
+            if len(ev) >= 3:
+                pca_text += (
+                    f"PC1 (Level): {ev[0]:.1%} of variance. PC2 (Slope): {ev[1]:.1%}. "
+                    f"PC3 (Curvature): {ev[2]:.1%}. "
+                )
+                if ev[0] > 0.8:
+                    pca_text += "PC1 dominates (>80%): the entire curve is repricing in lockstep. "
+                elif ev[1] > 0.15:
+                    pca_text += "Elevated PC2: significant slope rotation, possible flattener/steepener opportunity. "
+            if profile == "Academic":
+                pca_text += (
+                    "Reference: Litterman & Scheinkman (1991). PCA on daily yield changes "
+                    "(not levels) for stationarity. Covariance-based scaling preserves bps-scale "
+                    "economic meaning across tenors. Rolling 252-day window tracks time-varying "
+                    "factor structure."
+                )
+            self.pdf.set_x(self.pdf.l_margin)
+            self.pdf.multi_cell(0, 5, self._safe(pca_text))
+            self.pdf.ln(3)
+
+        # ── ML Predictor Detail (all profiles) ───────────────────────────
+        if ml_prob is not None:
+            self.pdf.set_font("Helvetica", "B", 10)
+            self.pdf.set_text_color(*_AGED_GOLD)
+            self.pdf.cell(0, 6, "ML REGIME TRANSITION PREDICTOR", ln=True)
+            self.pdf.set_text_color(0, 0, 0)
+            self.pdf.ln(2)
+            self.pdf.set_font("Helvetica", "", 9)
+            ml_text = (
+                f"Walk-forward RandomForest prediction: {ml_prob:.1%} probability of regime "
+                f"transition within 5 business days. "
+            )
+            if profile == "Trader":
+                if ml_prob > 0.5:
+                    ml_text += "ACTION: position for repricing. ML and ensemble aligned = full conviction sizing. "
+                else:
+                    ml_text += "ACTION: maintain current positioning. No imminent shift predicted. "
+            if ml_importance is not None and len(ml_importance) > 0:
+                top_feat = ml_importance.index[0]
+                top_val = ml_importance.iloc[0]
+                ml_text += (
+                    f"Top feature: {top_feat} (importance {top_val:.2f}). "
+                )
+                if top_val > 0.4:
+                    ml_text += "WARNING: single feature dominance (>40%) - model may be fragile. "
+            if profile == "Academic":
+                ml_text += (
+                    "Methodology: RandomForest (50 trees, max depth 5) with 504-day training window, "
+                    "quarterly retrain (63 days). Features: structural entropy (rolling std of JP_10Y changes), "
+                    "entropy delta (30d change), carry stress (US-JP spread z-score), spillover correlation "
+                    "(rolling 60d JP-US), vol z-score (21d realized vs 252d mean), VIX level, USDJPY 20d momentum. "
+                    "Labels: binary forward-looking (ensemble prob > 0.5 within 5 days). "
+                    "StandardScaler per window. No look-ahead bias."
+                )
+            self.pdf.set_x(self.pdf.l_margin)
+            self.pdf.multi_cell(0, 5, self._safe(ml_text))
+            self.pdf.ln(3)
+
+        # ── Ensemble Detail (Academic) ───────────────────────────────────
+        if profile == "Academic":
+            self.pdf.set_font("Helvetica", "B", 10)
+            self.pdf.set_text_color(*_AGED_GOLD)
+            self.pdf.cell(0, 6, "ENSEMBLE REGIME DETECTION METHODOLOGY", ln=True)
+            self.pdf.set_text_color(0, 0, 0)
+            self.pdf.ln(2)
+            self.pdf.set_font("Helvetica", "", 8)
+            ens_text = (
+                "Four independent models, each normalized to [0,1] and equally weighted (25%): "
+                "(1) Hamilton (1989) 2-state Markov-Switching regression on JP_10Y changes - "
+                "smoothed state probabilities. "
+                "(2) Gaussian HMM (hmmlearn) on multivariate features - Viterbi state sequence. "
+                "(3) Bandt & Pompe (2002) permutation entropy (order=3, window=120) - "
+                "z-score threshold signal detecting complexity shifts. "
+                "(4) Bollerslev (1986) GARCH(1,1) conditional volatility with PELT structural "
+                "breakpoints (ruptures library) - vol-regime change detection. "
+                "Conviction thresholds: >0.7 STRONG, 0.5-0.7 MODERATE, 0.3-0.5 TRANSITION, <0.3 SUPPRESSED. "
+                "Entropy serves as unifying thread: permutation entropy in ensemble, structural entropy "
+                "in ML features, transfer entropy in spillover network, entropy delta in early warning."
+            )
+            self.pdf.set_x(self.pdf.l_margin)
+            self.pdf.multi_cell(0, 4.5, self._safe(ens_text))
+            self.pdf.ln(3)
+
+        self._add_page_footer()
+
+        # ── Trade Ideas (all profiles, detail varies) ────────────────────
+        if cards:
+            self.add_trade_ideas(cards, regime_state)
+
+        # ── Performance Metrics (Analyst + Academic) ─────────────────────
+        if profile in ("Analyst", "Academic") and metrics is not None:
+            self.add_metrics_summary(metrics)
+            if suggestions:
+                self.add_suggestions(suggestions)
+
+        # ── Intraday FX Reactions (all profiles if available) ────────────
+        if reactions:
+            self.add_intraday_fx_summary(
+                pd.DataFrame(),  # not needed for summary text
+                [],
+                reactions,
+            )
+
+        # ── References (Academic) ────────────────────────────────────────
+        if profile == "Academic":
+            self.pdf.add_page()
+            self._draw_header_bar()
+            self.pdf.ln(14)
+            self.pdf.set_font("Helvetica", "B", 16)
+            self.pdf.cell(0, 12, "References", ln=True)
+            self.pdf.ln(4)
+            self.pdf.set_font("Helvetica", "", 8)
+            refs = [
+                "Litterman, R. & Scheinkman, J. (1991). Common factors affecting bond returns. Journal of Fixed Income, 1(1), 54-61.",
+                "Hamilton, J.D. (1989). A new approach to the economic analysis of nonstationary time series. Econometrica, 57(2), 357-384.",
+                "Diebold, F.X. & Yilmaz, K. (2012). Better to give than to receive: Predictive directional measurement of volatility spillovers. Int. J. of Forecasting, 28(1), 57-66.",
+                "Bandt, C. & Pompe, B. (2002). Permutation entropy: A natural complexity measure for time series. Physical Review Letters, 88(17), 174102.",
+                "Schreiber, T. (2000). Measuring information transfer. Physical Review Letters, 85(2), 461-464.",
+                "Bollerslev, T. (1986). Generalized autoregressive conditional heteroskedasticity. Journal of Econometrics, 31(3), 307-327.",
+            ]
+            for i, ref in enumerate(refs, 1):
+                self.pdf.set_x(self.pdf.l_margin)
+                self.pdf.multi_cell(0, 4.5, self._safe(f"[{i}] {ref}"))
+                self.pdf.ln(2)
+            self._add_page_footer()
+
+        # ── Disclaimer (all profiles) ────────────────────────────────────
+        self.pdf.add_page()
+        self._draw_header_bar()
+        self.pdf.ln(14)
+        self.pdf.set_font("Helvetica", "B", 14)
+        self.pdf.cell(0, 10, "Disclaimer", ln=True)
+        self.pdf.ln(4)
+        self.pdf.set_font("Helvetica", "", 8)
+        self.pdf.set_x(self.pdf.l_margin)
+        self.pdf.multi_cell(0, 4.5, self._safe(
+            "This report is generated by the JGB Repricing Framework for research and educational "
+            "purposes only (MGMT 69000 - Mastering AI for Finance, Purdue University). Nothing herein "
+            "constitutes investment advice, a solicitation, or a recommendation to buy or sell any security. "
+            "All models carry estimation risk and regime detection is inherently probabilistic. "
+            "Past performance of any signal does not guarantee future results. The authors accept no "
+            "liability for any losses arising from use of this software or its outputs. "
+            "Payout profiles use proxy premium assumptions and are illustrative only."
+        ))
+        self.pdf.ln(4)
+        self.pdf.set_font("Helvetica", "I", 7)
+        self.pdf.set_text_color(100, 100, 100)
+        self.pdf.set_x(self.pdf.l_margin)
+        self.pdf.multi_cell(0, 4, self._safe(
+            f"Report generated: {datetime.now():%Y-%m-%d %H:%M:%S}. "
+            f"Profile: {profile}. "
+            "Author: Heramb Patkar, Purdue University Daniels School of Business. "
+            "Course: MGMT 69000-119 - Mastering AI for Finance (Prof. Cinder Zhang)."
+        ))
+        self.pdf.set_text_color(0, 0, 0)
+        self._add_page_footer()
+
     def save(self, path: str | Path) -> str:
         path = str(path)
         self.pdf.output(path)
