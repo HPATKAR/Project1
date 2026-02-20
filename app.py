@@ -5715,9 +5715,43 @@ def page_intraday_fx():
 
 
 # ===================================================================
-# Cache warming args
+# Cache pre-warming — run ALL heavy computations once on startup
+# so page switches are instant (results served from st.cache_data).
 # ===================================================================
-_args = (use_simulated, str(start_date), str(end_date), fred_api_key)
+_args = (use_simulated, str(start_date), str(end_date), fred_api_key or None)
+
+if "cache_warmed" not in st.session_state or st.session_state.get("_cache_key") != _args:
+    with st.spinner("Loading analytics engine — first load may take a moment..."):
+        try:
+            # Tier 1: data layer (everything depends on this)
+            load_unified(*_args)
+
+            # Tier 2: independent model runs (parallel-safe under cache)
+            _run_pca(*_args)
+            _run_ns(*_args)
+            _run_liquidity(*_args)
+            _run_markov(*_args)
+            _run_hmm(*_args)
+            _run_entropy(*_args)
+            _run_garch(*_args)
+            _run_breaks(*_args)
+
+            # Tier 3: depends on Tier 2
+            _run_ensemble(*_args)
+            _run_granger(*_args)
+            _run_te(*_args)
+            _run_spillover(*_args)
+            _run_dcc(*_args)
+            _run_te_pca(*_args)
+            _run_carry(*_args)
+
+            # Tier 4: depends on Tier 3
+            _run_warning_score(*_args)
+            _run_ml_predictor(*_args, _layout_config.entropy_window)
+        except Exception:
+            pass  # individual pages handle their own errors gracefully
+    st.session_state["cache_warmed"] = True
+    st.session_state["_cache_key"] = _args
 
 
 # ===================================================================
