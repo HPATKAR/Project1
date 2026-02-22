@@ -241,3 +241,98 @@ def estimate_acm_term_premium(
     )
 
     return result
+
+
+# ---------------------------------------------------------------------------
+# Validation against published reference ranges
+# ---------------------------------------------------------------------------
+
+_REFERENCE_RANGES = {
+    "JGB": {"lo_bps": -50, "hi_bps": 150, "source": "BOJ-compressed historical range"},
+    "UST": {"lo_bps": -100, "hi_bps": 300, "source": "NY Fed ACM estimates"},
+}
+
+
+def validate_term_premium(
+    tp_df: pd.DataFrame,
+    asset_class: str = "JGB",
+) -> Dict[str, Any]:
+    """Validate estimated term premium against published reference ranges.
+
+    Parameters
+    ----------
+    tp_df : pd.DataFrame
+        Output of :func:`estimate_acm_term_premium` (must contain
+        ``term_premium`` column).
+    asset_class : str
+        ``"JGB"`` or ``"UST"`` — selects the reference range.
+
+    Returns
+    -------
+    dict
+        ``mean_bps``        : float
+        ``std_bps``         : float
+        ``min_bps``         : float
+        ``max_bps``         : float
+        ``pct_in_range``    : float – fraction of observations inside reference range.
+        ``sanity_pass``     : bool – True if ≥50 % of observations are in range.
+        ``warnings``        : list of str
+        ``ref_lo``          : float – lower bound (bps)
+        ``ref_hi``          : float – upper bound (bps)
+        ``source``          : str – reference source label
+    """
+    ref = _REFERENCE_RANGES.get(asset_class, _REFERENCE_RANGES["JGB"])
+    lo, hi = ref["lo_bps"], ref["hi_bps"]
+
+    tp = tp_df["term_premium"].dropna()
+
+    # Determine if yields are in decimal (< 1 on average) or percent
+    obs = tp_df["observed_yield"].dropna()
+    scale = 100 if obs.mean() < 1 else 1  # decimal yields → bps via *100
+    tp_bps = tp * scale
+
+    mean_bps = float(tp_bps.mean())
+    std_bps = float(tp_bps.std())
+    min_bps = float(tp_bps.min())
+    max_bps = float(tp_bps.max())
+
+    in_range = ((tp_bps >= lo) & (tp_bps <= hi)).mean()
+    sanity_pass = bool(in_range >= 0.50)
+
+    warnings: list[str] = []
+    if not sanity_pass:
+        warnings.append(
+            f"Only {in_range:.0%} of term premium estimates fall within the "
+            f"{asset_class} reference range [{lo}, {hi}] bps."
+        )
+    if abs(mean_bps) > hi:
+        warnings.append(
+            f"Mean term premium ({mean_bps:.0f} bps) exceeds the upper reference "
+            f"bound ({hi} bps). Model may be mis-specified."
+        )
+    if std_bps > (hi - lo):
+        warnings.append(
+            f"Term premium volatility ({std_bps:.0f} bps) exceeds the full "
+            f"reference range width ({hi - lo} bps). Estimates are unusually dispersed."
+        )
+
+    logger.info(
+        "Term-premium validation (%s): mean=%.0f bps, in-range=%.0f%%, pass=%s",
+        asset_class,
+        mean_bps,
+        in_range * 100,
+        sanity_pass,
+    )
+
+    return {
+        "mean_bps": mean_bps,
+        "std_bps": std_bps,
+        "min_bps": min_bps,
+        "max_bps": max_bps,
+        "pct_in_range": float(in_range),
+        "sanity_pass": sanity_pass,
+        "warnings": warnings,
+        "ref_lo": lo,
+        "ref_hi": hi,
+        "source": ref["source"],
+    }
