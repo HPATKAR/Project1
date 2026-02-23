@@ -24,7 +24,10 @@ Quantitative research platform that detects regime shifts in JGB markets — fro
 | `src/fx/` | Carry-to-vol ratio, rate differentials, positioning indicators |
 | `src/strategy/` | Regime-conditional trade cards, DV01-neutral sizing, backtester |
 | `src/data/` | FRED/yfinance/MOF Japan data layer with three-tier fallback |
-| `tests/` | Yield curve, regime, spillover, and data pipeline validation |
+| `src/pages/` | 11 Streamlit page modules (overview, yield curve, regime, spillover, equity spillover, early warning, trade ideas, intraday FX, performance review, AI Q&A, about) |
+| `src/reporting/` | Profile-tailored PDF export with payout graphs and analyst attribution |
+| `src/ui/` | Shared chart helpers, institutional CSS, layout config, alert system |
+| `tests/` | Yield curve, regime, spillover, and data pipeline validation (37 tests) |
 
 <details>
 <summary>Full directory tree</summary>
@@ -67,6 +70,29 @@ jgb-repricing-framework/
 |       |-- trade_generator.py      # Regime-conditional rates/FX/vol/cross-asset rules
 |       |-- sizing.py               # Vol-target and DV01-neutral position sizing
 |       `-- backtester.py           # Strategy backtesting engine
+|-- src/
+|   |-- pages/
+|   |   |-- overview.py             # Overview & Data page
+|   |   |-- yield_curve.py          # Yield Curve Analytics page
+|   |   |-- regime.py               # Regime Detection page
+|   |   |-- spillover.py            # Spillover & Info Flow page
+|   |   |-- equity_spillover.py     # Equity Market Spillover page (USA/Japan/India/China)
+|   |   |-- early_warning.py        # Early Warning page
+|   |   |-- trade_ideas.py          # Trade Ideas page
+|   |   |-- intraday_fx.py          # Intraday FX Event Study page
+|   |   |-- performance_review.py   # Performance Review page
+|   |   |-- ai_qa.py                # AI Q&A page
+|   |   |-- about_heramb.py         # About: Analyst page
+|   |   |-- about_zhang.py          # About: Instructor page
+|   |   `-- _data.py                # Shared data loading helpers
+|   |-- reporting/
+|   |   |-- pdf_export.py           # Profile-tailored PDF generation (Trader/Analyst/Academic)
+|   |   `-- metrics_tracker.py      # Accuracy metrics tracking
+|   |-- ui/
+|   |   |-- shared.py               # Chart helpers, text blocks, institutional footer
+|   |   |-- layout_config.py        # Dashboard settings and layout management
+|   |   `-- alert_system.py         # Real-time alert notifications
+|   |-- ...                         # (yield_curve/, regime/, spillover/, fx/, strategy/, data/)
 |-- tests/
 |   |-- test_yield_curve.py         # PCA shapes, explained variance, NS, liquidity
 |   |-- test_regime.py              # Markov, HMM, entropy, ensemble integration
@@ -123,6 +149,7 @@ Principal Component Analysis on daily yield changes across tenors (2Y, 5Y, 7Y, 1
 | Transfer Entropy | Directional information flow (Schreiber, 2000) | Asymmetric leader/follower network |
 
 - **Variables:** JP_10Y, US_10Y, DE_10Y, USDJPY, NIKKEI, VIX
+- **Equity Spillover:** Extends the framework to sector-level analysis across USA (11 SPDR sectors), Japan (5 ETFs), India (15 NSE sectors), and China (5 ETFs) — quantifying JGB transmission to global equity markets
 - **Interpretation:** Spillover >30% = markets tightly coupled, diversification less effective
 
 ### Trade Generation
@@ -157,14 +184,21 @@ All charts overlay these events as red vertical dashed lines for policy-model al
 
 ## Dashboard
 
-The Streamlit dashboard (`app.py`) provides six analytical pages:
+The Streamlit dashboard (`app.py`) provides eleven pages across analytics, export, and reference:
 
 1. **Overview & Data** — KPI metrics, sovereign yields + VIX chart, FX + equity chart, actionable spread/trend/vol insights, Japan sovereign credit ratings and BOJ credibility events timeline
 2. **Yield Curve Analytics** — PCA explained variance + loadings heatmap + score time series, PCA factor validation against Litterman-Scheinkman (1991), liquidity metrics, Nelson-Siegel factor evolution
 3. **Regime Detection** — Ensemble probability gauge + time series, Markov smoothed probabilities, PELT structural breakpoints, permutation entropy signal, GARCH conditional volatility
 4. **Spillover & Info Flow** — Granger causality table, transfer entropy heatmap, Diebold-Yilmaz spillover index + net directional bars, DCC correlations, carry-to-vol ratio
-5. **Trade Ideas** — Regime-conditional trade cards with conviction scores, filterable by category/conviction, CSV export
-6. **AI Q&A** — Conversational interface with full analysis context (regime state, PCA, spillover, carry, liquidity, trade ideas) injected as system prompt
+5. **Equity Spillover** — JGB-to-equity transmission across USA, Japan, India, and China at the sector level; rolling correlation, Granger causality, DCC-GARCH, Diebold-Yilmaz spillover decomposition
+6. **Early Warning** — Composite stress score, ML regime transition predictor (RandomForest walk-forward), entropy delta signals
+7. **Trade Ideas** — Regime-conditional trade cards with conviction scores, filterable by category/conviction, profile-tailored PDF export (Trader/Analyst/Academic), payout profiles
+8. **Intraday FX Event Study** — Minute-level USDJPY analysis around BOJ announcements using LSEG data, reaction tables, spread/liquidity metrics
+9. **Performance Review** — Prediction accuracy, lead time, precision/recall, ML model diagnostics, CSV/PDF export
+10. **AI Q&A** — Conversational interface with full analysis context (regime state, PCA, spillover, carry, liquidity, trade ideas) injected as system prompt
+11. **About pages** — Professional profiles for analyst and instructor
+
+All PDF reports include professional attribution: "Heramb S. Patkar, MSF Student Analyst — Purdue Daniels School of Business".
 
 ## Data Pipeline
 

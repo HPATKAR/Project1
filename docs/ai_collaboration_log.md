@@ -163,6 +163,20 @@ AI was used as a **pair-programming partner and research accelerator** — provi
 - **What I rejected:** Initial plan called for removing all Purdue references. I overrode this — Purdue Daniels is my institutional affiliation and should be credited professionally, not hidden.
 - **Verification:** Final README contains no mentions of "course", "professor", or "assignment". Purdue Daniels appears once in Contact section as professional affiliation. All internal links (LICENSE, ai_collaboration_log.md, product/README.md) are valid.
 
+### Session 13: Equity Spillover Page, PDF Analyst Credit & Bold Fix
+- **AI Tool:** Claude Code (Claude Opus 4.6)
+- **What I asked:** (1) Build a new Equity Market Spillover page showing JGB/BOJ policy transmission to equity sectors across USA, Japan, India, and China. (2) Add professional analyst attribution ("Heramb S. Patkar, MSF") to all PDF reports. (3) Fix markdown `**bold**` rendering as raw asterisks in HTML `_section_note` blocks.
+- **What I decided:**
+  - Four equity markets (USA, Japan, India, China) with sector-level indices: 11 SPDR sector ETFs for USA, 5 Japan ETFs, 15 NSE sector indices for India, 5 China ETFs
+  - Four spillover analytics tabs mirroring the bond spillover page: rolling correlation, Granger causality, DCC-GARCH, Diebold-Yilmaz — reusing existing spillover modules rather than duplicating code
+  - Per-sector pairwise correlation computation instead of all-at-once DataFrame join, to handle cross-calendar date mismatches (Indian and Japanese trading holidays differ significantly)
+  - Filter out sectors with <60 data points rather than failing silently
+  - PDF analyst credit on title page, report headers, trade ideas summary, page footer, and disclaimer
+- **What I rejected:**
+  - Initial implementation used a single `dropna()` across the entire equity returns DataFrame, which eliminated all rows when any one sparse sector (e.g., "Financial Services" with 1 data point) had NaN — I required per-sector independent handling
+  - Initial Granger column names were assumed (`best_lag`, `F_stat`) but the actual module uses `optimal_lag`, `f_stat` — caught via live testing on Japanese equities
+- **Verification:** All 37 tests pass. Import validation clean. Tested all four markets with live yfinance data. India correlation now returns 7 sectors with 3,900+ data points.
+
 ## AI Usage Summary
 
 | Category | AI Role | My Role |
