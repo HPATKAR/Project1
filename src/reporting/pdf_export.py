@@ -274,12 +274,16 @@ class JGBReportPDF:
             self.pdf.ln()
         self._add_page_footer()
 
-    # ── trade ideas (institutional format) ────────────────────────────
+    # ── trade ideas (institutional equity-research format) ───────────
     def add_trade_ideas(self, cards: list, regime_state: dict | None = None) -> None:
-        """Add Trade Ideas section in institutional research note format.
+        """Add Trade Ideas section modelled on JPM / GS equity research first page.
 
-        Layout: summary page with right-side sidebar strip for key metrics,
-        then dense full-width pages for individual trade cards.
+        Layout mirrors institutional initiation notes:
+          - Header bar: firm/course left, report type + date right
+          - Left ~62%: bold title, subtitle, dense thesis bullets, regime context
+          - Right ~38%: coloured recommendation box, key data table, analyst info
+          - Bottom full-width: trade summary table
+          - Subsequent pages: dense full-width individual trade cards
         """
         import numpy as np
 
@@ -293,192 +297,279 @@ class JGBReportPDF:
         categories = sorted(set(c.category for c in cards))
         top = sorted_cards[0] if sorted_cards else None
         rp = regime_state.get("regime_prob", 0.5) if regime_state else 0.5
-        regime_word = "repricing" if rp > 0.5 else "suppressed"
+        regime_word = "REPRICING" if rp > 0.5 else "SUPPRESSED"
 
-        # --- Summary page with RIGHT sidebar strip ---
+        # Accent colour for the recommendation box (muted gold)
+        _REC_BG = (207, 185, 145)
+        _REC_FG = (0, 0, 0)
+
+        # Column geometry
+        _sb_x = 134          # right panel X start
+        _sb_w = _PAGE_W - _MARGIN - _sb_x  # right panel width (~66mm)
+        _cw = _sb_x - _MARGIN - 3          # left content width (~121mm)
+
         self.pdf.add_page()
 
-        # Draw right sidebar background
-        _sb_x = 156  # sidebar starts here (right side)
-        _sb_w = 44   # sidebar width
-        self.pdf.set_fill_color(*_SIDEBAR_BG)
-        self.pdf.rect(_sb_x, 10, _sb_w, 267, "F")
-
-        # Content width (left of sidebar)
-        _cw = _sb_x - _MARGIN - 4  # content width with gap
-
-        # ── Right sidebar content ────────────────────────────────────
-        y_sb = 16
-        self.pdf.set_xy(_sb_x + 3, y_sb)
-        self.pdf.set_font("Helvetica", "", 6)
-        self.pdf.set_text_color(*_MID_GREY)
-        self.pdf.cell(_sb_w - 6, 3.5, "REGIME STATE", ln=True, align="C")
-        y_sb = self.pdf.get_y()
-        self.pdf.set_xy(_sb_x + 3, y_sb)
-        self.pdf.set_font("Helvetica", "B", 18)
+        # ══════════════════════════════════════════════════════════════
+        #  HEADER BAR  (like "J.P.Morgan CAZENOVE" ... "Europe Equity Research")
+        # ══════════════════════════════════════════════════════════════
+        self.pdf.set_fill_color(*_BLACK)
+        self.pdf.rect(_MARGIN, 10, _PAGE_W - 2 * _MARGIN, 9, "F")
+        self.pdf.set_xy(_MARGIN + 2, 10.5)
+        self.pdf.set_font("Helvetica", "B", 8)
+        self.pdf.set_text_color(255, 255, 255)
+        self.pdf.cell(90, 8, "Purdue Daniels School of Business")
+        self.pdf.set_font("Helvetica", "", 7)
+        self.pdf.cell(_PAGE_W - 2 * _MARGIN - 94, 8, f"JGB Rates Research  |  {datetime.now():%d %B %Y}", align="R")
         self.pdf.set_text_color(*_BLACK)
-        self.pdf.cell(_sb_w - 6, 9, f"{rp:.0%}", ln=True, align="C")
-        y_sb = self.pdf.get_y()
-        self.pdf.set_xy(_sb_x + 3, y_sb)
+
+        # ══════════════════════════════════════════════════════════════
+        #  RIGHT PANEL — Recommendation box + key data + analyst info
+        # ══════════════════════════════════════════════════════════════
+        # -- Recommendation box (coloured, prominent) --
+        _box_y = 22
+        self.pdf.set_fill_color(*_REC_BG)
+        self.pdf.rect(_sb_x, _box_y, _sb_w, 26, "F")
+        self.pdf.set_xy(_sb_x + 2, _box_y + 1)
         self.pdf.set_font("Helvetica", "", 6.5)
-        self.pdf.set_text_color(*_MID_GREY)
-        self.pdf.cell(_sb_w - 6, 4, regime_word.upper(), ln=True, align="C")
-
-        y_sb = self.pdf.get_y() + 5
-        self.pdf.set_xy(_sb_x + 3, y_sb)
-        self.pdf.set_font("Helvetica", "", 6)
-        self.pdf.cell(_sb_w - 6, 3.5, "TOTAL TRADES", ln=True, align="C")
-        y_sb = self.pdf.get_y()
-        self.pdf.set_xy(_sb_x + 3, y_sb)
-        self.pdf.set_font("Helvetica", "B", 14)
-        self.pdf.set_text_color(*_BLACK)
-        self.pdf.cell(_sb_w - 6, 7, str(len(cards)), ln=True, align="C")
-
-        y_sb = self.pdf.get_y() + 4
-        self.pdf.set_xy(_sb_x + 3, y_sb)
-        self.pdf.set_font("Helvetica", "", 6)
-        self.pdf.set_text_color(*_MID_GREY)
-        self.pdf.cell(_sb_w - 6, 3.5, "CONVICTION", ln=True, align="C")
-        for label, count in [("High (>=70%)", n_high), ("Med (40-69%)", n_med), ("Low (<40%)", n_low)]:
-            y_sb = self.pdf.get_y() + 1
-            self.pdf.set_xy(_sb_x + 3, y_sb)
-            self.pdf.set_font("Helvetica", "", 6.5)
-            self.pdf.set_text_color(*_DARK_GREY)
-            self.pdf.cell(_sb_w - 12, 4, label)
-            self.pdf.set_font("Helvetica", "B", 7)
-            self.pdf.cell(6, 4, str(count), ln=True, align="R")
-
-        y_sb = self.pdf.get_y() + 4
-        self.pdf.set_xy(_sb_x + 3, y_sb)
-        self.pdf.set_font("Helvetica", "", 6)
-        self.pdf.set_text_color(*_MID_GREY)
-        self.pdf.cell(_sb_w - 6, 3.5, "CATEGORIES", ln=True, align="C")
-        for cat in categories:
-            y_sb = self.pdf.get_y() + 1
-            self.pdf.set_xy(_sb_x + 3, y_sb)
-            self.pdf.set_font("Helvetica", "", 6.5)
-            self.pdf.set_text_color(*_DARK_GREY)
-            cat_count = sum(1 for c in cards if c.category == cat)
-            self.pdf.cell(_sb_w - 12, 4, cat.replace("_", " ").title())
-            self.pdf.set_font("Helvetica", "B", 7)
-            self.pdf.cell(6, 4, str(cat_count), ln=True, align="R")
-
-        if top:
-            y_sb = self.pdf.get_y() + 5
-            self.pdf.set_xy(_sb_x + 3, y_sb)
-            self.pdf.set_font("Helvetica", "", 6)
-            self.pdf.set_text_color(*_MID_GREY)
-            self.pdf.cell(_sb_w - 6, 3.5, "LEAD TRADE", ln=True, align="C")
-            y_sb = self.pdf.get_y() + 1
-            self.pdf.set_xy(_sb_x + 3, y_sb)
-            self.pdf.set_font("Helvetica", "B", 7)
-            self.pdf.set_text_color(*_BLACK)
-            self.pdf.multi_cell(_sb_w - 6, 3.5, self._safe(top.name[:40]), align="C")
-            y_sb = self.pdf.get_y()
-            self.pdf.set_xy(_sb_x + 3, y_sb)
-            self.pdf.set_font("Helvetica", "", 6.5)
-            self.pdf.set_text_color(*_DARK_GREY)
-            self.pdf.cell(_sb_w - 6, 4, f"{top.direction.upper()}  {top.conviction:.0%}", ln=True, align="C")
-
-        self.pdf.set_text_color(*_BLACK)
-
-        # ── Left content area ────────────────────────────────────────
-        self.pdf.set_xy(_MARGIN, 14)
+        self.pdf.set_text_color(*_REC_FG)
+        self.pdf.cell(_sb_w - 4, 4, "Regime Assessment", align="C")
+        self.pdf.set_xy(_sb_x + 2, _box_y + 5.5)
         self.pdf.set_font("Helvetica", "B", 16)
-        self.pdf.cell(_cw, 10, "Trade Ideas Summary", ln=True)
+        self.pdf.cell(_sb_w - 4, 9, regime_word, align="C")
+        self.pdf.set_xy(_sb_x + 2, _box_y + 16)
+        self.pdf.set_font("Helvetica", "", 7.5)
+        self.pdf.cell(_sb_w - 4, 4, f"Ensemble Prob: {rp:.1%}", align="C")
+        self.pdf.set_xy(_sb_x + 2, _box_y + 21)
+        self.pdf.set_font("Helvetica", "", 6.5)
+        conv_word = "HIGH" if n_high > n_med else "MODERATE" if n_med >= n_low else "LOW"
+        self.pdf.cell(_sb_w - 4, 4, f"Conviction: {conv_word}", align="C")
+
+        # -- Key data table (like "Selected Financial Data") --
+        _kd_y = _box_y + 29
+        self.pdf.set_xy(_sb_x, _kd_y)
+        self.pdf.set_font("Helvetica", "B", 7)
+        self.pdf.set_text_color(*_BLACK)
+        self.pdf.set_fill_color(*_REC_BG)
+        self.pdf.cell(_sb_w, 5.5, "  Key Data", fill=True, ln=True)
+
+        _kd_rows = [
+            ("Total Trades", str(len(cards))),
+            ("High Conviction", str(n_high)),
+            ("Medium Conviction", str(n_med)),
+            ("Low Conviction", str(n_low)),
+            ("Categories", str(len(categories))),
+            ("Regime Prob.", f"{rp:.1%}"),
+        ]
+        if top:
+            _kd_rows.append(("Lead Trade", self._safe(top.name[:22])))
+            _kd_rows.append(("Lead Direction", top.direction.upper()))
+            _kd_rows.append(("Lead Conviction", f"{top.conviction:.0%}"))
+
+        self.pdf.set_fill_color(*_SIDEBAR_BG)
+        for i, (label, value) in enumerate(_kd_rows):
+            self.pdf.set_x(_sb_x)
+            fill = i % 2 == 0
+            self.pdf.set_font("Helvetica", "", 6.5)
+            self.pdf.set_text_color(*_DARK_GREY)
+            self.pdf.cell(_sb_w - 18, 4.5, f"  {label}", fill=fill)
+            self.pdf.set_font("Helvetica", "B", 6.5)
+            self.pdf.set_text_color(*_BLACK)
+            self.pdf.cell(18, 4.5, value, fill=fill, align="R", ln=True)
+
+        # Hairline under key data
+        _kd_end = self.pdf.get_y()
+        self.pdf.set_draw_color(*_LIGHT_GREY)
+        self.pdf.set_line_width(0.3)
+        self.pdf.line(_sb_x, _kd_end, _sb_x + _sb_w, _kd_end)
+
+        # -- Category breakdown --
+        self.pdf.set_xy(_sb_x, _kd_end + 3)
+        self.pdf.set_font("Helvetica", "B", 6.5)
+        self.pdf.set_text_color(*_DARK_GREY)
+        self.pdf.cell(_sb_w, 4, "  Categories", ln=True)
+        for cat in categories:
+            self.pdf.set_x(_sb_x)
+            cat_count = sum(1 for c in cards if c.category == cat)
+            self.pdf.set_font("Helvetica", "", 6.5)
+            self.pdf.set_text_color(*_DARK_GREY)
+            self.pdf.cell(_sb_w - 14, 4, f"  {cat.replace('_', ' ').title()}")
+            self.pdf.set_font("Helvetica", "B", 6.5)
+            self.pdf.set_text_color(*_BLACK)
+            self.pdf.cell(14, 4, str(cat_count), align="R", ln=True)
+
+        # Hairline
+        _cat_end = self.pdf.get_y()
+        self.pdf.line(_sb_x, _cat_end, _sb_x + _sb_w, _cat_end)
+
+        # -- Analyst info --
+        self.pdf.set_xy(_sb_x, _cat_end + 3)
+        self.pdf.set_font("Helvetica", "B", 6.5)
+        self.pdf.set_text_color(*_DARK_GREY)
+        self.pdf.cell(_sb_w, 4, "  Analyst", ln=True)
+        self.pdf.set_x(_sb_x)
+        self.pdf.set_font("Helvetica", "", 6.5)
+        self.pdf.set_text_color(*_BLACK)
+        self.pdf.cell(_sb_w, 3.5, "  Heramb S. Patkar, MSF", ln=True)
+        self.pdf.set_x(_sb_x)
+        self.pdf.set_text_color(*_MID_GREY)
+        self.pdf.cell(_sb_w, 3.5, "  Purdue Daniels School of Business", ln=True)
+        self.pdf.set_x(_sb_x)
+        self.pdf.cell(_sb_w, 3.5, "  MGMT 69000-119", ln=True)
+        self.pdf.set_x(_sb_x)
+        self.pdf.cell(_sb_w, 3.5, "  github.com/HPATKAR", ln=True)
+
+        self.pdf.set_draw_color(*_BLACK)
+        self.pdf.set_line_width(0.2)
+        self.pdf.set_text_color(*_BLACK)
+
+        # ══════════════════════════════════════════════════════════════
+        #  LEFT BODY — Title, subtitle, thesis bullets, regime context
+        # ══════════════════════════════════════════════════════════════
+        self.pdf.set_xy(_MARGIN, 22)
+        self.pdf.set_font("Helvetica", "B", 18)
+        self.pdf.cell(_cw, 10, "JGB Trade Ideas")
+        self.pdf.ln(10)
+
+        # Subtitle / tagline
+        self.pdf.set_x(_MARGIN)
+        self.pdf.set_font("Helvetica", "", 9)
+        self.pdf.set_text_color(*_DARK_GREY)
+        subtitle = (
+            f"Regime-conditional strategies under {regime_word.lower()} "
+            f"with ensemble probability {rp:.0%}"
+        )
+        self.pdf.multi_cell(_cw, 4.5, self._safe(subtitle))
+        self.pdf.set_text_color(*_BLACK)
+        self.pdf.ln(3)
+
+        # Dense thesis paragraph
         self.pdf.set_x(_MARGIN)
         self.pdf.set_font("Helvetica", "", 8)
-        self.pdf.set_text_color(*_MID_GREY)
-        self.pdf.cell(_cw, 5, f"Heramb S. Patkar, MSF  |  {datetime.now():%d %B %Y}", ln=True)
-        self.pdf.set_text_color(*_BLACK)
-        self.pdf.set_x(_MARGIN)
-        self._hairline(x1=_MARGIN, x2=_MARGIN + _cw)
-        self.pdf.ln(6)
-
-        # Executive summary
-        self.pdf.set_x(_MARGIN)
-        self.pdf.set_font("Helvetica", "B", 9)
-        self.pdf.set_text_color(*_DARK_GREY)
-        self.pdf.cell(_cw, 6, "EXECUTIVE SUMMARY", ln=True)
-        self.pdf.set_text_color(*_BLACK)
-        self.pdf.ln(1)
-        self.pdf.set_x(_MARGIN)
-        self.pdf.set_font("Helvetica", "", 8.5)
-        exec_text = (
-            f"The framework has generated {len(cards)} trade idea{'s' if len(cards) != 1 else ''} "
-            f"under a {regime_word} regime (probability: {rp:.1%}). "
-            f"Distribution: {n_high} high, {n_med} medium, {n_low} low conviction across "
-            f"{', '.join(categories)}."
+        thesis_text = (
+            f"The four-model ensemble regime detector (Markov-Switching, HMM, Permutation "
+            f"Entropy, GARCH+PELT) currently signals a {rp:.1%} probability of market-driven "
+            f"repricing. The framework has generated {len(cards)} trade "
+            f"idea{'s' if len(cards) != 1 else ''} spanning "
+            f"{', '.join(c.replace('_', ' ') for c in categories)}. "
+            f"Distribution: {n_high} high, {n_med} medium, {n_low} low conviction."
         )
-        self.pdf.multi_cell(_cw, 4.5, self._safe(exec_text))
-        self.pdf.ln(2)
+        self.pdf.multi_cell(_cw, 4, self._safe(thesis_text))
+        self.pdf.ln(3)
 
+        # Bullet points — compelling reasons (like the Walmart template)
+        bullets = []
         if top:
-            self.pdf.set_x(_MARGIN)
-            self.pdf.set_font("Helvetica", "B", 9)
-            self.pdf.set_text_color(*_DARK_GREY)
-            self.pdf.cell(_cw, 6, "LEAD RECOMMENDATION", ln=True)
-            self.pdf.set_text_color(*_BLACK)
-            self.pdf.ln(1)
-            self.pdf.set_x(_MARGIN)
-            self.pdf.set_font("Helvetica", "B", 8.5)
-            self.pdf.multi_cell(_cw, 4.5, self._safe(
-                f"{top.name}  |  {top.direction.upper()}  |  {top.conviction:.0%}  |  "
-                f"{', '.join(top.instruments[:3])}"
-            ))
-            self.pdf.set_x(_MARGIN)
-            self.pdf.set_font("Helvetica", "", 8)
-            self.pdf.multi_cell(_cw, 4.5, self._safe(
-                f"Rationale: {top.edge_source}. Entry: {top.entry_signal}. Exit: {top.exit_signal}."
-            ))
-            self.pdf.ln(2)
+            bullets.append(
+                f"Lead trade: {top.name} ({top.direction.upper()}, {top.conviction:.0%}). "
+                f"Edge: {top.edge_source}."
+            )
+        if rp > 0.7:
+            bullets.append(
+                "Strong repricing signal: directional short-JGB and vol-long trades favoured. "
+                "Carry unwind risk elevated."
+            )
+        elif rp > 0.5:
+            bullets.append(
+                "Transitional regime: relative value and spread trades may outperform directional bets."
+            )
+        else:
+            bullets.append(
+                "Suppressed regime: carry and yield-enhancement favoured. Vol selling can capture "
+                "range-bound premium."
+            )
+        if n_high > 0:
+            high_names = [c.name for c in sorted_cards if c.conviction >= 0.7][:3]
+            bullets.append(
+                f"{n_high} high-conviction trade{'s' if n_high != 1 else ''}: "
+                f"{', '.join(high_names)}."
+            )
+        if top:
+            bullets.append(
+                f"Entry: {top.entry_signal}. Exit: {top.exit_signal}."
+            )
+            bullets.append(
+                f"Failure scenario: {top.failure_scenario[:120]}."
+            )
 
-        # Regime context
-        if regime_state:
+        self.pdf.set_font("Helvetica", "", 7.5)
+        for bullet in bullets:
             self.pdf.set_x(_MARGIN)
-            self.pdf.set_font("Helvetica", "B", 9)
-            self.pdf.set_text_color(*_DARK_GREY)
-            self.pdf.cell(_cw, 6, "MARKET REGIME CONTEXT", ln=True)
-            self.pdf.set_text_color(*_BLACK)
+            # Bullet character
+            self.pdf.set_font("Helvetica", "B", 7.5)
+            self.pdf.cell(4, 4, "*")
+            self.pdf.set_font("Helvetica", "", 7.5)
+            self.pdf.multi_cell(_cw - 4, 4, self._safe(bullet))
             self.pdf.ln(1)
-            self.pdf.set_x(_MARGIN)
-            self.pdf.set_font("Helvetica", "", 8)
-            regime_text = f"Ensemble probability: {rp:.1%} ({regime_word.upper()}). "
-            if rp > 0.7:
-                regime_text += "Directional short-JGB and vol-long trades favoured. Carry unwind risk elevated."
-            elif rp > 0.5:
-                regime_text += "Transitional. Relative value and spreads may outperform directional bets."
-            else:
-                regime_text += "Carry and yield-enhancement favoured. Vol selling can capture range-bound premium."
-            self.pdf.multi_cell(_cw, 4.5, self._safe(regime_text))
-            self.pdf.ln(2)
 
-        # Summary table (full width, below the sidebar content area)
+        # Regime context section
+        self.pdf.ln(2)
         self.pdf.set_x(_MARGIN)
-        self.pdf.set_font("Helvetica", "B", 9)
+        self.pdf.set_font("Helvetica", "B", 8)
         self.pdf.set_text_color(*_DARK_GREY)
-        self.pdf.cell(_cw, 6, "TRADE SUMMARY", ln=True)
+        self.pdf.cell(_cw, 5, "Market Regime Context", ln=True)
         self.pdf.set_text_color(*_BLACK)
+        self.pdf.set_x(_MARGIN)
+        self.pdf.set_font("Helvetica", "", 7.5)
+        if regime_state:
+            ctx_text = f"Ensemble: {rp:.1%} ({regime_word}). "
+            ms = regime_state.get("markov_prob")
+            hmm = regime_state.get("hmm_prob")
+            ent = regime_state.get("entropy_prob")
+            garch = regime_state.get("garch_prob")
+            parts = []
+            if ms is not None:
+                parts.append(f"Markov: {ms:.0%}")
+            if hmm is not None:
+                parts.append(f"HMM: {hmm:.0%}")
+            if ent is not None:
+                parts.append(f"Entropy: {ent:.0%}")
+            if garch is not None:
+                parts.append(f"GARCH: {garch:.0%}")
+            if parts:
+                ctx_text += "Components: " + ", ".join(parts) + "."
+            self.pdf.multi_cell(_cw, 3.5, self._safe(ctx_text))
         self.pdf.ln(1)
 
-        tbl_w = [52, 18, 18, 38, 16]
-        headers = ["Trade", "Dir.", "Conv.", "Instruments", "Cat."]
-        self.pdf.set_x(_MARGIN)
-        self.pdf.set_font("Helvetica", "B", 7.5)
+        # ══════════════════════════════════════════════════════════════
+        #  BOTTOM — Full-width trade summary table
+        # ══════════════════════════════════════════════════════════════
+        _tbl_y = max(self.pdf.get_y(), _cat_end + 20) + 2
+        self.pdf.set_xy(_MARGIN, _tbl_y)
+
+        # Table header bar
+        self.pdf.set_fill_color(*_BLACK)
+        fw = _PAGE_W - 2 * _MARGIN
+        tbl_w = [58, 20, 20, 52, 18, 22]
+        headers = ["Trade", "Dir.", "Conv.", "Instruments", "Cat.", "Sizing"]
+        self.pdf.set_font("Helvetica", "B", 7)
+        self.pdf.set_text_color(255, 255, 255)
         for w, h in zip(tbl_w, headers):
-            self.pdf.cell(w, 5.5, h, border="B", align="C")
+            self.pdf.cell(w, 5.5, f"  {h}", fill=True)
         self.pdf.ln()
-        self.pdf.set_font("Helvetica", "", 7)
+        self.pdf.set_text_color(*_BLACK)
+
+        # Table rows with alternating shading
         self.pdf.set_fill_color(*_SIDEBAR_BG)
+        self.pdf.set_font("Helvetica", "", 7)
         for i, card in enumerate(sorted_cards):
             fill = i % 2 == 0
             self.pdf.set_x(_MARGIN)
-            self.pdf.cell(tbl_w[0], 5, self._safe(card.name[:28]), fill=fill)
+            self.pdf.cell(tbl_w[0], 5, self._safe(f"  {card.name[:30]}"), fill=fill)
             self.pdf.cell(tbl_w[1], 5, card.direction.upper(), fill=fill, align="C")
             self.pdf.cell(tbl_w[2], 5, f"{card.conviction:.0%}", fill=fill, align="C")
-            self.pdf.cell(tbl_w[3], 5, self._safe(", ".join(card.instruments[:2])[:22]), fill=fill)
-            self.pdf.cell(tbl_w[4], 5, self._safe(card.category[:6].title()), fill=fill, align="C")
+            self.pdf.cell(tbl_w[3], 5, self._safe(", ".join(card.instruments[:2])[:28]), fill=fill)
+            self.pdf.cell(tbl_w[4], 5, self._safe(card.category[:8].title()), fill=fill, align="C")
+            self.pdf.cell(tbl_w[5], 5, self._safe(card.sizing_method[:12]), fill=fill, align="C")
             self.pdf.ln()
+
+        # Source line
+        self.pdf.ln(2)
+        self.pdf.set_font("Helvetica", "I", 6)
+        self.pdf.set_text_color(*_MID_GREY)
+        self.pdf.cell(0, 3.5, "Source: JGB Repricing Framework ensemble regime detector. Heramb S. Patkar.", ln=True)
+        self.pdf.set_text_color(*_BLACK)
+
         self._add_page_footer()
 
         # --- Individual trade card pages (dense full-width, no sidebar) ---
@@ -491,17 +582,20 @@ class JGBReportPDF:
 
         self.pdf.add_page()
         self.pdf.set_y(14)
+        self.pdf.set_x(_MARGIN)
         meta = card.metadata or {}
         fw = _PAGE_W - 2 * _MARGIN  # full width
 
         # Title line
         dir_label = "LONG" if card.direction == "long" else "SHORT"
         self.pdf.set_font("Helvetica", "B", 12)
+        self.pdf.set_x(_MARGIN)
         self.pdf.cell(fw, 8, self._safe(f"{dir_label}  |  {card.name}  |  {card.conviction:.0%}"), ln=True)
         self._hairline()
         self.pdf.ln(4)
 
         # Trade thesis
+        self.pdf.set_x(_MARGIN)
         self._section_header("Trade Thesis")
         conv_word = "high" if card.conviction >= 0.7 else "moderate" if card.conviction >= 0.4 else "low"
         thesis = (
@@ -509,9 +603,11 @@ class JGBReportPDF:
             f"{', '.join(card.instruments[:3])} ({card.category.replace('_', ' ')}). "
             f"Edge: {card.edge_source}. Regime condition: {card.regime_condition}."
         )
+        self.pdf.set_x(_MARGIN)
         self._body_text(thesis, size=8)
 
         # Specification table
+        self.pdf.set_x(_MARGIN)
         self._section_header("Trade Specification")
         fields = [
             ("Instruments", ", ".join(card.instruments)),
@@ -524,6 +620,7 @@ class JGBReportPDF:
         self.pdf.set_fill_color(*_SIDEBAR_BG)
         for i, (label, value) in enumerate(fields):
             fill = i % 2 == 0
+            self.pdf.set_x(_MARGIN)
             self.pdf.set_font("Helvetica", "B", 7.5)
             self.pdf.cell(32, 5, f"  {label}", fill=fill)
             self.pdf.set_font("Helvetica", "", 7.5)
@@ -541,18 +638,21 @@ class JGBReportPDF:
                 levels[key.replace("_", " ").title()] = meta[key]
 
         if levels:
+            self.pdf.set_x(_MARGIN)
             self._section_header("Key Levels")
             self.pdf.set_fill_color(*_SIDEBAR_BG)
             col_count = min(len(levels), 4)
             lev_w = fw / col_count
             items = list(levels.items())
             # Row of labels
+            self.pdf.set_x(_MARGIN)
             self.pdf.set_font("Helvetica", "", 6.5)
             self.pdf.set_text_color(*_MID_GREY)
             for k, _ in items[:col_count]:
                 self.pdf.cell(lev_w, 4, k, align="C")
             self.pdf.ln()
             # Row of values
+            self.pdf.set_x(_MARGIN)
             self.pdf.set_font("Helvetica", "B", 9)
             self.pdf.set_text_color(*_BLACK)
             for _, v in items[:col_count]:
@@ -563,11 +663,13 @@ class JGBReportPDF:
             if len(items) > col_count:
                 col_count2 = min(len(items) - col_count, 4)
                 lev_w2 = fw / col_count2
+                self.pdf.set_x(_MARGIN)
                 self.pdf.set_font("Helvetica", "", 6.5)
                 self.pdf.set_text_color(*_MID_GREY)
                 for k, _ in items[col_count:col_count + col_count2]:
                     self.pdf.cell(lev_w2, 4, k, align="C")
                 self.pdf.ln()
+                self.pdf.set_x(_MARGIN)
                 self.pdf.set_font("Helvetica", "B", 9)
                 self.pdf.set_text_color(*_BLACK)
                 for _, v in items[col_count:col_count + col_count2]:
@@ -576,6 +678,7 @@ class JGBReportPDF:
                 self.pdf.ln()
             self.pdf.ln(1)
             # Key levels text explanation
+            self.pdf.set_x(_MARGIN)
             self.pdf.set_font("Helvetica", "I", 6.5)
             self.pdf.set_text_color(*_MID_GREY)
             self.pdf.multi_cell(fw, 3.5, self._explain_key_levels(card, meta, levels))
@@ -583,13 +686,16 @@ class JGBReportPDF:
             self.pdf.ln(2)
 
         # Failure scenario
+        self.pdf.set_x(_MARGIN)
         self.pdf.set_fill_color(*_ALERT_BG)
         self.pdf.set_font("Helvetica", "B", 8)
         self.pdf.set_text_color(140, 20, 20)
         self.pdf.cell(fw, 5, "  FAILURE SCENARIO", ln=True, fill=True)
+        self.pdf.set_x(_MARGIN)
         self.pdf.set_text_color(60, 20, 20)
         self.pdf.set_font("Helvetica", "", 7.5)
         self.pdf.multi_cell(fw, 4.5, self._safe("  " + card.failure_scenario[:500]))
+        self.pdf.set_x(_MARGIN)
         self.pdf.set_text_color(*_MID_GREY)
         self.pdf.set_font("Helvetica", "I", 6.5)
         self.pdf.multi_cell(fw, 3.5, "  If this scenario is in play, skip this trade regardless of conviction.")
@@ -599,7 +705,9 @@ class JGBReportPDF:
         # Payout graph
         payout_path = self._generate_payout_graph(card)
         if payout_path:
+            self.pdf.set_x(_MARGIN)
             self._section_header("Estimated Payout Profile")
+            self.pdf.set_x(_MARGIN)
             self.pdf.set_font("Helvetica", "", 6.5)
             self.pdf.set_text_color(*_MID_GREY)
             self.pdf.multi_cell(fw, 3.5, self._explain_payout(card, meta))
@@ -614,6 +722,7 @@ class JGBReportPDF:
             except Exception:
                 pass
             self.pdf.ln(2)
+            self.pdf.set_x(_MARGIN)
             self.pdf.set_font("Helvetica", "I", 6)
             self.pdf.set_text_color(*_MID_GREY)
             self.pdf.multi_cell(fw, 3.5,
@@ -998,19 +1107,111 @@ class JGBReportPDF:
         rp = (regime_state or {}).get("regime_prob", ensemble_prob or 0.5)
         regime_word = "repricing" if rp > 0.5 else "suppressed"
 
-        # ── Page 1: Regime Overview ──────────────────────────────────────
+        # ── Page 1: Regime Overview (institutional equity-research layout) ─
         self.pdf.add_page()
-        self.pdf.set_y(14)
-        self.pdf.set_font("Helvetica", "B", 16)
-        self.pdf.cell(0, 10, self._safe(f"JGB Repricing Report  -  {profile} View"), ln=True)
-        self.pdf.set_font("Helvetica", "", 8)
-        self.pdf.set_text_color(*_MID_GREY)
-        self.pdf.cell(0, 5, f"Heramb S. Patkar, MSF  |  Purdue Daniels School of Business  |  {datetime.now():%d %B %Y}", ln=True)
-        self.pdf.set_text_color(*_BLACK)
-        self._hairline()
-        self.pdf.ln(6)
 
-        self._section_header("Current Regime State")
+        # Accent colour for recommendation box
+        _REC_BG = (207, 185, 145)
+        _sb_x = 134
+        _sb_w = _PAGE_W - _MARGIN - _sb_x
+        _cw = _sb_x - _MARGIN - 3
+
+        # Header bar
+        self.pdf.set_fill_color(*_BLACK)
+        self.pdf.rect(_MARGIN, 10, _PAGE_W - 2 * _MARGIN, 9, "F")
+        self.pdf.set_xy(_MARGIN + 2, 10.5)
+        self.pdf.set_font("Helvetica", "B", 8)
+        self.pdf.set_text_color(255, 255, 255)
+        self.pdf.cell(90, 8, "Purdue Daniels School of Business")
+        self.pdf.set_font("Helvetica", "", 7)
+        self.pdf.cell(_PAGE_W - 2 * _MARGIN - 94, 8, f"JGB Rates Research  |  {profile} View  |  {datetime.now():%d %B %Y}", align="R")
+        self.pdf.set_text_color(*_BLACK)
+
+        # Right panel — recommendation box
+        _box_y = 22
+        self.pdf.set_fill_color(*_REC_BG)
+        self.pdf.rect(_sb_x, _box_y, _sb_w, 22, "F")
+        self.pdf.set_xy(_sb_x + 2, _box_y + 1)
+        self.pdf.set_font("Helvetica", "", 6.5)
+        self.pdf.cell(_sb_w - 4, 4, "Regime Assessment", align="C")
+        self.pdf.set_xy(_sb_x + 2, _box_y + 5.5)
+        self.pdf.set_font("Helvetica", "B", 14)
+        self.pdf.cell(_sb_w - 4, 8, regime_word.upper(), align="C")
+        self.pdf.set_xy(_sb_x + 2, _box_y + 15)
+        self.pdf.set_font("Helvetica", "", 7)
+        self.pdf.cell(_sb_w - 4, 4, f"Prob: {rp:.1%}", align="C")
+
+        # Right panel — key data
+        _kd_y = _box_y + 25
+        self.pdf.set_fill_color(*_REC_BG)
+        self.pdf.set_xy(_sb_x, _kd_y)
+        self.pdf.set_font("Helvetica", "B", 7)
+        self.pdf.cell(_sb_w, 5.5, "  Key Data", fill=True, ln=True)
+        _kd_rows = [("Ensemble Prob.", f"{rp:.1%}")]
+        if ml_prob is not None:
+            _kd_rows.append(("ML 5d Prob.", f"{ml_prob:.1%}"))
+        if warning_score is not None:
+            _kd_rows.append(("Warning Score", f"{warning_score:.0f}/100"))
+        if spillover_pct is not None:
+            _kd_rows.append(("Spillover %", f"{spillover_pct:.1f}%"))
+        if carry_ratio is not None:
+            _kd_rows.append(("Carry/Vol", f"{carry_ratio:.2f}"))
+        if cards:
+            _kd_rows.append(("Total Trades", str(len(cards))))
+        self.pdf.set_fill_color(*_SIDEBAR_BG)
+        for i, (label, value) in enumerate(_kd_rows):
+            self.pdf.set_x(_sb_x)
+            fill = i % 2 == 0
+            self.pdf.set_font("Helvetica", "", 6.5)
+            self.pdf.set_text_color(*_DARK_GREY)
+            self.pdf.cell(_sb_w - 18, 4.5, f"  {label}", fill=fill)
+            self.pdf.set_font("Helvetica", "B", 6.5)
+            self.pdf.set_text_color(*_BLACK)
+            self.pdf.cell(18, 4.5, value, fill=fill, align="R", ln=True)
+
+        # Right panel — analyst info
+        _a_y = self.pdf.get_y() + 3
+        self.pdf.set_draw_color(*_LIGHT_GREY)
+        self.pdf.line(_sb_x, _a_y - 1, _sb_x + _sb_w, _a_y - 1)
+        self.pdf.set_xy(_sb_x, _a_y)
+        self.pdf.set_font("Helvetica", "B", 6.5)
+        self.pdf.set_text_color(*_DARK_GREY)
+        self.pdf.cell(_sb_w, 4, "  Analyst", ln=True)
+        self.pdf.set_x(_sb_x)
+        self.pdf.set_font("Helvetica", "", 6.5)
+        self.pdf.set_text_color(*_BLACK)
+        self.pdf.cell(_sb_w, 3.5, "  Heramb S. Patkar, MSF", ln=True)
+        self.pdf.set_x(_sb_x)
+        self.pdf.set_text_color(*_MID_GREY)
+        self.pdf.cell(_sb_w, 3.5, "  Purdue Daniels School of Business", ln=True)
+        self.pdf.set_x(_sb_x)
+        self.pdf.cell(_sb_w, 3.5, "  MGMT 69000-119", ln=True)
+        self.pdf.set_draw_color(*_BLACK)
+        self.pdf.set_text_color(*_BLACK)
+
+        # Left body — title + content
+        self.pdf.set_xy(_MARGIN, 22)
+        self.pdf.set_font("Helvetica", "B", 18)
+        self.pdf.cell(_cw, 10, "JGB Repricing Report")
+        self.pdf.ln(10)
+        self.pdf.set_x(_MARGIN)
+        self.pdf.set_font("Helvetica", "", 9)
+        self.pdf.set_text_color(*_DARK_GREY)
+        self.pdf.multi_cell(_cw, 4.5, self._safe(
+            f"{profile} view: regime-conditional analysis under {regime_word.lower()} "
+            f"with ensemble probability {rp:.0%}"
+        ))
+        self.pdf.set_text_color(*_BLACK)
+        self.pdf.ln(4)
+
+        # Current regime state (constrained to left column while beside right panel)
+        self.pdf.set_x(_MARGIN)
+        self.pdf.set_font("Helvetica", "B", 9)
+        self.pdf.set_text_color(*_DARK_GREY)
+        self.pdf.cell(_cw, 6, "CURRENT REGIME STATE", ln=True)
+        self.pdf.set_text_color(*_BLACK)
+        self.pdf.ln(1)
+        self.pdf.set_x(_MARGIN)
         regime_text = f"Ensemble regime probability: {rp:.1%} ({regime_word.upper()}). "
         if ml_prob is not None:
             regime_text += f"ML 5-day forward probability: {ml_prob:.1%}. "
@@ -1024,11 +1225,21 @@ class JGBReportPDF:
                 regime_text += "CRITICAL: multiple stress indicators firing. "
             elif warning_score > 50:
                 regime_text += "Elevated: monitor for regime shift. "
-        self._body_text(regime_text)
+        self.pdf.set_font("Helvetica", "", 8)
+        self.pdf.set_text_color(*_DARK_GREY)
+        self.pdf.multi_cell(_cw, 4, self._safe(regime_text))
+        self.pdf.set_text_color(*_BLACK)
+        self.pdf.ln(3)
 
-        # Cross-market conditions
+        # Cross-market conditions (still in left column)
         if spillover_pct is not None or carry_ratio is not None:
-            self._section_header("Cross-Market Conditions")
+            self.pdf.set_x(_MARGIN)
+            self.pdf.set_font("Helvetica", "B", 9)
+            self.pdf.set_text_color(*_DARK_GREY)
+            self.pdf.cell(_cw, 6, "CROSS-MARKET CONDITIONS", ln=True)
+            self.pdf.set_text_color(*_BLACK)
+            self.pdf.ln(1)
+            self.pdf.set_x(_MARGIN)
             cm_text = ""
             if spillover_pct is not None:
                 cm_text += (
@@ -1040,66 +1251,79 @@ class JGBReportPDF:
                     f"Carry-to-vol ratio: {carry_ratio:.2f}. "
                     f"{'Below 0.5: carry poorly compensated. ' if carry_ratio < 0.5 else 'Above 1.0: attractive carry. ' if carry_ratio > 1.0 else ''}"
                 )
-            self._body_text(cm_text)
-
-        # ── PCA / Yield Curve (Analyst + Academic) ───────────────────────
-        if profile in ("Analyst", "Academic") and pca_result is not None:
-            self._section_header("Yield Curve Decomposition (PCA)")
-            ev = pca_result.get("explained_variance_ratio", [])
-            pca_text = ""
-            if len(ev) >= 3:
-                pca_text += (
-                    f"PC1 (Level): {ev[0]:.1%}. PC2 (Slope): {ev[1]:.1%}. PC3 (Curvature): {ev[2]:.1%}. "
-                )
-                if ev[0] > 0.8:
-                    pca_text += "PC1 dominates (>80%): curve repricing in lockstep. "
-                elif ev[1] > 0.15:
-                    pca_text += "Elevated PC2: slope rotation, steepener/flattener opportunity. "
-            if profile == "Academic":
-                pca_text += (
-                    "Ref: Litterman & Scheinkman (1991). PCA on daily yield changes (not levels). "
-                    "Covariance-based scaling preserves bps economic meaning. Rolling 252-day window."
-                )
-            self._body_text(pca_text)
-
-        # ── ML Predictor Detail ──────────────────────────────────────────
-        if ml_prob is not None:
-            self._section_header("ML Regime Transition Predictor")
-            ml_text = f"Walk-forward RandomForest: {ml_prob:.1%} probability of transition within 5 days. "
-            if profile == "Trader":
-                if ml_prob > 0.5:
-                    ml_text += "ACTION: position for repricing. Full conviction sizing. "
-                else:
-                    ml_text += "ACTION: maintain positioning. No imminent shift. "
-            if ml_importance is not None and len(ml_importance) > 0:
-                top_feat = ml_importance.index[0]
-                top_val = ml_importance.iloc[0]
-                ml_text += f"Top feature: {top_feat} ({top_val:.2f}). "
-                if top_val > 0.4:
-                    ml_text += "Single feature dominance >40%: model may be fragile. "
-            if profile == "Academic":
-                ml_text += (
-                    "Methodology: RF (50 trees, max depth 5), 504-day window, quarterly retrain. "
-                    "Features: structural entropy, entropy delta, carry stress, spillover correlation, "
-                    "vol z-score, VIX, USDJPY momentum. Labels: binary forward-looking. No look-ahead bias."
-                )
-            self._body_text(ml_text)
-
-        # ── Ensemble Detail (Academic) ───────────────────────────────────
-        if profile == "Academic":
-            self._section_header("Ensemble Regime Detection Methodology")
             self.pdf.set_font("Helvetica", "", 8)
-            self.pdf.multi_cell(0, 4.5, self._safe(
-                "Four models, normalised to [0,1], equally weighted (25% each): "
-                "(1) Hamilton (1989) 2-state Markov-Switching: smoothed state probabilities. "
-                "(2) Gaussian HMM (hmmlearn): Viterbi state sequence on multivariate features. "
-                "(3) Bandt & Pompe (2002) permutation entropy (order=3, window=120): z-score threshold. "
-                "(4) Bollerslev (1986) GARCH(1,1) + PELT breakpoints: vol-regime detection. "
-                "Thresholds: >0.7 STRONG, 0.5-0.7 MODERATE, 0.3-0.5 TRANSITION, <0.3 SUPPRESSED."
-            ))
+            self.pdf.set_text_color(*_DARK_GREY)
+            self.pdf.multi_cell(_cw, 4, self._safe(cm_text))
+            self.pdf.set_text_color(*_BLACK)
             self.pdf.ln(3)
 
         self._add_page_footer()
+
+        # ── Page 2: Analytical Detail (full-width, no sidebar) ────────────
+        _has_detail = (
+            (profile in ("Analyst", "Academic") and pca_result is not None)
+            or ml_prob is not None
+            or profile == "Academic"
+        )
+        if _has_detail:
+            self.pdf.add_page()
+            self.pdf.set_y(14)
+
+            if profile in ("Analyst", "Academic") and pca_result is not None:
+                self._section_header("Yield Curve Decomposition (PCA)")
+                ev = pca_result.get("explained_variance_ratio", [])
+                pca_text = ""
+                if len(ev) >= 3:
+                    pca_text += (
+                        f"PC1 (Level): {ev[0]:.1%}. PC2 (Slope): {ev[1]:.1%}. PC3 (Curvature): {ev[2]:.1%}. "
+                    )
+                    if ev[0] > 0.8:
+                        pca_text += "PC1 dominates (>80%): curve repricing in lockstep. "
+                    elif ev[1] > 0.15:
+                        pca_text += "Elevated PC2: slope rotation, steepener/flattener opportunity. "
+                if profile == "Academic":
+                    pca_text += (
+                        "Ref: Litterman & Scheinkman (1991). PCA on daily yield changes (not levels). "
+                        "Covariance-based scaling preserves bps economic meaning. Rolling 252-day window."
+                    )
+                self._body_text(pca_text)
+
+            if ml_prob is not None:
+                self._section_header("ML Regime Transition Predictor")
+                ml_text = f"Walk-forward RandomForest: {ml_prob:.1%} probability of transition within 5 days. "
+                if profile == "Trader":
+                    if ml_prob > 0.5:
+                        ml_text += "ACTION: position for repricing. Full conviction sizing. "
+                    else:
+                        ml_text += "ACTION: maintain positioning. No imminent shift. "
+                if ml_importance is not None and len(ml_importance) > 0:
+                    top_feat = ml_importance.index[0]
+                    top_val = ml_importance.iloc[0]
+                    ml_text += f"Top feature: {top_feat} ({top_val:.2f}). "
+                    if top_val > 0.4:
+                        ml_text += "Single feature dominance >40%: model may be fragile. "
+                if profile == "Academic":
+                    ml_text += (
+                        "Methodology: RF (50 trees, max depth 5), 504-day window, quarterly retrain. "
+                        "Features: structural entropy, entropy delta, carry stress, spillover correlation, "
+                        "vol z-score, VIX, USDJPY momentum. Labels: binary forward-looking. No look-ahead bias."
+                    )
+                self._body_text(ml_text)
+
+            if profile == "Academic":
+                self._section_header("Ensemble Regime Detection Methodology")
+                self.pdf.set_font("Helvetica", "", 8)
+                self.pdf.multi_cell(0, 4.5, self._safe(
+                    "Four models, normalised to [0,1], equally weighted (25% each): "
+                    "(1) Hamilton (1989) 2-state Markov-Switching: smoothed state probabilities. "
+                    "(2) Gaussian HMM (hmmlearn): Viterbi state sequence on multivariate features. "
+                    "(3) Bandt & Pompe (2002) permutation entropy (order=3, window=120): z-score threshold. "
+                    "(4) Bollerslev (1986) GARCH(1,1) + PELT breakpoints: vol-regime detection. "
+                    "Thresholds: >0.7 STRONG, 0.5-0.7 MODERATE, 0.3-0.5 TRANSITION, <0.3 SUPPRESSED."
+                ))
+                self.pdf.ln(3)
+
+            self._add_page_footer()
 
         # ── Trade Ideas ──────────────────────────────────────────────────
         if cards:

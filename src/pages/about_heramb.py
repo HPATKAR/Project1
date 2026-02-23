@@ -107,7 +107,7 @@ def page_about_heramb():
             "<div class='stat-row'>"
             "<div class='stat-item'><p class='stat-num'>4</p><p class='stat-label'>Regime Models</p></div>"
             "<div class='stat-item'><p class='stat-num'>6</p><p class='stat-label'>Tenors</p></div>"
-            "<div class='stat-item'><p class='stat-num'>10</p><p class='stat-label'>Dashboard Pages</p></div>"
+            "<div class='stat-item'><p class='stat-num'>11</p><p class='stat-label'>Dashboard Pages</p></div>"
             "<div class='stat-item'><p class='stat-num'>5</p><p class='stat-label'>Analytical Layers</p></div>"
             "</div>"
             "</div>",

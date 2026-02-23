@@ -343,6 +343,7 @@ def _add_boj_events(fig: go.Figure, y_pos: float | None = None) -> go.Figure:
 def _about_page_styles():
     """Inject CSS for About pages (hero banner, cards, timelines, etc.)."""
     st.markdown("""<style>
+    /* ── Hero banner ───────────────────────────────────── */
     .about-hero {
         background: linear-gradient(135deg, #000000 0%, #1a1a2e 100%);
         border-radius: 16px;
@@ -359,6 +360,61 @@ def _about_page_styles():
         width: 300px; height: 300px;
         background: radial-gradient(circle, rgba(207,185,145,0.08) 0%, transparent 70%);
     }
+    .about-hero-inner { position: relative; z-index: 1; }
+    .about-hero h1 {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0 0 0.3rem 0;
+        letter-spacing: -0.02em;
+        line-height: 1.15;
+    }
+    .about-hero .overline {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: #CFB991;
+        margin: 0 0 0.5rem 0;
+    }
+    .about-hero .subtitle {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 1rem;
+        color: rgba(255,255,255,0.7);
+        margin: 0 0 0.8rem 0;
+        font-weight: 400;
+    }
+    .about-hero .tagline {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.85rem;
+        color: rgba(255,255,255,0.55);
+        margin: 0 0 1rem 0;
+        line-height: 1.6;
+    }
+    .about-hero .links {
+        display: flex;
+        gap: 0.8rem;
+        flex-wrap: wrap;
+    }
+    .about-hero .links a {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #CFB991;
+        text-decoration: none;
+        padding: 0.3rem 0.9rem;
+        border: 1px solid rgba(207,185,145,0.35);
+        border-radius: 20px;
+        transition: all 0.2s ease;
+    }
+    .about-hero .links a:hover {
+        background: rgba(207,185,145,0.15);
+        border-color: #CFB991;
+    }
+
+    /* ── Cards ─────────────────────────────────────────── */
     .about-card {
         background: #fff;
         border: 1px solid #e8e5e2;
@@ -372,6 +428,19 @@ def _about_page_styles():
         border-color: #CFB991;
         box-shadow: 0 4px 12px rgba(0,0,0,0.06);
     }
+    .about-card-title {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: #8E6F3E;
+        margin: 0 0 0.7rem 0;
+        padding-bottom: 0.4rem;
+        border-bottom: 1px solid #f0eeeb;
+    }
+
+    /* ── Experience timeline ───────────────────────────── */
     .exp-item {
         border-left: 2px solid #e8e5e2;
         padding-left: 1rem;
@@ -380,37 +449,162 @@ def _about_page_styles():
         transition: border-color 0.2s ease;
     }
     .exp-item:hover { border-color: #CFB991; }
+    .exp-role {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin: 0 0 0.1rem 0;
+    }
+    .exp-org {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #8E6F3E;
+        margin: 0 0 0.15rem 0;
+    }
+    .exp-meta {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.72rem;
+        color: #888;
+        margin: 0 0 0.3rem 0;
+    }
+    .exp-desc {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.8rem;
+        color: #444;
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    /* ── Education ─────────────────────────────────────── */
     .edu-item {
         padding: 0.6rem 0;
         border-bottom: 1px solid #f0eeeb;
     }
-    .cert-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.3rem 0;
-        font-size: var(--fs-base);
+    .edu-item:last-child { border-bottom: none; }
+    .edu-school {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin: 0 0 0.1rem 0;
     }
+    .edu-dept {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.78rem;
+        color: #8E6F3E;
+        margin: 0 0 0.1rem 0;
+        font-weight: 500;
+    }
+    .edu-degree {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.8rem;
+        color: #444;
+        margin: 0 0 0.1rem 0;
+    }
+    .edu-year {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.72rem;
+        color: #999;
+        margin: 0;
+    }
+
+    /* ── Publication ───────────────────────────────────── */
     .pub-item {
         padding: 0.4rem 0;
-        font-size: var(--fs-base);
+        font-size: 0.8rem;
     }
+    .pub-title {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin: 0 0 0.25rem 0;
+        line-height: 1.45;
+    }
+    .pub-authors {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.78rem;
+        color: #555;
+        margin: 0 0 0.15rem 0;
+    }
+    .pub-journal {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.75rem;
+        color: #8E6F3E;
+        font-style: italic;
+        margin: 0 0 0.1rem 0;
+    }
+    .pub-detail {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.7rem;
+        color: #999;
+        margin: 0 0 0.4rem 0;
+    }
+    .pub-link {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #CFB991;
+        text-decoration: none;
+        border-bottom: 1px solid rgba(207,185,145,0.3);
+        transition: border-color 0.2s;
+    }
+    .pub-link:hover { border-color: #CFB991; }
+
+    /* ── Certifications ────────────────────────────────── */
+    .cert-item {
+        padding: 0.4rem 0;
+        border-bottom: 1px solid #f5f4f2;
+    }
+    .cert-item:last-child { border-bottom: none; }
+    .cert-name {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin: 0 0 0.1rem 0;
+    }
+    .cert-issuer {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.72rem;
+        color: #999;
+        margin: 0;
+    }
+
+    /* ── Interest tags ─────────────────────────────────── */
     .interest-tag {
         display: inline-block;
-        background: rgba(207,185,145,0.1);
-        color: #8E6F3E;
-        border: 1px solid rgba(207,185,145,0.2);
         border-radius: 20px;
-        padding: 0.2rem 0.7rem;
-        font-size: var(--fs-xs);
+        padding: 0.25rem 0.75rem;
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.72rem;
         font-weight: 600;
         margin: 0.15rem;
     }
-    .ack-item {
-        padding: 0.3rem 0;
-        font-size: var(--fs-base);
-        color: #555960;
+    .interest-gold {
+        background: rgba(207,185,145,0.12);
+        color: #8E6F3E;
+        border: 1px solid rgba(207,185,145,0.25);
     }
+    .interest-neutral {
+        background: #f5f4f2;
+        color: #555;
+        border: 1px solid #e8e5e2;
+    }
+
+    /* ── Acknowledgments ───────────────────────────────── */
+    .ack-text {
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
+        font-size: 0.8rem;
+        color: #555;
+        line-height: 1.6;
+        margin: 0;
+    }
+    .ack-text strong { color: #1a1a1a; }
+
+    /* ── Stats row ─────────────────────────────────────── */
     .stat-row {
         display: flex;
         justify-content: space-around;
@@ -420,16 +614,18 @@ def _about_page_styles():
     }
     .stat-item { text-align: center; }
     .stat-num {
-        font-size: var(--fs-metric);
+        font-size: 1.6rem;
         font-weight: 700;
         color: #CFB991;
-        font-family: var(--font-mono);
+        font-family: var(--font-mono, monospace);
+        margin: 0;
     }
     .stat-label {
-        font-size: var(--fs-micro);
+        font-size: 0.6rem;
         text-transform: uppercase;
-        letter-spacing: var(--ls-widest);
+        letter-spacing: 0.12em;
         color: rgba(255,255,255,0.5);
-        margin-top: 2px;
+        margin: 2px 0 0 0;
+        font-family: var(--font-sans, 'DM Sans', sans-serif);
     }
     </style>""", unsafe_allow_html=True)

@@ -311,34 +311,38 @@ st.markdown(
         font-size: 0.72rem;
         font-weight: 600;
     }
-    /* Nav buttons */
+    /* Nav buttons — institutional terminal style */
     section[data-testid="stSidebar"] .stButton > button {
         text-align: left;
         font-family: var(--font-sans);
-        font-size: 0.78rem;
-        border-radius: 4px;
-        padding: 0.45rem 0.75rem;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        font-weight: 600;
-        letter-spacing: 0.015em;
-        margin-bottom: 1px;
+        font-size: 0.68rem;
+        border-radius: 0;
+        padding: 0.38rem 0.6rem 0.38rem 0.75rem;
+        transition: all 0.15s ease;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+        margin-bottom: 0;
+        border: none;
+        border-left: 2px solid transparent;
+        line-height: 1.3;
     }
     section[data-testid="stSidebar"] .stButton > button[kind="secondary"] {
         background: transparent;
-        border: 1px solid rgba(255,255,255,0.06);
-        color: rgba(255,255,255,0.7) !important;
+        border: none;
+        border-left: 2px solid transparent;
+        color: rgba(255,255,255,0.55) !important;
     }
     section[data-testid="stSidebar"] .stButton > button[kind="secondary"]:hover {
-        background: rgba(255,255,255,0.06);
-        border-color: rgba(255,255,255,0.15);
-        color: #fff !important;
+        background: rgba(255,255,255,0.04);
+        border-left: 2px solid rgba(207,185,145,0.4);
+        color: rgba(255,255,255,0.9) !important;
     }
     section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
-        background: rgba(207,185,145,0.1);
-        border: 1px solid rgba(207,185,145,0.25);
-        border-left: 3px solid #CFB991;
+        background: rgba(207,185,145,0.08);
+        border: none;
+        border-left: 2px solid #CFB991;
         color: #CFB991 !important;
-        font-weight: 700;
+        font-weight: 600;
     }
     section[data-testid="stSidebar"] hr {
         border-color: rgba(255,255,255,0.06);
@@ -599,20 +603,53 @@ if _qp in _QP_MAP:
 elif "current_page" not in st.session_state:
     st.session_state.current_page = "Overview & Data"
 
-_NAV_ITEMS = [
-    ("Overview & Data", "overview"),
-    ("Yield Curve Analytics", "yield_curve"),
-    ("Regime Detection", "regime"),
-    ("Spillover & Info Flow", "spillover"),
-    ("Equity Spillover", "equity_spillover"),
-    ("Early Warning", "early_warning"),
-    ("Trade Ideas", "trades"),
-    ("Intraday FX Event Study", "intraday_fx"),
-    ("Performance Review", "performance"),
-    ("AI Q&A", "ai_qa"),
+_NAV_SECTIONS = [
+    ("ANALYTICS", [
+        ("Overview & Data", "overview"),
+        ("Yield Curve Analytics", "yield_curve"),
+        ("Regime Detection", "regime"),
+        ("Spillover & Info Flow", "spillover"),
+        ("Equity Spillover", "equity_spillover"),
+        ("Early Warning", "early_warning"),
+    ]),
+    ("STRATEGY", [
+        ("Trade Ideas", "trades"),
+        ("Intraday FX Event Study", "intraday_fx"),
+    ]),
+    ("DIAGNOSTICS", [
+        ("Performance Review", "performance"),
+        ("AI Q&A", "ai_qa"),
+    ]),
 ]
 
-for _label, _key in _NAV_ITEMS:
+for _section_label, _section_items in _NAV_SECTIONS:
+    st.sidebar.markdown(
+        f"<p style='font-size:0.5rem;font-weight:700;text-transform:uppercase;"
+        f"letter-spacing:0.16em;color:rgba(207,185,145,0.5);margin:0.6rem 0 0.25rem 0.75rem;"
+        f"font-family:var(--font-sans);padding:0;'>{_section_label}</p>",
+        unsafe_allow_html=True,
+    )
+    for _label, _key in _section_items:
+        _active = st.session_state.current_page == _label
+        if st.sidebar.button(
+            _label,
+            key=f"nav_{_key}",
+            use_container_width=True,
+            type="primary" if _active else "secondary",
+        ):
+            st.session_state.current_page = _label
+            st.rerun()
+
+page = st.session_state.current_page
+
+# About section (separate from main nav)
+st.sidebar.markdown(
+    "<p style='font-size:0.5rem;font-weight:700;text-transform:uppercase;"
+    "letter-spacing:0.16em;color:rgba(207,185,145,0.5);margin:0.6rem 0 0.25rem 0.75rem;"
+    "font-family:var(--font-sans);padding:0;'>REFERENCE</p>",
+    unsafe_allow_html=True,
+)
+for _label, _key in [("About: Heramb Patkar", "about_heramb"), ("About: Dr. Zhang", "about_zhang")]:
     _active = st.session_state.current_page == _label
     if st.sidebar.button(
         _label,
@@ -623,13 +660,11 @@ for _label, _key in _NAV_ITEMS:
         st.session_state.current_page = _label
         st.rerun()
 
-page = st.session_state.current_page
-
 st.sidebar.markdown(
-    "<div style='border-top:1px solid rgba(255,255,255,0.06); margin:0.4rem 0 0.5rem 0; padding-top:0.5rem;'>"
-    "<span style='font-size:0.55rem;font-weight:700;text-transform:uppercase;"
-    "letter-spacing:0.14em;color:rgba(255,255,255,0.4);"
-    "font-family:var(--font-sans);'>Configuration</span></div>",
+    "<div style='border-top:1px solid rgba(255,255,255,0.06); margin:0.5rem 0 0.5rem 0; padding-top:0.5rem;'>"
+    "<span style='font-size:0.5rem;font-weight:700;text-transform:uppercase;"
+    "letter-spacing:0.16em;color:rgba(207,185,145,0.5);"
+    "font-family:var(--font-sans);'>CONFIGURATION</span></div>",
     unsafe_allow_html=True,
 )
 
