@@ -311,38 +311,65 @@ st.markdown(
         font-size: 0.72rem;
         font-weight: 600;
     }
-    /* Nav buttons — institutional terminal style */
-    section[data-testid="stSidebar"] .stButton > button {
-        text-align: left;
+    /* Nav links — pure HTML, full control */
+    .sb-nav { margin: 0; padding: 0; }
+    .sb-nav-section {
+        font-size: 0.48rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: rgba(207,185,145,0.45);
+        padding: 0.65rem 0 0.3rem 0.85rem;
         font-family: var(--font-sans);
-        font-size: 0.68rem;
-        border-radius: 0;
-        padding: 0.38rem 0.6rem 0.38rem 0.75rem;
-        transition: all 0.15s ease;
+        margin: 0;
+        user-select: none;
+    }
+    .sb-nav a {
+        display: block;
+        padding: 0.4rem 0.7rem 0.4rem 0.85rem;
+        font-family: var(--font-sans);
+        font-size: 0.66rem;
         font-weight: 500;
-        letter-spacing: 0.02em;
-        margin-bottom: 0;
-        border: none;
+        color: rgba(255,255,255,0.5);
+        text-decoration: none;
         border-left: 2px solid transparent;
-        line-height: 1.3;
+        transition: all 0.12s ease;
+        letter-spacing: 0.01em;
+        line-height: 1.35;
     }
-    section[data-testid="stSidebar"] .stButton > button[kind="secondary"] {
-        background: transparent;
-        border: none;
-        border-left: 2px solid transparent;
-        color: rgba(255,255,255,0.55) !important;
-    }
-    section[data-testid="stSidebar"] .stButton > button[kind="secondary"]:hover {
+    .sb-nav a:hover {
+        color: rgba(255,255,255,0.88);
         background: rgba(255,255,255,0.04);
-        border-left: 2px solid rgba(207,185,145,0.4);
-        color: rgba(255,255,255,0.9) !important;
+        border-left-color: rgba(207,185,145,0.35);
     }
-    section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
-        background: rgba(207,185,145,0.08);
-        border: none;
-        border-left: 2px solid #CFB991;
-        color: #CFB991 !important;
+    .sb-nav a.active {
+        color: #CFB991;
         font-weight: 600;
+        background: rgba(207,185,145,0.07);
+        border-left-color: #CFB991;
+    }
+    .sb-nav-divider {
+        border: none;
+        border-top: 1px solid rgba(255,255,255,0.05);
+        margin: 0.35rem 0.8rem;
+    }
+    /* Hide Streamlit buttons used only for refresh */
+    section[data-testid="stSidebar"] .stButton > button {
+        font-family: var(--font-sans);
+        font-size: 0.62rem;
+        border-radius: 3px;
+        padding: 0.35rem 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        border: 1px solid rgba(255,255,255,0.08);
+        background: transparent;
+        color: rgba(255,255,255,0.5) !important;
+        transition: all 0.15s ease;
+    }
+    section[data-testid="stSidebar"] .stButton > button:hover {
+        background: rgba(255,255,255,0.05);
+        border-color: rgba(255,255,255,0.15);
+        color: rgba(255,255,255,0.85) !important;
     }
     section[data-testid="stSidebar"] hr {
         border-color: rgba(255,255,255,0.06);
@@ -557,26 +584,31 @@ st.markdown(
 # Sidebar: navigation + global controls
 # ---------------------------------------------------------------------------
 st.sidebar.markdown(
-    "<div style='padding:0.8rem 0 1rem 0; border-bottom:1px solid rgba(207,185,145,0.12); "
-    "margin-bottom:0.6rem;'>"
-    # Japanese flag + "Rates Strategy Desk" on the same line
-    "<div style='display:flex; align-items:center; gap:8px; margin-bottom:8px;'>"
-    "<svg width='28' height='19' viewBox='0 0 900 600' xmlns='http://www.w3.org/2000/svg' "
-    "style='border-radius:2px; box-shadow:0 1px 3px rgba(0,0,0,0.3); flex-shrink:0;'>"
+    "<div style='padding:0.9rem 0.85rem 0.9rem 0.85rem; "
+    "border-bottom:1px solid rgba(207,185,145,0.12); margin-bottom:0.2rem;'>"
+    # Row 1: Japanese flag + desk label
+    "<div style='display:flex;align-items:center;gap:8px;margin-bottom:10px;'>"
+    "<svg width='24' height='16' viewBox='0 0 900 600' xmlns='http://www.w3.org/2000/svg' "
+    "style='border-radius:2px;box-shadow:0 1px 3px rgba(0,0,0,0.3);flex-shrink:0;'>"
     "<rect width='900' height='600' fill='#fff'/>"
     "<circle cx='450' cy='300' r='180' fill='#BC002D'/>"
     "</svg>"
-    "<span style='font-size:0.58rem; font-weight:700; text-transform:uppercase; "
-    "letter-spacing:0.14em; color:#CFB991; font-family:var(--font-sans);'>Rates Strategy Desk</span></div>"
-    "<div style='font-size:1.4rem; font-weight:800; color:#fff; "
-    "letter-spacing:-0.01em; line-height:1.1; "
-    "font-family:var(--font-sans);'>JGB Repricing</div>"
-    "<div style='font-size:0.68rem; font-weight:600; color:rgba(255,255,255,0.6); "
-    "margin-top:3px; letter-spacing:0.06em; text-transform:uppercase; "
+    "<span style='font-size:0.48rem;font-weight:700;text-transform:uppercase;"
+    "letter-spacing:0.16em;color:rgba(207,185,145,0.55);font-family:var(--font-sans);'>"
+    "Rates Strategy Desk</span></div>"
+    # Row 2: Title
+    "<div style='font-size:1.25rem;font-weight:800;color:#fff;"
+    "letter-spacing:-0.015em;line-height:1.05;font-family:var(--font-sans);'>"
+    "JGB Repricing</div>"
+    # Row 3: Subtitle
+    "<div style='font-size:0.56rem;font-weight:500;color:rgba(255,255,255,0.4);"
+    "margin-top:4px;letter-spacing:0.08em;text-transform:uppercase;"
     "font-family:var(--font-sans);'>Quantitative Framework</div>"
-    "<div style='font-size:0.56rem; font-weight:600; color:rgba(207,185,145,0.6); "
-    "margin-top:6px; letter-spacing:0.1em; text-transform:uppercase; "
-    "font-family:var(--font-sans);'>Purdue Daniels School of Business</div></div>",
+    # Row 4: Institution
+    "<div style='font-size:0.46rem;font-weight:600;color:rgba(207,185,145,0.4);"
+    "margin-top:5px;letter-spacing:0.12em;text-transform:uppercase;"
+    "font-family:var(--font-sans);'>Purdue Daniels School of Business</div>"
+    "</div>",
     unsafe_allow_html=True,
 )
 
@@ -604,7 +636,7 @@ elif "current_page" not in st.session_state:
     st.session_state.current_page = "Overview & Data"
 
 _NAV_SECTIONS = [
-    ("ANALYTICS", [
+    ("Analytics", [
         ("Overview & Data", "overview"),
         ("Yield Curve Analytics", "yield_curve"),
         ("Regime Detection", "regime"),
@@ -612,59 +644,39 @@ _NAV_SECTIONS = [
         ("Equity Spillover", "equity_spillover"),
         ("Early Warning", "early_warning"),
     ]),
-    ("STRATEGY", [
+    ("Strategy", [
         ("Trade Ideas", "trades"),
         ("Intraday FX Event Study", "intraday_fx"),
     ]),
-    ("DIAGNOSTICS", [
+    ("Diagnostics", [
         ("Performance Review", "performance"),
         ("AI Q&A", "ai_qa"),
     ]),
+    ("Reference", [
+        ("About: Heramb Patkar", "about_heramb"),
+        ("About: Dr. Zhang", "about_zhang"),
+    ]),
 ]
 
-for _section_label, _section_items in _NAV_SECTIONS:
-    st.sidebar.markdown(
-        f"<p style='font-size:0.5rem;font-weight:700;text-transform:uppercase;"
-        f"letter-spacing:0.16em;color:rgba(207,185,145,0.5);margin:0.6rem 0 0.25rem 0.75rem;"
-        f"font-family:var(--font-sans);padding:0;'>{_section_label}</p>",
-        unsafe_allow_html=True,
-    )
+# Build the entire navigation as one HTML block — no Streamlit buttons
+_nav_html_parts = ["<nav class='sb-nav'>"]
+for _si, (_section_label, _section_items) in enumerate(_NAV_SECTIONS):
+    if _si > 0:
+        _nav_html_parts.append("<hr class='sb-nav-divider'/>")
+    _nav_html_parts.append(f"<p class='sb-nav-section'>{_section_label}</p>")
     for _label, _key in _section_items:
-        _active = st.session_state.current_page == _label
-        if st.sidebar.button(
-            _label,
-            key=f"nav_{_key}",
-            use_container_width=True,
-            type="primary" if _active else "secondary",
-        ):
-            st.session_state.current_page = _label
-            st.rerun()
+        _cls = " class='active'" if st.session_state.current_page == _label else ""
+        _nav_html_parts.append(
+            f"<a href='?page={_key}' target='_self'{_cls}>{_label}</a>"
+        )
+_nav_html_parts.append("</nav>")
+st.sidebar.markdown("".join(_nav_html_parts), unsafe_allow_html=True)
 
 page = st.session_state.current_page
 
-# About section (separate from main nav)
 st.sidebar.markdown(
-    "<p style='font-size:0.5rem;font-weight:700;text-transform:uppercase;"
-    "letter-spacing:0.16em;color:rgba(207,185,145,0.5);margin:0.6rem 0 0.25rem 0.75rem;"
-    "font-family:var(--font-sans);padding:0;'>REFERENCE</p>",
-    unsafe_allow_html=True,
-)
-for _label, _key in [("About: Heramb Patkar", "about_heramb"), ("About: Dr. Zhang", "about_zhang")]:
-    _active = st.session_state.current_page == _label
-    if st.sidebar.button(
-        _label,
-        key=f"nav_{_key}",
-        use_container_width=True,
-        type="primary" if _active else "secondary",
-    ):
-        st.session_state.current_page = _label
-        st.rerun()
-
-st.sidebar.markdown(
-    "<div style='border-top:1px solid rgba(255,255,255,0.06); margin:0.5rem 0 0.5rem 0; padding-top:0.5rem;'>"
-    "<span style='font-size:0.5rem;font-weight:700;text-transform:uppercase;"
-    "letter-spacing:0.16em;color:rgba(207,185,145,0.5);"
-    "font-family:var(--font-sans);'>CONFIGURATION</span></div>",
+    "<hr class='sb-nav-divider' style='margin:0.5rem 0.4rem;'/>"
+    "<p class='sb-nav-section' style='padding-left:0.4rem;'>Configuration</p>",
     unsafe_allow_html=True,
 )
 
