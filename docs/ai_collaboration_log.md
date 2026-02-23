@@ -203,6 +203,17 @@ AI was used as a **pair-programming partner and research accelerator** — provi
   - Initial implementation put the sidebar on the left and on every page — I corrected to right-side, summary page only, matching sell-side research note conventions (GS, JPM, MS style)
 - **Verification:** All 54 tests pass. Smoke test generates 6-page PDF (98KB) without errors. Import validation clean.
 
+### Session 16: Institutional First-Page Layout, Sidebar Formalization, About Page CSS
+- **AI Tool:** Claude Code (Claude Opus 4.6)
+- **What I asked:** Redesign PDF first page to match institutional equity research initiation notes (referenced JPM ASOS and student Walmart equity research reports as templates). Formalize sidebar navigation — current buttons looked "kiddish". Fix About page CSS (all classes were undefined).
+- **What I decided:**
+  - PDF first page now mirrors JPM/GS equity research layout: black header bar (firm left, report type + date right), bold title on left ~62%, gold "REPRICING/SUPPRESSED" recommendation box on right ~38% (like "Recommendation: Buy"), Key Data table with alternating rows, category breakdown, analyst info panel, full-width trade summary table with black header at bottom
+  - Fixed all text overlap issues: added explicit `set_x(_MARGIN)` before every PDF element, moved PCA/ML/Ensemble analytical sections to page 2 to prevent overlap with right panel
+  - Sidebar navigation: grouped into ANALYTICS (6 pages), STRATEGY (2 pages), DIAGNOSTICS (2 pages), REFERENCE (2 about pages) with terminal-style buttons — no border-radius, 2px gold left-accent on active, muted grey inactive, 0.5rem uppercase section headers
+  - About page: added all 30+ missing CSS class definitions (hero typography, experience timeline, education, publication, certifications, interest tags, acknowledgments) — root cause of broken rendering was HTML referencing classes never defined in `_about_page_styles()`
+  - Fixed stale stat: 10 → 11 dashboard pages in about_heramb.py
+- **Verification:** All 54 tests pass. PDF smoke test: Trade Ideas 5 pages, Full Analysis 7 pages, no text overlaps. All page module imports clean.
+
 ## AI Usage Summary
 
 | Category | AI Role | My Role |
