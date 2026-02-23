@@ -177,6 +177,19 @@ AI was used as a **pair-programming partner and research accelerator** — provi
   - Initial Granger column names were assumed (`best_lag`, `F_stat`) but the actual module uses `optimal_lag`, `f_stat` — caught via live testing on Japanese equities
 - **Verification:** All 37 tests pass. Import validation clean. Tested all four markets with live yfinance data. India correlation now returns 7 sectors with 3,900+ data points.
 
+### Session 14: Test Coverage for Equity Spillover & README Cleanup
+- **AI Tool:** Claude Code (Claude Opus 4.6)
+- **What I asked:** Anticipate professor's next criticism based on past feedback patterns and address proactively.
+- **Analysis of past feedback patterns:**
+  - First feedback (94.5/A): required README, PCA validation, credit ratings, AI collaboration log — all about *documentation and validation evidence*
+  - Second feedback: required splitting monolithic app.py, adding model validations — about *code quality and modularity*
+  - Pattern: professor values test coverage, validation evidence, and professional documentation quality
+- **What I decided:**
+  - Created `tests/test_equity_spillover.py` with 17 tests covering config integrity, helper functions, serialization, rolling correlation logic, sparse-sector exclusion, and integration with Granger/Diebold-Yilmaz modules — the new equity spillover page was the only module with zero test coverage
+  - Removed "Development Process" section from README — Session 12 explicitly decided to remove it ("commit count reads as proving effort") but it was still present. Institutional-grade repos show results, not process metrics
+  - Updated test count across README from 37 to 54
+- **Verification:** All 54 tests pass (37 existing + 17 new). README contains no self-congratulatory process descriptions.
+
 ## AI Usage Summary
 
 | Category | AI Role | My Role |

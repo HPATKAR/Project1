@@ -27,7 +27,7 @@ Quantitative research platform that detects regime shifts in JGB markets — fro
 | `src/pages/` | 11 Streamlit page modules (overview, yield curve, regime, spillover, equity spillover, early warning, trade ideas, intraday FX, performance review, AI Q&A, about) |
 | `src/reporting/` | Profile-tailored PDF export with payout graphs and analyst attribution |
 | `src/ui/` | Shared chart helpers, institutional CSS, layout config, alert system |
-| `tests/` | Yield curve, regime, spillover, and data pipeline validation (37 tests) |
+| `tests/` | Yield curve, regime, spillover, equity spillover, and data pipeline validation (54 tests) |
 
 <details>
 <summary>Full directory tree</summary>
@@ -248,14 +248,6 @@ export FRED_API_KEY=your_key_here
 Without a FRED key, the dashboard falls back to yfinance + synthetic data.
 
 </details>
-
-## Development Process
-
-- **21+ iterative commits** spanning architecture design, data pipeline hardening, 4-model regime ensemble, spillover analysis, trade generation logic, dashboard UX, Purdue Daniels branding, and CI/CD pipeline
-- **DRIVER Framework** applied end-to-end: thesis formulation (Define), module architecture (Represent), full implementation across 6 source packages (Implement), 37 automated tests (Validate), iterative refinement from professor feedback (Evolve), and structured reflection on AI collaboration patterns (Reflect)
-- **Docker containerized** with proper `src/` module structure and Render.com cloud deployment
-- **Graceful degradation** across four data source tiers (FRED → yfinance → MOF → synthetic)
-- **Cache pre-warming** optimization for production-level dashboard performance
 
 ## Known Limitations
 
