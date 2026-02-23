@@ -190,6 +190,19 @@ AI was used as a **pair-programming partner and research accelerator** — provi
   - Updated test count across README from 37 to 54
 - **Verification:** All 54 tests pass (37 existing + 17 new). README contains no self-congratulatory process descriptions.
 
+### Session 15: Institutional PDF Redesign
+- **AI Tool:** Claude Code (Claude Opus 4.6)
+- **What I asked:** Redesign the PDF export to match institutional buy/sell-side research note format. Right-side vertical sidebar on summary page, dense full-width layout for trade cards, formal typography, massive disclaimer. Reorder profile buttons: Analyst first, then Trader, then Academic.
+- **What I decided:**
+  - Removed all decorative elements (gold header bars, gold rules, coloured accents) — institutional research notes use monochrome palettes with minimal hairlines
+  - Summary page: right-side sidebar strip (grey background column) containing regime state, total trades, conviction breakdown, categories, and lead trade. Content flows in the left area
+  - Trade card pages: dense full-width layout with specification tables, key levels displayed as compact metric rows, payout graphs spanning full content width
+  - Full-page disclaimer (9 paragraphs): general disclaimer, not investment advice, model limitations, data sources, AI-assisted development, payout profiles, IP, limitation of liability, conflicts of interest
+  - Profile order: Analyst first (balanced coverage), Trader second (action-first), Academic third (methodology-heavy) — reflects institutional norm where the analyst view is the default deliverable
+- **What I rejected:**
+  - Initial implementation put the sidebar on the left and on every page — I corrected to right-side, summary page only, matching sell-side research note conventions (GS, JPM, MS style)
+- **Verification:** All 54 tests pass. Smoke test generates 6-page PDF (98KB) without errors. Import validation clean.
+
 ## AI Usage Summary
 
 | Category | AI Role | My Role |

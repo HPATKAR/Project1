@@ -531,10 +531,10 @@ def page_trade_ideas():
             cards=filtered,
         )
 
-        col_t, col_a, col_ac, col_csv = st.columns(4)
+        col_a, col_t, col_ac, col_csv = st.columns(4)
         for _col, _prof, _icon, _key in [
-            (col_t,  "Trader",   "Trader PDF",   "pdf_trader"),
             (col_a,  "Analyst",  "Analyst PDF",  "pdf_analyst"),
+            (col_t,  "Trader",   "Trader PDF",   "pdf_trader"),
             (col_ac, "Academic", "Academic PDF",  "pdf_academic"),
         ]:
             with _col:
