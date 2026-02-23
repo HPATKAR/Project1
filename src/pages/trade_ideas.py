@@ -488,10 +488,10 @@ def page_trade_ideas():
     if filtered:
         st.subheader("Export Trade Ideas")
         _section_note(
-            "Download a **profile-tailored PDF** — each version is optimised for a different audience. "
-            "**Trader**: action-first with regime calls, key levels, and sizing. "
-            "**Analyst**: balanced coverage of models, trades, and performance. "
-            "**Academic**: full methodology, validation detail, and references."
+            "Download a <b>profile-tailored PDF</b> — each version is optimised for a different audience. "
+            "<b>Trader</b>: action-first with regime calls, key levels, and sizing. "
+            "<b>Analyst</b>: balanced coverage of models, trades, and performance. "
+            "<b>Academic</b>: full methodology, validation detail, and references."
         )
 
         # Gather framework-wide context for the full report

@@ -562,7 +562,7 @@ def page_intraday_fx():
     st.subheader("Export Intraday Data")
     _section_note(
         "Download profile-tailored PDFs or raw CSV. "
-        "**Trader**: reaction summary + key levels. **Analyst**: full analysis. **Academic**: methodology + references."
+        "<b>Trader</b>: reaction summary + key levels. <b>Analyst</b>: full analysis. <b>Academic</b>: methodology + references."
     )
 
     try:

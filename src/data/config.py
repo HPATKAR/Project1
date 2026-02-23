@@ -58,6 +58,57 @@ YF_TICKERS = {
     "JGB_FUT": "JBH5.OSE",
 }
 
+# ── Equity Sector Tickers (for Equity Spillover page) ────────────
+EQUITY_SECTOR_TICKERS = {
+    "USA": {
+        "_broad": {"S&P 500": "^GSPC", "NASDAQ": "^IXIC", "Dow Jones": "^DJI"},
+        "Communication": "XLC",
+        "Consumer Discretionary": "XLY",
+        "Consumer Staples": "XLP",
+        "Energy": "XLE",
+        "Financials": "XLF",
+        "Healthcare": "XLV",
+        "Industrials": "XLI",
+        "Technology": "XLK",
+        "Materials": "XLB",
+        "Real Estate": "XLRE",
+        "Utilities": "XLU",
+    },
+    "Japan": {
+        "_broad": {"Nikkei 225": "^N225", "TOPIX": "^TPX"},
+        "Japan (Broad)": "EWJ",
+        "Japan Hedged": "DXJ",
+        "Japan Financials": "DBJP",
+        "Japan Small Cap": "SCJ",
+        "Japan Value": "EWJV",
+    },
+    "India": {
+        "_broad": {"NIFTY 50": "^NSEI", "SENSEX": "^BSESN"},
+        "Auto": "^CNXAUTO",
+        "Bank": "^NSEBANK",
+        "Financial Services": "^CNXFIN",
+        "FMCG": "^CNXFMCG",
+        "IT": "^CNXIT",
+        "Metal": "^NSEMET",
+        "Pharma": "^CNXPHARMA",
+        "Realty": "^NSEREAL",
+        "Media": "^NSEMED",
+        "PSU Bank": "^NSEPSBK",
+        "Private Bank": "^NSEPBANK",
+        "Consumer Durables": "^CNXCONSUM",
+        "Oil & Gas": "^CNXENERGY",
+        "Healthcare": "^CNXHEALTH",
+    },
+    "China": {
+        "_broad": {"SSE Composite": "000001.SS", "Hang Seng": "^HSI"},
+        "China Internet/Tech": "KWEB",
+        "China Broad": "MCHI",
+        "China Large-Cap": "FXI",
+        "China Consumer": "CHIQ",
+        "China Tech": "CQQQ",
+    },
+}
+
 # ── Date Ranges ───────────────────────────────────────────────────────
 DEFAULT_START = date(2010, 1, 1)
 DEFAULT_END = date.today()

@@ -82,7 +82,7 @@ class JGBReportPDF:
         self.pdf.ln(3)
         self.pdf.set_font("Helvetica", "", 7)
         self.pdf.set_text_color(100, 100, 100)
-        self.pdf.cell(0, 5, "AI for Finance | MGMT 69000-119 | Purdue University", align="L")
+        self.pdf.cell(0, 5, "Heramb S. Patkar | AI for Finance | MGMT 69000-119 | Purdue University", align="L")
         self.pdf.cell(0, 5, f"Generated {datetime.now():%Y-%m-%d %H:%M}", align="R", ln=True)
         self.pdf.set_text_color(0, 0, 0)
         self.pdf.set_auto_page_break(auto=True, margin=15)
@@ -136,7 +136,12 @@ class JGBReportPDF:
         self.pdf.cell(0, 8, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", ln=True, align="C")
         self.pdf.cell(0, 8, "Mastering AI for Finance  |  MGMT 69000-119", ln=True, align="C")
         self.pdf.cell(0, 8, "Mitch Daniels School of Business  |  Purdue University", ln=True, align="C")
-        self.pdf.ln(6)
+        self.pdf.ln(4)
+        self.pdf.set_font("Helvetica", "B", 11)
+        self.pdf.set_text_color(*_AGED_GOLD)
+        self.pdf.cell(0, 8, "Analyst: Heramb S. Patkar, MSF", ln=True, align="C")
+        self.pdf.set_text_color(80, 80, 80)
+        self.pdf.ln(4)
         self.pdf.set_font("Helvetica", "I", 10)
         self.pdf.cell(0, 8, "West Lafayette, Indiana", ln=True, align="C")
         self.pdf.set_text_color(0, 0, 0)
@@ -261,7 +266,12 @@ class JGBReportPDF:
         self.pdf.ln(14)
         self.pdf.set_font("Helvetica", "B", 18)
         self.pdf.cell(0, 12, "Trade Ideas", ln=True)
-        self.pdf.ln(2)
+        self.pdf.ln(1)
+        self.pdf.set_font("Helvetica", "I", 9)
+        self.pdf.set_text_color(100, 100, 100)
+        self.pdf.cell(0, 6, "Prepared by: Heramb S. Patkar, MSF Student Analyst", ln=True)
+        self.pdf.set_text_color(0, 0, 0)
+        self.pdf.ln(1)
         self._draw_gold_rule(width=60)
         self.pdf.ln(6)
 
@@ -1034,6 +1044,10 @@ class JGBReportPDF:
         self.pdf.set_font("Helvetica", "B", 18)
         self.pdf.cell(0, 12, self._safe(f"JGB Repricing Report  -  {profile} View"), ln=True)
         self.pdf.ln(1)
+        self.pdf.set_font("Helvetica", "I", 9)
+        self.pdf.set_text_color(100, 100, 100)
+        self.pdf.cell(0, 6, "Prepared by Heramb S. Patkar | MSF Candidate, Purdue Daniels School of Business", ln=True)
+        self.pdf.set_text_color(0, 0, 0)
         self._draw_gold_rule(width=80)
         self.pdf.ln(6)
 
@@ -1246,7 +1260,7 @@ class JGBReportPDF:
         self.pdf.multi_cell(0, 4, self._safe(
             f"Report generated: {datetime.now():%Y-%m-%d %H:%M:%S}. "
             f"Profile: {profile}. "
-            "Author: Heramb Patkar, Purdue University Daniels School of Business. "
+            "Analyst: Heramb S. Patkar, MSF Candidate | Purdue University Daniels School of Business. "
             "Course: MGMT 69000-119 - Mastering AI for Finance (Prof. Cinder Zhang)."
         ))
         self.pdf.set_text_color(0, 0, 0)

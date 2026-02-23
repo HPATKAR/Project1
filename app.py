@@ -589,6 +589,7 @@ _QP_MAP = {
     "early_warning": "Early Warning",
     "performance": "Performance Review",
     "ai_qa": "AI Q&A",
+    "equity_spillover": "Equity Spillover",
 }
 _qp = st.query_params.get("page", "")
 if _qp in _QP_MAP:
@@ -603,6 +604,7 @@ _NAV_ITEMS = [
     ("Yield Curve Analytics", "yield_curve"),
     ("Regime Detection", "regime"),
     ("Spillover & Info Flow", "spillover"),
+    ("Equity Spillover", "equity_spillover"),
     ("Early Warning", "early_warning"),
     ("Trade Ideas", "trades"),
     ("Intraday FX Event Study", "intraday_fx"),
@@ -702,6 +704,7 @@ from src.pages.performance_review import page_performance_review
 from src.pages.about_heramb import page_about_heramb
 from src.pages.about_zhang import page_about_zhang
 from src.pages.intraday_fx import page_intraday_fx
+from src.pages.equity_spillover import page_equity_spillover
 from src.pages._data import load_unified
 from src.ui.shared import _page_footer
 
@@ -753,6 +756,7 @@ _PAGE_FN_MAP = {
     "Yield Curve Analytics": page_yield_curve,
     "Regime Detection": page_regime,
     "Spillover & Info Flow": page_spillover,
+    "Equity Spillover": page_equity_spillover,
     "Early Warning": page_early_warning,
     "Trade Ideas": page_trade_ideas,
     "Intraday FX Event Study": page_intraday_fx,

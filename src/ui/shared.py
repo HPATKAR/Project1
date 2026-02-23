@@ -287,6 +287,7 @@ def _page_footer():
         f"<li style='margin-bottom:8px;'><a href='?page=yield_curve' target='_self' style='{_w}'>Yield Curve Analytics</a></li>"
         f"<li style='margin-bottom:8px;'><a href='?page=regime' target='_self' style='{_w}'>Regime Detection</a></li>"
         f"<li style='margin-bottom:8px;'><a href='?page=spillover' target='_self' style='{_w}'>Spillover &amp; Info Flow</a></li>"
+        f"<li style='margin-bottom:8px;'><a href='?page=equity_spillover' target='_self' style='{_w}'>Equity Spillover</a></li>"
         f"<li style='margin-bottom:8px;'><a href='?page=early_warning' target='_self' style='{_w}'>Early Warning</a></li>"
         f"<li style='margin-bottom:8px;'><a href='?page=trades' target='_self' style='{_w}'>Trade Ideas</a></li>"
         f"<li style='margin-bottom:8px;'><a href='?page=intraday_fx' target='_self' style='{_w}'>Intraday FX Event Study</a></li>"

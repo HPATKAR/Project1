@@ -287,7 +287,7 @@ def page_performance_review():
         st.subheader("Export Reports")
         _section_note(
             "Download profile-tailored PDFs or raw metrics CSV. "
-            "**Trader**: regime + trades. **Analyst**: full analysis. **Academic**: methodology + references."
+            "<b>Trader</b>: regime + trades. <b>Analyst</b>: full analysis. <b>Academic</b>: methodology + references."
         )
 
         _pr_args = _get_args()
