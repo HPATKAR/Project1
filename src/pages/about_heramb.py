@@ -30,7 +30,7 @@ def page_about_heramb():
     _f = "font-family:var(--font-sans);"
 
     # ── load profile image as base64 ──
-    _img_path = Path(__file__).parent / "FinDis.jpeg"
+    _img_path = Path(__file__).resolve().parent.parent.parent / "FinDis.jpeg"
     _img_b64 = ""
     if _img_path.exists():
         _img_b64 = base64.b64encode(_img_path.read_bytes()).decode()
@@ -38,22 +38,20 @@ def page_about_heramb():
     _photo_html = ""
     if _img_b64:
         _photo_html = (
-            "<div style='flex-shrink:0;'>"
+            "<div class='hero-photo'>"
             f"<img src='data:image/jpeg;base64,{_img_b64}' "
-            "alt='Heramb S. Patkar' style='width:190px;height:190px;border-radius:50%;"
-            "object-fit:cover;border:4px solid rgba(207,185,145,0.3);"
-            "box-shadow:0 12px 40px rgba(0,0,0,0.45);' />"
+            "alt='Heramb S. Patkar' />"
             "</div>"
         )
 
     # ── hero banner ──
     st.markdown(
-        "<div class='about-hero'><div class='about-hero-inner' "
-        "style='display:flex;align-items:center;gap:44px;'>"
-        "<div style='flex:1;'>"
+        "<div class='about-hero'><div class='about-hero-inner'>"
+        f"{_photo_html}"
+        "<div class='hero-body'>"
         "<p class='overline'>About the Author</p>"
         "<h1>Heramb S. Patkar</h1>"
-        "<p class='subtitle'>MSF Candidate, Purdue Daniels School of Business</p>"
+        "<p class='subtitle'>MSF Candidate &middot; Purdue Daniels School of Business</p>"
         "<p class='tagline'>BITS Pilani engineering graduate and NISM XV certified research analyst "
         "with equity research experience spanning Indian and U.S. capital markets. "
         "Published researcher in biomedical device design.</p>"
@@ -62,7 +60,6 @@ def page_about_heramb():
         "<a href='https://github.com/HPATKAR' target='_blank'>GitHub</a>"
         "<a href='https://www.ias.ac.in/article/fulltext/boms/048/0028' target='_blank'>Publication</a>"
         "</div></div>"
-        f"{_photo_html}"
         "</div></div>",
         unsafe_allow_html=True,
     )

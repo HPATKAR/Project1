@@ -345,73 +345,89 @@ def _about_page_styles():
     st.markdown("""<style>
     /* ── Hero banner ───────────────────────────────────── */
     .about-hero {
-        background: linear-gradient(135deg, #000000 0%, #1a1a2e 100%);
-        border-radius: 16px;
-        padding: 2.5rem 2.5rem;
-        margin-bottom: 1.5rem;
-        position: relative;
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 0;
+        margin-bottom: 1.2rem;
         overflow: hidden;
-        border: 1px solid rgba(207,185,145,0.15);
+        border: 1px solid #e8e5e2;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
     }
-    .about-hero::before {
-        content: '';
-        position: absolute;
-        top: 0; right: 0;
-        width: 300px; height: 300px;
-        background: radial-gradient(circle, rgba(207,185,145,0.08) 0%, transparent 70%);
+    .about-hero-inner {
+        display: flex;
+        align-items: stretch;
     }
-    .about-hero-inner { position: relative; z-index: 1; }
+    .about-hero .hero-photo {
+        flex-shrink: 0;
+        width: 200px;
+        overflow: hidden;
+    }
+    .about-hero .hero-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    .about-hero .hero-body {
+        flex: 1;
+        padding: 1.6rem 1.8rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        border-left: 3px solid #CFB991;
+    }
     .about-hero h1 {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
         font-size: var(--fs-hero, 2.0rem);
         font-weight: 700;
-        color: #ffffff;
-        margin: 0 0 0.3rem 0;
+        color: #1a1a1a;
+        margin: 0 0 0.15rem 0;
         letter-spacing: -0.02em;
         line-height: 1.15;
     }
     .about-hero .overline {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: var(--fs-base, 0.70rem);
-        font-weight: 600;
+        font-size: var(--fs-tiny, 0.56rem);
+        font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.18em;
-        color: #CFB991;
-        margin: 0 0 0.5rem 0;
+        color: #8E6F3E;
+        margin: 0 0 0.4rem 0;
     }
     .about-hero .subtitle {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: var(--fs-2xl, 0.88rem);
-        color: rgba(255,255,255,0.7);
-        margin: 0 0 0.8rem 0;
-        font-weight: 400;
+        font-size: var(--fs-xl, 0.82rem);
+        color: #555;
+        margin: 0 0 0.6rem 0;
+        font-weight: 500;
     }
     .about-hero .tagline {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: var(--fs-xl, 0.82rem);
-        color: rgba(255,255,255,0.55);
-        margin: 0 0 1rem 0;
+        font-size: var(--fs-lg, 0.78rem);
+        color: #777;
+        margin: 0 0 0.8rem 0;
         line-height: 1.6;
     }
     .about-hero .links {
         display: flex;
-        gap: 0.8rem;
+        gap: 0.6rem;
         flex-wrap: wrap;
     }
     .about-hero .links a {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: var(--fs-lg, 0.78rem);
+        font-size: var(--fs-sm, 0.65rem);
         font-weight: 600;
-        color: #CFB991;
+        color: #8E6F3E;
         text-decoration: none;
-        padding: 0.3rem 0.9rem;
-        border: 1px solid rgba(207,185,145,0.35);
-        border-radius: 20px;
+        padding: 0.25rem 0.8rem;
+        border: 1px solid rgba(142,111,62,0.3);
+        border-radius: 4px;
         transition: all 0.2s ease;
+        letter-spacing: 0.02em;
     }
     .about-hero .links a:hover {
-        background: rgba(207,185,145,0.15);
-        border-color: #CFB991;
+        background: rgba(207,185,145,0.1);
+        border-color: #8E6F3E;
     }
 
     /* ── Cards ─────────────────────────────────────────── */

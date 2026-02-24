@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import base64
+from pathlib import Path
+
 import streamlit as st
 
 from src.ui.shared import (
@@ -26,19 +29,36 @@ def page_about_zhang():
     _about_page_styles()
     _f = "font-family:var(--font-sans);"
 
+    # ── load profile image as base64 ──
+    _img_path = Path(__file__).resolve().parent.parent.parent / "assets" / "zhang_profile.png"
+    _img_b64 = ""
+    if _img_path.exists():
+        _img_b64 = base64.b64encode(_img_path.read_bytes()).decode()
+
+    _photo_html = ""
+    if _img_b64:
+        _photo_html = (
+            "<div class='hero-photo'>"
+            f"<img src='data:image/png;base64,{_img_b64}' "
+            "alt='Dr. Cinder Zhang' />"
+            "</div>"
+        )
+
     # ── hero banner ──
     st.markdown(
         "<div class='about-hero'><div class='about-hero-inner'>"
+        f"{_photo_html}"
+        "<div class='hero-body'>"
         "<p class='overline'>Course Instructor</p>"
         "<h1>Dr. Cinder Zhang, Ph.D.</h1>"
-        "<p class='subtitle'>Finance Faculty, Mitchell E. Daniels, Jr. School of Business</p>"
+        "<p class='subtitle'>Finance Faculty &middot; Mitchell E. Daniels, Jr. School of Business</p>"
         "<p class='tagline'>Creator of the DRIVER Framework. Award-winning educator "
         "pioneering AI-integrated finance pedagogy at Purdue University.</p>"
         "<div class='links'>"
         "<a href='https://www.linkedin.com/in/cinder-zhang/' target='_blank'>LinkedIn</a>"
         "<a href='https://github.com/CinderZhang' target='_blank'>GitHub</a>"
         "<a href='https://cinderzhang.github.io/' target='_blank'>DRIVER Framework</a>"
-        "</div></div></div>",
+        "</div></div></div></div>",
         unsafe_allow_html=True,
     )
 
