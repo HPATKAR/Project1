@@ -114,7 +114,7 @@ def render_settings_panel(st_module, layout_mgr: LayoutManager) -> LayoutConfig:
     st_module.markdown(
         "<div style='border-top:1px solid rgba(255,255,255,0.06);"
         "margin:0.4rem 0 0.5rem 0;padding-top:0.5rem;'>"
-        "<span style='font-size:0.55rem;font-weight:700;text-transform:uppercase;"
+        "<span style='font-size:var(--fs-tiny);font-weight:700;text-transform:uppercase;"
         "letter-spacing:0.14em;color:rgba(255,255,255,0.4);"
         "font-family:var(--font-sans);'>Dashboard Settings</span></div>",
         unsafe_allow_html=True,

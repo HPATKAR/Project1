@@ -256,7 +256,7 @@ st.markdown(
         font-family: var(--font-sans);
     }
     section[data-testid="stSidebar"] label {
-        font-size: 0.62rem !important;
+        font-size: var(--fs-xs) !important;
         font-weight: 700 !important;
         letter-spacing: 0.1em;
         text-transform: uppercase;
@@ -308,37 +308,37 @@ st.markdown(
     /* Toggle */
     section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
         color: rgba(255,255,255,0.8) !important;
-        font-size: 0.72rem;
+        font-size: var(--fs-base);
         font-weight: 600;
     }
     /* Nav links — pure HTML, full control */
     .sb-nav { margin: 0; padding: 0; }
     .sb-nav-section {
-        font-size: 0.48rem;
+        font-size: var(--fs-micro);
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.18em;
-        color: rgba(207,185,145,0.45);
-        padding: 0.65rem 0 0.3rem 0.85rem;
+        color: rgba(207,185,145,0.55);
+        padding: 0.6rem 0 0.25rem 0.85rem;
         font-family: var(--font-sans);
         margin: 0;
         user-select: none;
     }
     .sb-nav a {
         display: block;
-        padding: 0.4rem 0.7rem 0.4rem 0.85rem;
+        padding: 0.38rem 0.7rem 0.38rem 0.85rem;
         font-family: var(--font-sans);
-        font-size: 0.66rem;
+        font-size: var(--fs-sm);
         font-weight: 500;
-        color: rgba(255,255,255,0.5);
+        color: rgba(255,255,255,0.65);
         text-decoration: none;
         border-left: 2px solid transparent;
         transition: all 0.12s ease;
-        letter-spacing: 0.01em;
-        line-height: 1.35;
+        letter-spacing: 0.015em;
+        line-height: 1.3;
     }
     .sb-nav a:hover {
-        color: rgba(255,255,255,0.88);
+        color: rgba(255,255,255,0.92);
         background: rgba(255,255,255,0.04);
         border-left-color: rgba(207,185,145,0.35);
     }
@@ -356,7 +356,7 @@ st.markdown(
     /* Hide Streamlit buttons used only for refresh */
     section[data-testid="stSidebar"] .stButton > button {
         font-family: var(--font-sans);
-        font-size: 0.62rem;
+        font-size: var(--fs-xs);
         border-radius: 3px;
         padding: 0.35rem 0.7rem;
         font-weight: 600;
@@ -380,7 +380,7 @@ st.markdown(
         background: rgba(207,185,145,0.12) !important;
         color: #CFB991 !important;
         border: none;
-        font-size: 0.65rem;
+        font-size: var(--fs-sm);
     }
     /* ---- Expander ---- */
     .streamlit-expanderHeader {
@@ -584,8 +584,8 @@ st.markdown(
 # Sidebar: navigation + global controls
 # ---------------------------------------------------------------------------
 st.sidebar.markdown(
-    "<div style='padding:0.9rem 0.85rem 0.9rem 0.85rem; "
-    "border-bottom:1px solid rgba(207,185,145,0.12); margin-bottom:0.2rem;'>"
+    "<div style='padding:0.9rem 0.85rem 1.1rem 0.85rem; "
+    "border-bottom:1px solid rgba(207,185,145,0.12); margin-bottom:0.5rem;'>"
     # Row 1: Japanese flag + desk label
     "<div style='display:flex;align-items:center;gap:8px;margin-bottom:10px;'>"
     "<svg width='24' height='16' viewBox='0 0 900 600' xmlns='http://www.w3.org/2000/svg' "
@@ -593,19 +593,19 @@ st.sidebar.markdown(
     "<rect width='900' height='600' fill='#fff'/>"
     "<circle cx='450' cy='300' r='180' fill='#BC002D'/>"
     "</svg>"
-    "<span style='font-size:0.48rem;font-weight:700;text-transform:uppercase;"
-    "letter-spacing:0.16em;color:rgba(207,185,145,0.55);font-family:var(--font-sans);'>"
+    "<span style='font-size:var(--fs-sm);font-weight:800;text-transform:uppercase;"
+    "letter-spacing:0.16em;color:rgba(207,185,145,0.82);font-family:var(--font-sans);'>"
     "Rates Strategy Desk</span></div>"
     # Row 2: Title
-    "<div style='font-size:1.25rem;font-weight:800;color:#fff;"
-    "letter-spacing:-0.015em;line-height:1.05;font-family:var(--font-sans);'>"
+    "<div style='font-size:var(--fs-hero);font-weight:900;color:#fff;"
+    "letter-spacing:-0.02em;line-height:1.05;font-family:var(--font-sans);'>"
     "JGB Repricing</div>"
     # Row 3: Subtitle
-    "<div style='font-size:0.56rem;font-weight:500;color:rgba(255,255,255,0.4);"
+    "<div style='font-size:var(--fs-base);font-weight:700;color:rgba(255,255,255,0.72);"
     "margin-top:4px;letter-spacing:0.08em;text-transform:uppercase;"
     "font-family:var(--font-sans);'>Quantitative Framework</div>"
     # Row 4: Institution
-    "<div style='font-size:0.46rem;font-weight:600;color:rgba(207,185,145,0.4);"
+    "<div style='font-size:var(--fs-xs);font-weight:700;color:rgba(207,185,145,0.78);"
     "margin-top:5px;letter-spacing:0.12em;text-transform:uppercase;"
     "font-family:var(--font-sans);'>Purdue Daniels School of Business</div>"
     "</div>",
@@ -714,7 +714,7 @@ except Exception:
 st.sidebar.markdown(
     "<div style='border-top:1px solid rgba(255,255,255,0.06);"
     "margin:0.4rem 0 0.5rem 0;padding-top:0.5rem;'>"
-    "<span style='font-size:0.55rem;font-weight:700;text-transform:uppercase;"
+    "<span style='font-size:var(--fs-tiny);font-weight:700;text-transform:uppercase;"
     "letter-spacing:0.14em;color:rgba(255,255,255,0.4);"
     f"font-family:var(--font-sans);'>Last Update: {datetime.now().strftime('%H:%M:%S')}</span></div>",
     unsafe_allow_html=True,

@@ -363,7 +363,7 @@ def _about_page_styles():
     .about-hero-inner { position: relative; z-index: 1; }
     .about-hero h1 {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 2.2rem;
+        font-size: var(--fs-hero, 2.0rem);
         font-weight: 700;
         color: #ffffff;
         margin: 0 0 0.3rem 0;
@@ -372,7 +372,7 @@ def _about_page_styles():
     }
     .about-hero .overline {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.7rem;
+        font-size: var(--fs-base, 0.70rem);
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.18em;
@@ -381,14 +381,14 @@ def _about_page_styles():
     }
     .about-hero .subtitle {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 1rem;
+        font-size: var(--fs-2xl, 0.88rem);
         color: rgba(255,255,255,0.7);
         margin: 0 0 0.8rem 0;
         font-weight: 400;
     }
     .about-hero .tagline {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.85rem;
+        font-size: var(--fs-xl, 0.82rem);
         color: rgba(255,255,255,0.55);
         margin: 0 0 1rem 0;
         line-height: 1.6;
@@ -400,7 +400,7 @@ def _about_page_styles():
     }
     .about-hero .links a {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.78rem;
+        font-size: var(--fs-lg, 0.78rem);
         font-weight: 600;
         color: #CFB991;
         text-decoration: none;
@@ -430,7 +430,7 @@ def _about_page_styles():
     }
     .about-card-title {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.72rem;
+        font-size: var(--fs-base, 0.70rem);
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.14em;
@@ -451,27 +451,27 @@ def _about_page_styles():
     .exp-item:hover { border-color: #CFB991; }
     .exp-role {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.88rem;
+        font-size: var(--fs-2xl, 0.88rem);
         font-weight: 700;
         color: #1a1a1a;
         margin: 0 0 0.1rem 0;
     }
     .exp-org {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.82rem;
+        font-size: var(--fs-xl, 0.82rem);
         font-weight: 600;
         color: #8E6F3E;
         margin: 0 0 0.15rem 0;
     }
     .exp-meta {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.72rem;
+        font-size: var(--fs-base, 0.70rem);
         color: #888;
         margin: 0 0 0.3rem 0;
     }
     .exp-desc {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.8rem;
+        font-size: var(--fs-lg, 0.78rem);
         color: #444;
         line-height: 1.6;
         margin: 0;
@@ -485,27 +485,27 @@ def _about_page_styles():
     .edu-item:last-child { border-bottom: none; }
     .edu-school {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.88rem;
+        font-size: var(--fs-2xl, 0.88rem);
         font-weight: 700;
         color: #1a1a1a;
         margin: 0 0 0.1rem 0;
     }
     .edu-dept {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.78rem;
+        font-size: var(--fs-lg, 0.78rem);
         color: #8E6F3E;
         margin: 0 0 0.1rem 0;
         font-weight: 500;
     }
     .edu-degree {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.8rem;
+        font-size: var(--fs-lg, 0.78rem);
         color: #444;
         margin: 0 0 0.1rem 0;
     }
     .edu-year {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.72rem;
+        font-size: var(--fs-base, 0.70rem);
         color: #999;
         margin: 0;
     }
@@ -513,11 +513,11 @@ def _about_page_styles():
     /* ── Publication ───────────────────────────────────── */
     .pub-item {
         padding: 0.4rem 0;
-        font-size: 0.8rem;
+        font-size: var(--fs-lg, 0.78rem);
     }
     .pub-title {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.84rem;
+        font-size: var(--fs-xl, 0.82rem);
         font-weight: 600;
         color: #1a1a1a;
         margin: 0 0 0.25rem 0;
@@ -525,26 +525,26 @@ def _about_page_styles():
     }
     .pub-authors {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.78rem;
+        font-size: var(--fs-lg, 0.78rem);
         color: #555;
         margin: 0 0 0.15rem 0;
     }
     .pub-journal {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.75rem;
+        font-size: var(--fs-md, 0.74rem);
         color: #8E6F3E;
         font-style: italic;
         margin: 0 0 0.1rem 0;
     }
     .pub-detail {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.7rem;
+        font-size: var(--fs-base, 0.70rem);
         color: #999;
         margin: 0 0 0.4rem 0;
     }
     .pub-link {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.75rem;
+        font-size: var(--fs-md, 0.74rem);
         font-weight: 600;
         color: #CFB991;
         text-decoration: none;
@@ -561,14 +561,14 @@ def _about_page_styles():
     .cert-item:last-child { border-bottom: none; }
     .cert-name {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.82rem;
+        font-size: var(--fs-xl, 0.82rem);
         font-weight: 600;
         color: #1a1a1a;
         margin: 0 0 0.1rem 0;
     }
     .cert-issuer {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.72rem;
+        font-size: var(--fs-base, 0.70rem);
         color: #999;
         margin: 0;
     }
@@ -579,7 +579,7 @@ def _about_page_styles():
         border-radius: 20px;
         padding: 0.25rem 0.75rem;
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.72rem;
+        font-size: var(--fs-base, 0.70rem);
         font-weight: 600;
         margin: 0.15rem;
     }
@@ -597,7 +597,7 @@ def _about_page_styles():
     /* ── Acknowledgments ───────────────────────────────── */
     .ack-text {
         font-family: var(--font-sans, 'DM Sans', sans-serif);
-        font-size: 0.8rem;
+        font-size: var(--fs-lg, 0.78rem);
         color: #555;
         line-height: 1.6;
         margin: 0;
@@ -614,17 +614,17 @@ def _about_page_styles():
     }
     .stat-item { text-align: center; }
     .stat-num {
-        font-size: 1.6rem;
+        font-size: var(--fs-h1, 1.25rem);
         font-weight: 700;
         color: #CFB991;
         font-family: var(--font-mono, monospace);
         margin: 0;
     }
     .stat-label {
-        font-size: 0.6rem;
+        font-size: var(--fs-xs, 0.60rem);
         text-transform: uppercase;
         letter-spacing: 0.12em;
-        color: rgba(255,255,255,0.5);
+        color: #888;
         margin: 2px 0 0 0;
         font-family: var(--font-sans, 'DM Sans', sans-serif);
     }

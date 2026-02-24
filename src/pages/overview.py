@@ -5,7 +5,6 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
 import streamlit as st
 
 from src.ui.shared import (
@@ -13,7 +12,7 @@ from src.ui.shared import (
     _takeaway_block, _page_conclusion, _page_footer, _add_boj_events,
     _about_page_styles, _PALETTE,
 )
-from src.pages._data import load_unified, load_rates, load_market, _safe_col
+from src.pages._data import load_unified
 
 
 def _get_args():

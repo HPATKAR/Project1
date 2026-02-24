@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
 import streamlit as st
 
 from src.ui.shared import (
@@ -13,7 +11,7 @@ from src.ui.shared import (
     _takeaway_block, _page_conclusion, _page_footer, _add_boj_events,
     _about_page_styles, _PALETTE,
 )
-from src.pages._data import load_unified, load_rates, load_market, _safe_col
+from src.pages._data import load_unified
 from src.pages.regime import _run_ensemble
 
 
@@ -245,7 +243,7 @@ def page_early_warning():
                     f"<div style='border-left:4px solid {color};padding:8px 12px;margin-bottom:8px;"
                     f"background:rgba(0,0,0,0.02);border-radius:0 6px 6px 0;'>"
                     f"<b style='color:{color}'>{w.severity}</b> "
-                    f"<span style='color:#666;font-size:0.85rem'>{w.timestamp:%Y-%m-%d}</span><br>"
+                    f"<span style='color:#666;font-size:var(--fs-xl)'>{w.timestamp:%Y-%m-%d}</span><br>"
                     f"{w.message}</div>",
                     unsafe_allow_html=True,
                 )

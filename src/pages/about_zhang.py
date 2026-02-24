@@ -2,18 +2,11 @@
 
 from __future__ import annotations
 
-import numpy as np
-import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
 import streamlit as st
 
 from src.ui.shared import (
-    _style_fig, _chart, _page_intro, _section_note, _definition_block,
-    _takeaway_block, _page_conclusion, _page_footer, _add_boj_events,
-    _about_page_styles, _PALETTE,
+    _about_page_styles, _page_footer,
 )
-from src.pages._data import load_unified, load_rates, load_market, _safe_col
 
 
 def _get_args():

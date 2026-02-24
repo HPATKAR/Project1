@@ -13,7 +13,7 @@ from src.ui.shared import (
     _takeaway_block, _page_conclusion, _page_footer, _add_boj_events,
     _about_page_styles, _PALETTE,
 )
-from src.pages._data import load_unified, load_rates, load_market, _safe_col
+from src.pages._data import load_unified
 from src.pages.yield_curve import _run_pca
 
 

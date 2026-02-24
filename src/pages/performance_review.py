@@ -5,15 +5,14 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
 import streamlit as st
 
 from src.ui.shared import (
     _style_fig, _chart, _page_intro, _section_note, _definition_block,
     _takeaway_block, _page_conclusion, _page_footer, _add_boj_events,
-    _about_page_styles, _PALETTE,
+    _PALETTE,
 )
-from src.pages._data import load_unified, load_rates, load_market, _safe_col
+from src.pages._data import load_unified
 from src.pages.regime import _run_ensemble, _run_markov, _run_entropy, _run_garch
 from src.pages.early_warning import _run_warning_score, _run_ml_predictor
 from src.pages.yield_curve import _run_pca

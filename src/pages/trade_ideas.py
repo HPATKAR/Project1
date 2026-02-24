@@ -13,10 +13,10 @@ from src.ui.shared import (
     _takeaway_block, _page_conclusion, _page_footer, _add_boj_events,
     _about_page_styles, _PALETTE,
 )
-from src.pages._data import load_unified, load_rates, load_market, _safe_col
-from src.pages.regime import _run_ensemble, _run_markov, _run_entropy, _run_garch
-from src.pages.yield_curve import _run_pca, _run_ns, _run_liquidity
-from src.pages.spillover import _run_granger, _run_te, _run_spillover, _run_dcc, _run_te_pca, _run_carry
+from src.pages._data import load_unified
+from src.pages.regime import _run_ensemble, _run_entropy, _run_garch
+from src.pages.yield_curve import _run_pca, _run_liquidity
+from src.pages.spillover import _run_granger, _run_te, _run_spillover, _run_dcc, _run_carry
 from src.pages.early_warning import _run_warning_score, _run_ml_predictor
 
 
@@ -357,7 +357,7 @@ def page_trade_ideas():
     # --- Sidebar filters ---
     st.sidebar.markdown(
         "<div style='border-top:1px solid rgba(255,255,255,0.06); margin:0.4rem 0 0.5rem 0; padding-top:0.5rem;'>"
-        "<span style='font-size:0.55rem;font-weight:700;text-transform:uppercase;"
+        "<span style='font-size:var(--fs-tiny);font-weight:700;text-transform:uppercase;"
         "letter-spacing:0.14em;color:rgba(255,255,255,0.4);"
         "font-family:var(--font-sans);'>Trade Filters</span></div>",
         unsafe_allow_html=True,

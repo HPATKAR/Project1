@@ -213,14 +213,14 @@ class AlertNotifier:
 
         badge = ""
         if crit:
-            badge += f"<span style='background:#dc2626;color:#fff;border-radius:3px;padding:1px 5px;font-size:0.6rem;font-weight:700;margin-right:3px;'>{crit} CRIT</span>"
+            badge += f"<span style='background:#dc2626;color:#fff;border-radius:3px;padding:1px 5px;font-size:var(--fs-xs);font-weight:700;margin-right:3px;'>{crit} CRIT</span>"
         if warn:
-            badge += f"<span style='background:#d97706;color:#fff;border-radius:3px;padding:1px 5px;font-size:0.6rem;font-weight:700;'>{warn} WARN</span>"
+            badge += f"<span style='background:#d97706;color:#fff;border-radius:3px;padding:1px 5px;font-size:var(--fs-xs);font-weight:700;'>{warn} WARN</span>"
 
         st_module.markdown(
             "<div style='border-top:1px solid rgba(255,255,255,0.06);"
             "margin:0.4rem 0 0.3rem 0;padding-top:0.5rem;'>"
-            "<span style='font-size:0.55rem;font-weight:700;text-transform:uppercase;"
+            "<span style='font-size:var(--fs-tiny);font-weight:700;text-transform:uppercase;"
             "letter-spacing:0.14em;color:rgba(255,255,255,0.4);"
             f"font-family:var(--font-sans);'>Alerts</span> {badge}</div>",
             unsafe_allow_html=True,
@@ -244,11 +244,11 @@ class AlertNotifier:
                     f"border-radius:0 4px 4px 0;padding:5px 8px;margin-bottom:4px;"
                     f"font-family:var(--font-sans);'>"
                     f"<div style='display:flex;align-items:center;gap:5px;'>"
-                    f"<span style='color:{color};font-size:0.6rem;'>{icon}</span>"
-                    f"<span style='color:{color};font-size:0.6rem;font-weight:700;letter-spacing:0.08em;'>{sev}</span>"
-                    f"<span style='color:rgba(255,255,255,0.35);font-size:0.55rem;margin-left:auto;'>{ts}</span>"
+                    f"<span style='color:{color};font-size:var(--fs-xs);'>{icon}</span>"
+                    f"<span style='color:{color};font-size:var(--fs-xs);font-weight:700;letter-spacing:0.08em;'>{sev}</span>"
+                    f"<span style='color:rgba(255,255,255,0.35);font-size:var(--fs-tiny);margin-left:auto;'>{ts}</span>"
                     f"</div>"
-                    f"<div style='color:rgba(255,255,255,0.75);font-size:0.7rem;margin-top:2px;line-height:1.3;'>{title}</div>"
+                    f"<div style='color:rgba(255,255,255,0.75);font-size:var(--fs-base);margin-top:2px;line-height:1.3;'>{title}</div>"
                     f"</div>",
                     unsafe_allow_html=True,
                 )
