@@ -28,7 +28,7 @@ if str(PROJECT_ROOT) not in sys.path:
 # ---------------------------------------------------------------------------
 from src.data.config import DEFAULT_START, DEFAULT_END
 from src.ui.layout_config import LayoutConfig, LayoutManager, render_settings_panel
-from src.ui.alert_system import AlertNotifier
+from src.ui.alert_system import AlertNotifier, get_subscriber_count
 
 # ---------------------------------------------------------------------------
 # Global Streamlit config
@@ -707,6 +707,14 @@ except Exception:
 try:
     _alert_notifier = AlertNotifier()
     _alert_notifier.render_sidebar_log(st.sidebar)
+    _sub_count = get_subscriber_count()
+    if _sub_count > 0:
+        st.sidebar.markdown(
+            f"<div style='font-size:var(--fs-tiny);color:rgba(255,255,255,0.4);"
+            f"font-family:var(--font-sans);padding:2px 0 0 0;'>"
+            f"<span style='color:#CFB991;font-weight:700;'>{_sub_count}</span> email subscriber{'s' if _sub_count != 1 else ''} active</div>",
+            unsafe_allow_html=True,
+        )
 except Exception:
     _alert_notifier = None
 

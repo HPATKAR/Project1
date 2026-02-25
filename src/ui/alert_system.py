@@ -6,9 +6,13 @@ toast notifications for real-time regime and market alerts.
 """
 from __future__ import annotations
 
+import re
+import smtplib
 import sqlite3
 from dataclasses import dataclass, field
 from datetime import datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -91,6 +95,160 @@ def get_recent_alerts(
     )
     conn.close()
     return df
+
+
+# ── Email Subscriber Persistence ─────────────────────────────────────────
+
+def _init_subscriber_db(db_path: Optional[Path] = None) -> sqlite3.Connection:
+    """Initialize the subscribers table."""
+    path = db_path or _DB_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(path))
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS subscribers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            subscribed_at TEXT NOT NULL,
+            active INTEGER DEFAULT 1,
+            min_severity TEXT DEFAULT 'WARNING'
+        )
+    """)
+    conn.commit()
+    return conn
+
+
+def subscribe_email(email: str, min_severity: str = "WARNING", db_path: Optional[Path] = None) -> bool:
+    """Add an email subscriber. Returns True if new, False if already exists."""
+    email = email.strip().lower()
+    if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", email):
+        raise ValueError(f"Invalid email: {email}")
+    conn = _init_subscriber_db(db_path)
+    try:
+        conn.execute(
+            "INSERT INTO subscribers (email, subscribed_at, active, min_severity) VALUES (?, ?, 1, ?)",
+            (email, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), min_severity),
+        )
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        conn.execute(
+            "UPDATE subscribers SET active = 1, min_severity = ? WHERE email = ?",
+            (min_severity, email),
+        )
+        conn.commit()
+        return False
+    finally:
+        conn.close()
+
+
+def unsubscribe_email(email: str, db_path: Optional[Path] = None) -> bool:
+    """Deactivate an email subscriber. Returns True if found."""
+    email = email.strip().lower()
+    conn = _init_subscriber_db(db_path)
+    cursor = conn.execute("UPDATE subscribers SET active = 0 WHERE email = ?", (email,))
+    conn.commit()
+    found = cursor.rowcount > 0
+    conn.close()
+    return found
+
+
+def get_active_subscribers(db_path: Optional[Path] = None) -> pd.DataFrame:
+    """Retrieve all active subscribers."""
+    conn = _init_subscriber_db(db_path)
+    df = pd.read_sql("SELECT * FROM subscribers WHERE active = 1 ORDER BY subscribed_at DESC", conn)
+    conn.close()
+    return df
+
+
+def get_subscriber_count(db_path: Optional[Path] = None) -> int:
+    """Return count of active subscribers."""
+    conn = _init_subscriber_db(db_path)
+    count = conn.execute("SELECT COUNT(*) FROM subscribers WHERE active = 1").fetchone()[0]
+    conn.close()
+    return count
+
+
+_SEVERITY_ORDER = {"INFO": 0, "WARNING": 1, "CRITICAL": 2}
+
+
+def send_alert_emails(
+    alerts: List[Alert],
+    smtp_host: str = "",
+    smtp_port: int = 587,
+    smtp_user: str = "",
+    smtp_pass: str = "",
+    from_addr: str = "",
+    db_path: Optional[Path] = None,
+) -> int:
+    """Send alert emails to all active subscribers whose severity threshold is met.
+
+    Returns the number of emails sent. If SMTP is not configured, returns 0
+    silently (alerts are still persisted to DB for dashboard display).
+    """
+    if not smtp_host or not smtp_user:
+        return 0
+
+    subscribers = get_active_subscribers(db_path)
+    if subscribers.empty:
+        return 0
+
+    sent = 0
+    for _, sub in subscribers.iterrows():
+        sub_min = _SEVERITY_ORDER.get(sub["min_severity"], 1)
+        relevant = [a for a in alerts if _SEVERITY_ORDER.get(a.severity, 0) >= sub_min]
+        if not relevant:
+            continue
+
+        body_lines = []
+        for a in relevant:
+            body_lines.append(f"[{a.severity}] {a.title}\n{a.description}\n")
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"JGB Alert: {relevant[0].severity} — {relevant[0].title}"
+        msg["From"] = from_addr or smtp_user
+        msg["To"] = sub["email"]
+
+        plain = "JGB Repricing Framework — Early Warning Alert\n\n" + "\n".join(body_lines)
+        html = _build_alert_email_html(relevant)
+        msg.attach(MIMEText(plain, "plain"))
+        msg.attach(MIMEText(html, "html"))
+
+        try:
+            with smtplib.SMTP(smtp_host, smtp_port) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_pass)
+                server.send_message(msg)
+            sent += 1
+        except Exception:
+            pass  # fail silently per subscriber — don't block dashboard
+
+    return sent
+
+
+def _build_alert_email_html(alerts: List[Alert]) -> str:
+    """Build a styled HTML email body for alert notifications."""
+    _sev_color = {"CRITICAL": "#dc2626", "WARNING": "#d97706", "INFO": "#2563eb"}
+    rows = ""
+    for a in alerts:
+        color = _sev_color.get(a.severity, "#6b7280")
+        rows += (
+            f"<tr><td style='border-left:4px solid {color};padding:12px 16px;'>"
+            f"<strong style='color:{color};'>{a.severity}</strong><br>"
+            f"<span style='font-size:16px;font-weight:600;'>{a.title}</span><br>"
+            f"<span style='color:#555;'>{a.description}</span>"
+            f"</td></tr>"
+        )
+    return (
+        "<html><body style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>"
+        "<div style='background:#000;color:#CFB991;padding:20px;text-align:center;'>"
+        "<h2 style='margin:0;'>JGB Repricing Framework</h2>"
+        "<p style='margin:4px 0 0 0;font-size:12px;letter-spacing:0.1em;'>EARLY WARNING SYSTEM</p></div>"
+        f"<table style='width:100%;border-collapse:collapse;margin-top:16px;'>{rows}</table>"
+        "<p style='color:#999;font-size:11px;margin-top:24px;text-align:center;'>"
+        "Purdue Daniels School of Business — Rates Strategy Desk<br>"
+        "To unsubscribe, visit the dashboard and remove your email.</p>"
+        "</body></html>"
+    )
 
 
 # ── Alert Detector ───────────────────────────────────────────────────────
@@ -189,15 +347,21 @@ class AlertDetector:
 class AlertNotifier:
     """Manage alerts in a Streamlit session."""
 
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(self, db_path: Optional[Path] = None, smtp_config: Optional[Dict] = None):
         self.db_path = db_path
+        self.smtp_config = smtp_config or {}
 
     def process_alerts(self, alerts: List[Alert]) -> List[Alert]:
-        """Save alerts to DB and return them for display."""
+        """Save alerts to DB, send email notifications, and return for display."""
         new_alerts = []
         for alert in alerts:
             save_alert(alert, self.db_path)
             new_alerts.append(alert)
+        if new_alerts and self.smtp_config.get("smtp_host"):
+            try:
+                send_alert_emails(new_alerts, db_path=self.db_path, **self.smtp_config)
+            except Exception:
+                pass
         return new_alerts
 
     def render_sidebar_log(self, st_module) -> None:

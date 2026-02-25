@@ -17,6 +17,8 @@ build/
 # Environment / secrets
 .env
 *.key
+.streamlit/secrets.toml
+config/user_settings.json
 
 # IDE
 .idea/

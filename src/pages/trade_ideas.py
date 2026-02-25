@@ -13,7 +13,7 @@ from src.ui.shared import (
     _takeaway_block, _page_conclusion, _page_footer, _add_boj_events,
     _about_page_styles, _PALETTE,
 )
-from src.pages._data import load_unified
+from src.pages._data import load_unified, _safe_col
 from src.pages.regime import _run_ensemble, _run_entropy, _run_garch
 from src.pages.yield_curve import _run_pca, _run_liquidity
 from src.pages.spillover import _run_granger, _run_te, _run_spillover, _run_dcc, _run_carry
@@ -506,7 +506,7 @@ def page_trade_ideas():
             pass
         _pdf_warn = None
         try:
-            _ws = _run_warning_score(*_pdf_args)
+            _ws = _run_warning_score(*_pdf_args, _get_layout_config().entropy_window)
             if _ws is not None and len(_ws.dropna()) > 0:
                 _pdf_warn = float(_ws.dropna().iloc[-1])
         except Exception:

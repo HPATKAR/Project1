@@ -28,7 +28,10 @@ def _get_alert_notifier():
     return st.session_state.get("_alert_notifier")
 
 from src.regime.early_warning import compute_simple_warning_score, generate_warnings
-from src.ui.alert_system import AlertDetector, AlertNotifier, AlertThresholds
+from src.ui.alert_system import (
+    AlertDetector, AlertNotifier, AlertThresholds,
+    subscribe_email, unsubscribe_email, get_subscriber_count, get_active_subscribers,
+)
 
 
 
@@ -283,6 +286,71 @@ def page_early_warning():
         st.dataframe(score_df.style.format({"Warning Score": "{:.1f}"}), use_container_width=True, height=300)
     except Exception as exc:
         st.warning(f"Could not render data table: {exc}")
+
+    # --- Email Alert Subscription ---
+    try:
+        st.subheader("Alert Subscriptions")
+        _section_note(
+            "Subscribe with your email to receive alerts when the warning score breaches "
+            "WARNING (50+) or CRITICAL (80+) thresholds. Alerts are checked each time the "
+            "dashboard loads."
+        )
+        sub_count = get_subscriber_count()
+        st.markdown(
+            f"<div style='background:var(--surface-1);border:1px solid var(--border-light);"
+            f"border-radius:10px;padding:16px 20px;margin-bottom:16px;'>"
+            f"<span style='font-size:var(--fs-xs);font-weight:700;text-transform:uppercase;"
+            f"letter-spacing:var(--ls-wider);color:var(--ink-muted);'>Active Subscribers</span>"
+            f"<div style='font-size:var(--fs-metric);font-weight:600;color:var(--ink);"
+            f"font-family:var(--font-mono);margin-top:4px;'>{sub_count}</div></div>",
+            unsafe_allow_html=True,
+        )
+
+        col_sub, col_unsub = st.columns(2)
+        with col_sub:
+            with st.form("subscribe_form", clear_on_submit=True):
+                sub_email = st.text_input("Email address", placeholder="you@example.com")
+                sub_severity = st.selectbox(
+                    "Minimum alert severity",
+                    ["WARNING", "CRITICAL"],
+                    help="WARNING sends alerts at score 50+. CRITICAL only at 80+.",
+                )
+                if st.form_submit_button("Subscribe", use_container_width=True):
+                    if sub_email:
+                        try:
+                            is_new = subscribe_email(sub_email.strip(), min_severity=sub_severity)
+                            if is_new:
+                                st.success(f"Subscribed {sub_email.strip().lower()} for {sub_severity}+ alerts.")
+                            else:
+                                st.info(f"{sub_email.strip().lower()} re-activated with {sub_severity} threshold.")
+                        except ValueError as ve:
+                            st.error(str(ve))
+                    else:
+                        st.warning("Please enter an email address.")
+
+        with col_unsub:
+            with st.form("unsubscribe_form", clear_on_submit=True):
+                unsub_email = st.text_input("Email to unsubscribe", placeholder="you@example.com")
+                st.write("")  # spacer to align with selectbox
+                if st.form_submit_button("Unsubscribe", use_container_width=True):
+                    if unsub_email:
+                        found = unsubscribe_email(unsub_email.strip())
+                        if found:
+                            st.success(f"Unsubscribed {unsub_email.strip().lower()}.")
+                        else:
+                            st.warning("Email not found in subscriber list.")
+                    else:
+                        st.warning("Please enter an email address.")
+
+        # Show current subscribers in an expander
+        subs_df = get_active_subscribers()
+        if not subs_df.empty:
+            with st.expander(f"View {len(subs_df)} active subscriber(s)", expanded=False):
+                display_df = subs_df[["email", "min_severity", "subscribed_at"]].copy()
+                display_df.columns = ["Email", "Min Severity", "Subscribed At"]
+                st.dataframe(display_df, use_container_width=True, hide_index=True)
+    except Exception as exc:
+        st.warning(f"Could not render subscription section: {exc}")
 
     # --- Page conclusion (always render, even if sections above failed) ---
     try:
