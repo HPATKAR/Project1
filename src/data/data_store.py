@@ -238,22 +238,22 @@ class DataStore:
 
             if not api_key:
                 # Fallback: yfinance yields + MOF Japan JGB
-                print("  [rates] No FRED API key — using yfinance yields + MOF Japan JGB")
+                logger.info("No FRED API key — using yfinance yields + MOF Japan JGB")
                 yf_yields = pd.DataFrame()
                 mof_jgb = pd.DataFrame()
 
                 try:
                     yf_yields = _fetch_yf_yields(start_str, end_str)
-                    print(f"  [rates] yfinance yields: {len(yf_yields)} rows, cols={list(yf_yields.columns)}")
+                    logger.info("yfinance yields: %d rows, cols=%s", len(yf_yields), list(yf_yields.columns))
                 except Exception as exc:
-                    print(f"  [rates] yfinance yields fetch failed: {exc}")
+                    logger.warning("yfinance yields fetch failed: %s", exc)
 
                 try:
                     mof_jgb = _fetch_mof_jgb_yields(start_str, end_str)
                     if not mof_jgb.empty:
-                        print(f"  [rates] MOF Japan JGB: {len(mof_jgb)} rows, cols={list(mof_jgb.columns)}")
+                        logger.info("MOF Japan JGB: %d rows, cols=%s", len(mof_jgb), list(mof_jgb.columns))
                 except Exception as exc:
-                    print(f"  [rates] MOF JGB fetch failed: {exc}")
+                    logger.warning("MOF JGB fetch failed: %s", exc)
 
                 if not mof_jgb.empty and not yf_yields.empty:
                     # Strip timezone info for join compatibility

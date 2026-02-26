@@ -48,7 +48,8 @@ def fetch_all_fred(
             errors[name] = str(e)
 
     if errors:
-        print(f"FRED fetch errors: {errors}")
+        import logging
+        logging.getLogger(__name__).warning("FRED fetch errors: %s", errors)
 
     df = pd.DataFrame(results)
     df.index = pd.to_datetime(df.index)
